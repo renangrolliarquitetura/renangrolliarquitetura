@@ -287,11 +287,11 @@ footer{background:var(--dark);color:var(--on-dark);padding-block:0 32px}
     <div class="wrap">
       <p class="eyebrow">Onde atuamos</p>
       <h2 class="h2">De Sorriso ao litoral.</h2>
-      <p class="lead" style="margin-top:18px">Com raízes no Mato Grosso, o escritório também desenvolve projetos de casas de praia e veraneio no litoral do Nordeste e do Sul do país.</p>
+      <p class="lead" style="margin-top:18px">Com raízes no Mato Grosso, o escritório também tem projetos no litoral: residências e flats para locação por temporada em Japaratinga, Alagoas, e uma residência de veraneio na Praia de Torres, no Rio Grande do Sul.</p>
       <div class="regions">
         <div><h3>Sorriso · MT</h3><p>Sede do escritório e a maior parte das obras, em loteamentos como Mont Serrat, São Conrado, Green Park e Jardim Aurora.</p></div>
-        <div><h3>Litoral de Alagoas</h3><p>Casas de veraneio pensadas para o uso da família e para locação por temporada.</p></div>
-        <div><h3>Litoral do Rio Grande do Sul</h3><p>Projetos residenciais adaptados ao clima, à legislação e ao modo de viver do Sul.</p></div>
+        <div><h3>Japaratinga · AL</h3><p>Projetos executados de residências e flats pensados para locação no Airbnb. Imóveis de temporada são também uma especialidade do escritório.</p></div>
+        <div><h3>Torres · RS</h3><p>Projeto de edificação residencial de veraneio na Praia de Torres, no litoral do Rio Grande do Sul.</p></div>
       </div>
       <div class="qa">
         <h3>Contratar um escritório de outro estado realmente funciona?</h3>
@@ -402,7 +402,7 @@ document.querySelectorAll(".ph").forEach(el=>{
   else if(el.dataset.plan!=="hero") el.insertAdjacentHTML("beforeend", `<span class="soon">foto em breve</span>`);
 });
 
-const places=["Sorriso · MT","Mont Serrat","São Conrado","Green Park","Jardim Aurora","Cidade Nova","Japaratinga · AL","Litoral de Alagoas","Litoral do Rio Grande do Sul"];
+const places=["Sorriso · MT","Mont Serrat","São Conrado","Green Park","Jardim Aurora","Cidade Nova","Japaratinga · AL","Flats para Airbnb","Praia de Torres · RS"];
 document.getElementById("track").innerHTML = [...places,...places].map(p=>`<span>${p}</span>`).join("");
 
 document.querySelectorAll("[data-wa]").forEach(a=>a.href="https://wa.me/"+WHATSAPP+"?text="+encodeURIComponent(a.dataset.msg||MSG));
