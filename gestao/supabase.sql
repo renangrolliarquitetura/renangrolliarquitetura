@@ -67,3 +67,52 @@ alter table public.registros replica identity full;
 do $$ begin
   alter publication supabase_realtime add table public.registros;
 exception when duplicate_object then null; end $$;
+
+-- ===== Área restrita (Financeiro / Equipe) =====
+-- A senha da área restrita fica só como hash bcrypt em config_privada, gravado direto no SQL Editor:
+--   insert into public.config_privada values ('senha_area_restrita', '<hash bcrypt>')
+--   on conflict (chave) do update set valor = excluded.valor;
+-- (para trocar a senha: gere o hash com extensions.crypt('nova senha', extensions.gen_salt('bf')))
+create extension if not exists pg_net;
+create table if not exists public.config_privada (chave text primary key, valor text not null);
+alter table public.config_privada enable row level security; -- sem políticas: o app não lê
+
+-- Registro de quem abriu o Financeiro / Equipe
+create table if not exists public.acessos (
+  id bigint generated always as identity primary key,
+  usuario uuid default auth.uid(),
+  nome text,
+  area text not null,
+  quando timestamptz not null default now()
+);
+alter table public.acessos enable row level security;
+drop policy if exists "admin vê acessos" on public.acessos;
+create policy "admin vê acessos" on public.acessos for select to authenticated using (eh_admin());
+
+-- Confere a senha, registra o acesso e manda e-mail para o Renan (via Resend, se a chave
+-- "resend_api_key" estiver no Vault do Supabase)
+create or replace function public.abrir_area_restrita(senha text, area text) returns boolean
+language plpgsql security definer set search_path = public, extensions as $$
+declare h text; quem text; chave text;
+begin
+  if not eh_admin() then return false; end if;
+  select valor into h from config_privada where config_privada.chave = 'senha_area_restrita';
+  if h is null or crypt(senha, h) <> h then return false; end if;
+  select nome into quem from perfis where id = auth.uid();
+  insert into acessos (nome, area) values (quem, area);
+  select decrypted_secret into chave from vault.decrypted_secrets where name = 'resend_api_key';
+  if chave is not null then
+    perform net.http_post(
+      url := 'https://api.resend.com/emails',
+      headers := jsonb_build_object('Authorization', 'Bearer ' || chave, 'Content-Type', 'application/json'),
+      body := jsonb_build_object(
+        'from', 'Gestão do Escritório <onboarding@resend.dev>',
+        'to', jsonb_build_array('renangrolliarquitetura@gmail.com'),
+        'subject', 'Acesso ao ' || area || ': ' || coalesce(quem, '?'),
+        'text', coalesce(quem, '?') || ' abriu ' || area || ' no app de gestão em '
+          || to_char(now() at time zone 'America/Cuiaba', 'DD/MM/YYYY "às" HH24:MI') || ' (horário de Sorriso-MT).'));
+  end if;
+  return true;
+end $$;
+revoke execute on function public.abrir_area_restrita(text, text) from public, anon;
+grant execute on function public.abrir_area_restrita(text, text) to authenticated;
