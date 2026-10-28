@@ -656,7 +656,7 @@ function tabelaLancamentos(lista) {
 }
 function blocoFinanceiroVinculado(filtro, rotulo, novoParams) {
   if (!sessao.admin) return "";
-  if (!finLiberado()) return `<div class="card mb" style="margin-top:14px">O financeiro deste ${rotulo} está bloqueado. <a href="#/financeiro">Desbloquear com sua senha</a></div>`;
+  if (!finLiberado()) return `<div class="card mb" style="margin-top:14px">O financeiro deste ${rotulo} está bloqueado. <a href="#/financeiro">Desbloquear com a senha</a></div>`;
   const ls = db.lancamentos.filter(filtro).sort((a, b) => a.data.localeCompare(b.data));
   const ent = ls.filter((l) => l.tipo === "entrada");
   return `<h2 style="margin-top:22px">Financeiro deste ${rotulo}</h2>
@@ -1347,13 +1347,17 @@ function mostrarPorTipo() {
 }
 
 /* ---------- página e ações do financeiro ---------- */
+// Financeiro e Equipe pedem a senha da área restrita (conferida no servidor, que registra o acesso e avisa o Renan por e-mail)
+function telaBloqueio(area) {
+  return `<form class="card lockbox" data-form="desbloquear" data-area="${area}">
+    <div><h1>${area}</h1><p class="muted" style="margin:4px 0 0">Área restrita. Digite a senha do Financeiro / Equipe para abrir. Ela fica liberada por 30 minutos.</p></div>
+    <label class="field"><span>Senha</span><input class="input" type="password" name="senha" autofocus required autocomplete="off"></label>
+    <div class="err" id="err-fin"></div><button class="btn pri" style="justify-content:center">Abrir</button>
+  </form>`;
+}
 function pgFinanceiro(sub = "dashboard") {
   if (!sessao.admin) return `<p class="empty">Acesso restrito.</p>`;
-  if (!finLiberado()) return `<form class="card lockbox" data-form="desbloquear">
-    <div><h1>Financeiro</h1><p class="muted" style="margin:4px 0 0">Área restrita. Digite sua senha para abrir. Ela fica liberada por 30 minutos.</p></div>
-    <label class="field"><span>Senha</span><input class="input" type="password" name="senha" autofocus required></label>
-    <div class="err" id="err-fin"></div><button class="btn pri" style="justify-content:center">Abrir financeiro</button>
-</form>`;
+  if (!finLiberado()) return telaBloqueio("Financeiro");
   const paginas = { dashboard: finDashboard, transacoes: finTransacoes, relatorios: finRelatorios, contatos: finContatos, importar: finImportar, configuracoes: finConfig };
   return moldura(sub, (paginas[sub] || finDashboard)());
 }
@@ -1483,7 +1487,7 @@ function render() {
   const ativo = { cliente: "clientes", prospeccao: "prospeccoes" }[rota] || rota;
   const nav = [["painel", "Painel"], ["esteira", "Esteira"], ["tarefas", "Tarefas"], ["clientes", "Clientes"], ["prospeccoes", "Prospecções"], ...(sessao.admin ? [["financeiro", "Financeiro"], ["equipe", "Equipe"]] : [])];
   root.innerHTML = `<div class="app"><aside class="side"><div class="brand">${simbolo()}<div><span class="wm" role="img" aria-label="Renan Grolli Arquitetura"></span><small>Gestão</small></div></div>
-    <nav class="nav">${nav.map(([r, l]) => `<a href="#/${r}" class="${ativo === r ? "on" : ""}">${l}${r === "financeiro" ? `<span class="lock">${finLiberado() ? "🔓" : "🔒"}</span>` : ""}</a>`).join("")}</nav>
+    <nav class="nav">${nav.map(([r, l]) => `<a href="#/${r}" class="${ativo === r ? "on" : ""}">${l}${r === "financeiro" || r === "equipe" ? `<span class="lock">${finLiberado() ? "🔓" : "🔒"}</span>` : ""}</a>`).join("")}</nav>
     <div class="me"><span class="small muted">${esc(sessao.nome)}${sessao.admin ? " · administrador" : ""}</span><button class="btn sm" data-act="sair">Sair</button><a href="#" class="small no-print" data-act="trocar-senha">Trocar minha senha</a></div></aside>
     <main>${(paginas[rota] || pgPainel)()}</main></div>`;
   const buscaEst = $("#busca-est");
@@ -1558,12 +1562,15 @@ document.addEventListener("submit", (e) => {
   const erro = (msg, alvo = "#err-dlg") => { const el = $(alvo); if (el) el.textContent = msg; };
   if (nome === "login") {
     erro("Entrando…", "#err-login");
+    // Marca atividade antes de entrar, para a sessão nova não ser tomada como parada
+    ultimaAtividade = Date.now(); try { localStorage.setItem(CHAVE_ATIVIDADE, String(ultimaAtividade)); } catch {}
     sb.auth.signInWithPassword({ email: v("email").toLowerCase(), password: v("senha") }).then(({ error }) => { if (error) erro("E-mail ou senha incorretos.", "#err-login"); });
     return;
   }
   if (nome === "desbloquear") {
-    sb.auth.signInWithPassword({ email: sessao.email, password: v("senha") }).then(({ error }) => {
-      if (error) return erro("Senha incorreta.", "#err-fin");
+    erro("Conferindo…", "#err-fin");
+    sb.rpc("abrir_area_restrita", { senha: v("senha"), area: f.dataset.area || "Financeiro" }).then(({ data, error }) => {
+      if (error || data !== true) return erro(error ? "Não foi possível conferir a senha. Tente de novo." : "Senha incorreta.", "#err-fin");
       finAte = Date.now() + 30 * 60 * 1000; guardarSessao(); render();
     });
     return;
@@ -1637,6 +1644,31 @@ document.addEventListener("drop", (e) => {
   else { const t = db.tarefas.find((x) => x.id === id); if (t && (t.responsavelId || "") !== col.dataset.v) { t.responsavelId = col.dataset.v || null; salvar(); render(); } else render(); }
 });
 
+/* ===================== saída automática por inatividade ===================== */
+// Sem mexer no sistema por 30 minutos (em qualquer aba), a pessoa precisa entrar de novo
+const INATIVO_MS = 30 * 60 * 1000, CHAVE_ATIVIDADE = "gestao-ultima-atividade";
+let ultimaAtividade = Date.now();
+const lerAtividade = () => { try { return Number(localStorage.getItem(CHAVE_ATIVIDADE)) || 0; } catch { return 0; } };
+function marcarAtividade() {
+  const agora = Date.now();
+  if (agora - ultimaAtividade < 15000) return;
+  ultimaAtividade = agora;
+  try { localStorage.setItem(CHAVE_ATIVIDADE, String(agora)); } catch {}
+}
+["pointerdown", "keydown", "scroll", "touchstart", "mousemove"].forEach((ev) => addEventListener(ev, marcarAtividade, { passive: true, capture: true }));
+async function conferirInatividade() {
+  if (!sessao) return;
+  const ultima = Math.max(ultimaAtividade, lerAtividade());
+  if (Date.now() - ultima < INATIVO_MS) return;
+  finAte = 0; guardarSessao();
+  if (canal) sb.removeChannel(canal);
+  await sb.auth.signOut();
+  sessao = null; db = vazio(); espelho = new Map(); ROTA = "#/painel"; render();
+  toast("Sessão encerrada depois de 30 minutos sem uso. Entre de novo.");
+}
+setInterval(conferirInatividade, 60000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) conferirInatividade(); });
+
 /* ===================== acesso e equipe ===================== */
 function telaNovaSenha() {
   return `<div class="center"><form class="card login" data-form="nova-senha">
@@ -1647,13 +1679,16 @@ function telaNovaSenha() {
 function formEsqueci() {
   abrir("Esqueci minha senha", `<p class="muted" style="margin-top:0">Digite seu e-mail. Você vai receber um link para criar uma nova senha.</p><div class="form">${campo("E-mail *", `<input class="input" type="email" name="email" required>`, true)}</div>`, "esqueci");
 }
-let equipe = null;
+let equipe = null, acessos = [];
 async function carregarEquipe() {
   const { data, error } = await sb.from("perfis").select("id, nome, email, admin, ativo").order("nome");
+  const ac = await sb.from("acessos").select("nome, area, quando").order("quando", { ascending: false }).limit(20);
+  acessos = ac.data || [];
   equipe = (!error && data) || []; await carregarPessoas(); render();
 }
 function pgEquipe() {
   if (!sessao.admin) return `<p class="empty">Acesso restrito.</p>`;
+  if (!finLiberado()) return telaBloqueio("Equipe");
   if (!equipe) { carregarEquipe(); return `<p class="empty">Carregando…</p>`; }
   const linhas = equipe.map((p) => `<tr><td><b>${esc(p.nome)}</b><div class="small muted">${esc(p.email)}</div></td>
     <td>${p.ativo ? `<span class="badge b-good">Ativo</span>` : `<span class="badge b-critical">Bloqueado</span>`}</td>
@@ -1661,6 +1696,7 @@ function pgEquipe() {
     <td class="num">${p.id === sessao.id ? `<span class="small muted">você</span>` : `<button class="btn sm" data-act="eq-admin" data-id="${p.id}" data-v="${p.admin ? 0 : 1}">${p.admin ? "Tirar admin" : "Tornar admin"}</button> <button class="btn sm ${p.ativo ? "danger" : ""}" data-act="eq-ativo" data-id="${p.id}" data-v="${p.ativo ? 0 : 1}">${p.ativo ? "Bloquear" : "Liberar"}</button>`}</td></tr>`).join("");
   return cabecalho("Equipe", "Quem pode entrar no sistema") + `
     <div class="grid g2 mb"><div class="card flush span2"><table><thead><tr><th>Pessoa</th><th>Acesso</th><th>Perfil</th><th></th></tr></thead><tbody>${linhas || `<tr><td colspan="4" class="empty">Ninguém cadastrado.</td></tr>`}</tbody></table></div></div>
+    ${acessos.length ? `<div class="card flush mb" style="max-width:640px"><h2>Últimos acessos ao Financeiro / Equipe</h2><table><tbody>${acessos.map((a) => `<tr><td>${new Date(a.quando).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</td><td>${esc(a.nome)}</td><td class="ink2">${esc(a.area)}</td></tr>`).join("")}</tbody></table></div>` : ""}
     <form class="card" data-form="novo-membro" style="max-width:640px"><h2>Cadastrar pessoa</h2><div class="form">
       ${campo("Nome *", `<input class="input" name="nome" required>`)}${campo("E-mail *", `<input class="input" type="email" name="email" required>`)}
       ${campo("Senha inicial (mínimo 6) *", `<input class="input" name="senha" minlength="6" required>`)}
@@ -1687,6 +1723,8 @@ async function alterarPerfil(id, dados) {
 sb.auth.onAuthStateChange((evento, s) => {
   if (evento === "PASSWORD_RECOVERY") { recuperandoSenha = true; carregando = false; return render(); }
   if (evento === "SIGNED_IN" || evento === "INITIAL_SESSION") {
+    const parada = evento === "INITIAL_SESSION" && lerAtividade() && Date.now() - lerAtividade() > INATIVO_MS;
+    if (s?.user && parada) { setTimeout(async () => { await sb.auth.signOut(); carregando = false; render(); toast("Sessão encerrada depois de 30 minutos sem uso. Entre de novo."); }); return; }
     if (s?.user && sessao?.id !== s.user.id) setTimeout(() => entrar(s.user));
     else if (!s) { carregando = false; render(); }
   }
