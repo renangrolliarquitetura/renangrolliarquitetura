@@ -114,7 +114,7 @@ main { flex: 1; min-width: 0; padding: 40px clamp(20px, 3vw, 56px) 64px; }
 select.input { width: auto; }
 .field { display: flex; flex-direction: column; gap: 4px; }
 .field > span { color: var(--muted); font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; }
-.field select.input { width: 100%; }
+.field select.input, dd select.input { width: 100%; }
 .form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .form .full { grid-column: 1 / -1; }
 @media (max-width: 600px) { .form { grid-template-columns: 1fr; } }
@@ -129,6 +129,7 @@ tr:last-child td { border-bottom: 0; }
 .neg { color: var(--critical-text); } .pos { color: var(--good-text); }
 .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 2px 9px; border-radius: 999px; background: var(--surface-2); white-space: nowrap; }
 .badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.b-info::before { background: #5f7489; }
 .b-good::before { background: var(--good); } .b-warning::before { background: var(--warning); } .b-critical::before { background: var(--critical); }
 .empty { color: var(--muted); text-align: center; padding: 28px 12px; }
 .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
@@ -206,6 +207,25 @@ dialog .df { padding: 14px 20px; border-top: 1px solid var(--line); display: fle
 .proto { position: fixed; right: 12px; bottom: 12px; z-index: 40; font-size: 12px; }
 
 [hidden] { display: none !important; }
+/* ---------- quadros (esteira e tarefas) ---------- */
+.kanban { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 12px; align-items: flex-start; scroll-snap-type: x proximity; }
+.kcol { flex: 0 0 272px; background: var(--surface-2); border: 1px solid var(--line); display: flex; flex-direction: column; max-height: calc(100vh - 230px); scroll-snap-align: start; }
+.kcol > header { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px; font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; border-bottom: 1px solid var(--line); }
+.kcol > header .btn { padding: 2px 8px; }
+.kcards { padding: 10px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; min-height: 70px; }
+.kcol.over { outline: 2px dashed var(--accent); outline-offset: -2px; }
+.kcard { background: var(--surface); border: 1px solid var(--line); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; cursor: grab; }
+.kcard.feita .tit { color: var(--muted); text-decoration: line-through; }
+.kcard .tit { font-weight: 500; color: var(--ink); text-decoration: none; }
+.kcard .tit:hover { text-decoration: underline; }
+.kcard .rod { display: flex; justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap; }
+.kcard .kmove { display: inline-flex; gap: 2px; margin-left: auto; }
+.kcard .kmove button { border: 1px solid var(--line); background: transparent; color: var(--ink-2); font: inherit; width: 26px; height: 24px; cursor: pointer; padding: 0; }
+.kcard .kmove button:disabled { opacity: .3; cursor: default; }
+.resp { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); }
+.resp i { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: 10px; font-style: normal; font-weight: 600; }
+.urg { font-size: 11px; font-weight: 600; color: var(--critical-text); letter-spacing: .08em; text-transform: uppercase; }
+@media (max-width: 900px) { .kcol { flex-basis: 84vw; max-height: none; } }
 /* ---------- financeiro ---------- */
 .finnav { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; border-bottom: 1px solid var(--line); margin: -8px 0 20px; padding-bottom: 8px; }
 .finnav a { padding: 8px 12px; color: var(--ink-2); font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; text-decoration: none; }
@@ -351,10 +371,18 @@ const CAT_SAI = ["Aluguel", "Salários / Pró-labore", "Impostos", "Software / L
 const FORMAS = ["Pix", "Transferência", "Boleto", "Cartão de crédito", "Cartão de débito", "Dinheiro", "Cheque"];
 const TIPOS_CONTATO = ["Ligação", "WhatsApp", "Reunião", "E-mail", "Visita à obra", "Proposta enviada", "Outro"];
 const ETAPAS_PADRAO = ["Levantamento / briefing", "Estudo preliminar", "Anteprojeto", "Projeto executivo", "Aprovação (Prefeitura / Vigilância Sanitária)", "Entrega final"];
+// Mesmas colunas e etiquetas da "Esteira de projetos" e da "Agenda de tarefas" do Trello
+const ESTEIRA = ["Em prospecção", "Contrato", "Iniciar", "Estudo preliminar / Anteprojeto", "Projeto legal", "Detalhamentos", "Projetos complementares", "Aprovação na prefeitura", "Concluído", "Stand by"];
+const ANDAMENTOS = {
+  iniciar: { label: "Iniciar", cls: "" },
+  andamento: { label: "Em andamento", cls: "b-warning" },
+  aguardando: { label: "Correto / aguardando aprovação", cls: "b-info" },
+  concluido: { label: "Concluído", cls: "b-good" },
+};
 const MOTIVOS = ["Preço", "Prazo", "Desistiu da obra", "Fechou com outro escritório", "Sem retorno do cliente"];
 
 /* ===================== dados iniciais ===================== */
-const COLECOES = ["tipos", "clientes", "prospeccoes", "etapas", "contatos", "contas", "categorias", "centros", "tags", "fornecedores", "lancamentos"];
+const COLECOES = ["tipos", "clientes", "prospeccoes", "etapas", "contatos", "tarefas", "contas", "categorias", "centros", "tags", "fornecedores", "lancamentos"];
 const COLECOES_FIN = ["contas", "categorias", "centros", "tags", "fornecedores", "lancamentos"];
 const vazio = () => Object.fromEntries(COLECOES.map((k) => [k, []]));
 // Cadastros básicos criados no primeiro acesso (tipos de projeto e, para o administrador, plano de contas)
@@ -378,6 +406,7 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let db = vazio();
 let sessao = null;          // { id, email, nome, admin }
+let pessoas = [];           // equipe ativa, para escolher responsáveis
 let finAte = 0;             // financeiro liberado até (ms)
 let carregando = true, recuperandoSenha = false;
 try { finAte = Number(sessionStorage.getItem("gestao-fin-ate")) || 0; } catch {}
@@ -441,6 +470,11 @@ function atualizarTela() {
   if (dlg.open || (ativo && ativo.matches?.("input, textarea, select"))) { renderPendente = true; return; }
   render();
 }
+async function carregarPessoas() {
+  const { data } = await sb.from("perfis").select("id, nome, ativo").order("nome");
+  pessoas = (data || []).filter((x) => x.ativo);
+  if (!pessoas.some((x) => x.id === sessao.id)) pessoas.push({ id: sessao.id, nome: sessao.nome, ativo: true });
+}
 let entrando = false;
 async function entrar(user) {
   if (entrando) return; entrando = true;
@@ -448,6 +482,7 @@ async function entrar(user) {
   const { data: perfil, error } = await sb.from("perfis").select("nome, admin, ativo").eq("id", user.id).maybeSingle();
   if (error || !perfil?.ativo) { sessao = null; carregando = false; entrando = false; await sb.auth.signOut(); render(); return toast(error ? "Erro ao abrir: " + error.message : "Seu acesso ainda não foi liberado pelo administrador."); }
   sessao = { id: user.id, email: user.email, nome: perfil.nome, admin: perfil.admin };
+  await carregarPessoas();
   try { await carregarDados(); } catch (e) { toast("Erro ao carregar os dados: " + e.message); }
   completarBasicos(); ouvirMudancas();
   carregando = false; entrando = false; render();
@@ -457,6 +492,12 @@ const cliente = (id) => db.clientes.find((c) => c.id === id);
 const prosp = (id) => db.prospeccoes.find((p) => p.id === id);
 const tipoNome = (id) => db.tipos.find((t) => t.id === id)?.nome || "?";
 const tiposDe = (p) => p.tipos.map(tipoNome).join(", ") || "—";
+const etapaDe = (p) => p.esteira || (p.status === "aberto" ? ESTEIRA[0] : ESTEIRA[1]);
+const nomePessoa = (id) => pessoas.find((x) => x.id === id)?.nome || "";
+const iniciais = (n) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x[0]).join("").toUpperCase();
+const respTag = (id) => (nomePessoa(id) ? `<span class="resp" title="Responsável"><i>${esc(iniciais(nomePessoa(id)))}</i>${esc(nomePessoa(id))}</span>` : `<span class="resp muted">Sem responsável</span>`);
+const andamentoTag = (a) => (ANDAMENTOS[a] ? `<span class="badge ${ANDAMENTOS[a].cls}">${ANDAMENTOS[a].label}</span>` : "");
+const opcoesPessoas = (atual, vazio = "Sem responsável") => opts(pessoas.map((x) => [x.id, x.nome]), atual, vazio);
 const badge = (s) => `<span class="badge ${STATUS[s].cls}">${STATUS[s].label}</span>`;
 function situacaoLanc(l) {
   if (l.pago) return `<span class="badge b-good">${l.tipo === "entrada" ? "Recebido" : "Pago"}</span>`;
@@ -561,6 +602,7 @@ function pgPainel() {
     const doMes = lista.filter((p) => Number(p.contato.slice(5, 7)) === i + 1);
     return { mes, fechado: doMes.filter((p) => p.status === "fechado").length, aberto: doMes.filter((p) => p.status === "aberto").length, cancelado: doMes.filter((p) => p.status === "cancelado").length };
   });
+  const minhas = db.tarefas.filter((t) => t.responsavelId === sessao.id && t.andamento !== "concluido").sort(ordemTarefas);
   return cabecalho(`Olá, ${esc(sessao.nome)}`, "Resumo das prospecções e projetos do escritório", selAno(anosDe(db.prospeccoes.map((p) => p.contato)), ano) + botoesExportar()) +
     `<div class="grid g4 mb">
       ${tile("Clientes cadastrados", db.clientes.length)}
@@ -568,6 +610,7 @@ function pgPainel() {
       ${tile("Em aberto", a.length, R$(soma(a)) + " em negociação")}
       ${tile("Taxa de conversão", pct(f.length, f.length + c.length) + "%", `${f.length} fechados de ${f.length + c.length} decididos · ${c.length} cancelados`)}
     </div>` +
+    (minhas.length ? `<div class="card mb"><div class="bar"><h2>Minhas tarefas</h2><a href="#/tarefas" class="small">Ver todas</a></div><ul class="steps">${minhas.slice(0, 8).map((t) => `<li><button class="btn sm" data-act="tarefa-ok" data-id="${t.id}">○</button><a href="#" class="nm" data-act="editar-tarefa" data-id="${t.id}">${esc(t.titulo)}</a>${t.urgente ? `<span class="urg">Urgente</span>` : ""}${andamentoTag(t.andamento)}${prosp(t.prospeccaoId) ? `<a href="#/prospeccao/${t.prospeccaoId}" class="small muted">${esc(prosp(t.prospeccaoId).titulo)}</a>` : ""}${t.prazo ? situacaoPrazo(t.prazo) : ""}</li>`).join("")}</ul></div>` : "") +
     (prazos.length ? `<div class="card flush mb"><h2>Prazos das próximas 2 semanas</h2><table><tbody>${prazos.map((e) => {
       const p = prosp(e.prospeccaoId);
       return `<tr><td class="num" style="text-align:left">${dataBR(e.prazo)}</td><td><a href="#/prospeccao/${p.id}">${esc(p.titulo)}</a> <span class="muted">· ${esc(cliente(p.clienteId)?.nome)}</span></td><td>${esc(e.nome)}</td><td>${situacaoPrazo(e.prazo)}</td></tr>`;
@@ -628,7 +671,7 @@ function pgCliente(id) {
   return cabecalho(esc(c.nome), `Cliente desde ${dataBR(c.criado)}`, `<button class="btn pri" data-act="nova-prosp" data-cliente="${id}">Nova prospecção</button><button class="btn" data-act="editar-cliente" data-id="${id}">Editar</button>${botoesExportar()}<button class="btn danger" data-act="del-cliente" data-id="${id}">Excluir</button>`) +
     `<div class="grid g3 mb">
       <div class="card"><h2>Dados</h2><dl>${info.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v) || "—"}</dd></div>`).join("")}</dl>${c.observacoes ? `<p class="ink2">${esc(c.observacoes)}</p>` : ""}</div>
-      <div class="card flush span2"><h2>Prospecções e projetos</h2>${ps.length ? `<table><thead><tr><th>Projeto</th><th>Tipos</th><th>Situação</th><th>Contato</th><th class="num">Valor</th></tr></thead><tbody>${ps.map((p) => `<tr><td><a href="#/prospeccao/${p.id}">${esc(p.titulo)}</a></td><td class="ink2">${esc(tiposDe(p))}</td><td>${badge(p.status)}</td><td>${dataBR(p.contato)}</td><td class="num">${R$(p.valor)}</td></tr>`).join("")}</tbody></table>` : `<p class="empty">Nenhuma prospecção para este cliente.</p>`}</div>
+      <div class="card flush span2"><h2>Prospecções e projetos</h2>${ps.length ? `<table><thead><tr><th>Projeto</th><th>Tipos</th><th>Situação</th><th>Etapa</th><th>Contato</th><th class="num">Valor</th></tr></thead><tbody>${ps.map((p) => `<tr><td><a href="#/prospeccao/${p.id}">${esc(p.titulo)}</a></td><td class="ink2">${esc(tiposDe(p))}</td><td>${badge(p.status)}</td><td class="ink2">${p.status === "cancelado" ? "—" : esc(etapaDe(p))}</td><td>${dataBR(p.contato)}</td><td class="num">${R$(p.valor)}</td></tr>`).join("")}</tbody></table>` : `<p class="empty">Nenhuma prospecção para este cliente.</p>`}</div>
     </div>` + blocoContatos(id) + blocoFinanceiroVinculado((l) => l.clienteId === id, "cliente", `data-cliente="${id}"`);
 }
 
@@ -641,8 +684,8 @@ function pgProspeccoes() {
   return cabecalho("Prospecções", `${lista.length} projeto(s) · ${R$(soma(lista))}`, botoesExportar("prospeccoes") + `<button class="btn pri" data-act="nova-prosp">Nova prospecção</button>`) +
     `<div class="bar mb"><div class="actions">${abas.map(([s, l]) => `<button class="btn sm ${fpStatus === s ? "on" : ""}" data-act="fp-status" data-v="${s}">${l} <span class="muted">${s ? doPeriodo.filter((p) => p.status === s).length : doPeriodo.length}</span></button>`).join("")}</div>
       <div class="actions"><select class="input" data-act="fp-tipo" aria-label="Tipo de projeto"><option value="">Todos os tipos</option>${db.tipos.map((t) => `<option value="${t.id}" ${String(t.id) === fpTipo ? "selected" : ""}>${esc(t.nome)}</option>`).join("")}</select>${selAno(anosDe(db.prospeccoes.map((p) => p.contato)), fpAno).replace('data-act="ano"', 'data-act="fp-ano"')}</div></div>
-    <div class="card flush">${lista.length ? `<table><thead><tr><th>Projeto</th><th>Cliente</th><th>Tipos</th><th>Situação</th><th>Contato</th><th class="num">Valor</th><th></th></tr></thead><tbody>${lista.map((p) => `<tr>
-      <td><a href="#/prospeccao/${p.id}"><b>${esc(p.titulo)}</b></a></td><td><a href="#/cliente/${p.clienteId}">${esc(cliente(p.clienteId)?.nome)}</a></td><td class="ink2">${esc(tiposDe(p))}</td><td>${badge(p.status)}</td><td>${dataBR(p.contato)}</td><td class="num">${R$(p.valor)}</td>
+    <div class="card flush">${lista.length ? `<table><thead><tr><th>Projeto</th><th>Cliente</th><th>Tipos</th><th>Situação</th><th>Etapa</th><th>Contato</th><th class="num">Valor</th><th></th></tr></thead><tbody>${lista.map((p) => `<tr>
+      <td><a href="#/prospeccao/${p.id}"><b>${esc(p.titulo)}</b></a></td><td><a href="#/cliente/${p.clienteId}">${esc(cliente(p.clienteId)?.nome)}</a></td><td class="ink2">${esc(tiposDe(p))}</td><td>${badge(p.status)}</td><td class="ink2">${p.status === "cancelado" ? "—" : esc(etapaDe(p))}</td><td>${dataBR(p.contato)}</td><td class="num">${R$(p.valor)}</td>
       <td>${p.status === "aberto" ? `<span class="actions" style="flex-wrap:nowrap"><button class="btn sm" data-act="fechou" data-id="${p.id}">Fechou</button><button class="btn sm" data-act="editar-prosp" data-id="${p.id}" data-cancelar="1">Cancelar</button></span>` : ""}</td></tr>`).join("")}</tbody></table>` : `<p class="empty">Nenhuma prospecção encontrada.</p>`}</div>`;
 }
 function pgProspeccao(id) {
@@ -653,9 +696,13 @@ function pgProspeccao(id) {
   return cabecalho(esc(p.titulo), `Cliente: <a href="#/cliente/${c.id}">${esc(c.nome)}</a>`, `<button class="btn pri" data-act="editar-prosp" data-id="${id}">Editar</button>${botoesExportar()}<button class="btn danger" data-act="del-prosp" data-id="${id}">Excluir</button>`) +
     `<div class="card mb"><div class="grid g4">
       <div><dt>Situação</dt><dd>${badge(p.status)}</dd></div><div><dt>Tipos de projeto</dt><dd>${esc(tiposDe(p))}</dd></div>
+      <div><dt>Etapa da esteira</dt><dd><select class="input" data-act="prosp-esteira" data-id="${id}" aria-label="Etapa da esteira">${opts(ESTEIRA, etapaDe(p))}</select></dd></div>
+      <div><dt>Andamento</dt><dd><select class="input" data-act="prosp-andamento" data-id="${id}" aria-label="Andamento">${opts(Object.entries(ANDAMENTOS).map(([k, a]) => [k, a.label]), p.andamento, "—")}</select></dd></div>
+      <div><dt>Responsável</dt><dd><select class="input" data-act="prosp-resp" data-id="${id}" aria-label="Responsável">${opcoesPessoas(p.responsavelId)}</select></dd></div>
       <div><dt>Valor</dt><dd>${R$(p.valor)}</dd></div><div><dt>Contato · ${p.status === "cancelado" ? "cancelamento" : "fechamento"}</dt><dd>${dataBR(p.contato)} · ${dataBR(p.fechamento)}</dd></div>
       ${p.motivo ? `<div class="span2"><dt>Motivo do cancelamento</dt><dd>${esc(p.motivo)}</dd></div>` : ""}${p.obs ? `<div class="span2"><dt>Observações</dt><dd>${esc(p.obs)}</dd></div>` : ""}
     </div></div>
+    ${blocoTarefas(id)}
     <div class="grid g2">
       <div class="card"><div class="bar"><h2>Etapas e prazos</h2>${et.length ? `<span class="muted">${feitas} de ${et.length} concluídas</span>` : ""}</div>
         ${et.length ? `<div class="progress"><div style="width:${pct(feitas, et.length)}%"></div></div>` : ""}
@@ -669,6 +716,90 @@ function pgProspeccao(id) {
       </div>
       ${blocoContatos(c.id, id)}
     </div>` + blocoFinanceiroVinculado((l) => l.prospeccaoId === id, "projeto", `data-cliente="${c.id}" data-prosp="${id}"`);
+}
+
+/* ---------- Esteira de projetos ---------- */
+let feTipo = "", feResp = "", feBusca = "";
+const filtraBusca = (txt) => !feBusca || txt.toLowerCase().includes(feBusca.toLowerCase());
+function resumoFin(p) {
+  if (!finLiberado()) return "";
+  const ent = db.lancamentos.filter((l) => l.prospeccaoId === p.id && l.tipo === "entrada");
+  if (!ent.length) return "";
+  return `<span class="small muted" title="Recebido de ${R$(soma(ent))}">${R$c(soma(ent.filter((l) => l.pago)))} de ${R$c(soma(ent))}</span>`;
+}
+function cartaoProjeto(p) {
+  const i = ESTEIRA.indexOf(etapaDe(p)), c = cliente(p.clienteId);
+  return `<article class="kcard" draggable="true" data-drag="prosp" data-id="${p.id}">
+    <a class="tit" href="#/prospeccao/${p.id}">${esc(p.titulo)}</a>
+    <div class="small"><a href="#/cliente/${p.clienteId}" class="muted">${esc(c?.nome || "—")}</a></div>
+    ${p.tipos.length ? `<div class="chips">${p.tipos.map((t) => `<span class="tagp">${esc(tipoNome(t))}</span>`).join("")}</div>` : ""}
+    ${p.andamento ? `<div>${andamentoTag(p.andamento)}</div>` : ""}
+    <div class="rod">${respTag(p.responsavelId)}${resumoFin(p)}<span class="kmove"><button type="button" data-act="mover" data-id="${p.id}" data-v="-1" ${i <= 0 ? "disabled" : ""} aria-label="Coluna anterior">‹</button><button type="button" data-act="mover" data-id="${p.id}" data-v="1" ${i >= ESTEIRA.length - 1 ? "disabled" : ""} aria-label="Próxima coluna">›</button></span></div>
+  </article>`;
+}
+function pgEsteira() {
+  const lista = db.prospeccoes.filter((p) => p.status !== "cancelado" && (!feTipo || p.tipos.includes(Number(feTipo))) && (!feResp || (p.responsavelId || "-") === feResp) && filtraBusca(p.titulo + " " + (cliente(p.clienteId)?.nome || "")));
+  return cabecalho("Esteira de projetos", `${lista.length} projeto(s) · arraste os cartões entre as colunas`, `<button class="btn pri" data-act="nova-prosp">Novo projeto</button>`) +
+    `<div class="bar mb"><input class="input" id="busca-est" style="max-width:320px" placeholder="Buscar projeto ou cliente" value="${esc(feBusca)}">
+      <div class="actions"><select class="input" data-act="fe-tipo" aria-label="Tipo de projeto"><option value="">Todos os tipos</option>${db.tipos.map((t) => `<option value="${t.id}" ${String(t.id) === feTipo ? "selected" : ""}>${esc(t.nome)}</option>`).join("")}</select>
+      <select class="input" data-act="fe-resp" aria-label="Responsável"><option value="">Todos os responsáveis</option>${pessoas.map((x) => `<option value="${x.id}" ${x.id === feResp ? "selected" : ""}>${esc(x.nome)}</option>`).join("")}<option value="-" ${feResp === "-" ? "selected" : ""}>Sem responsável</option></select></div></div>
+    <div class="kanban">${ESTEIRA.map((col, i) => {
+      const cs = lista.filter((p) => etapaDe(p) === col);
+      return `<section class="kcol" data-drop="prosp" data-v="${i}"><header><span>${esc(col)} <span class="muted">${cs.length}</span></span>${i === 0 ? `<button class="btn sm" data-act="nova-prosp" title="Nova prospecção">+</button>` : ""}</header><div class="kcards">${cs.map(cartaoProjeto).join("")}</div></section>`;
+    }).join("")}</div>`;
+}
+// Mover na esteira também atualiza a situação comercial: sair de "Em prospecção" para uma etapa de trabalho fecha o projeto
+function moverProjeto(p, i) {
+  i = Math.max(0, Math.min(ESTEIRA.length - 1, i));
+  if (ESTEIRA[i] === etapaDe(p)) return;
+  p.esteira = ESTEIRA[i];
+  let msg = "Movido para " + ESTEIRA[i];
+  if (i === 0 && p.status === "fechado") { p.status = "aberto"; p.fechamento = null; msg += " (voltou a ficar em aberto)"; }
+  else if (i >= 1 && i <= 8 && p.status === "aberto") { p.status = "fechado"; p.fechamento = HOJE; msg += " e marcado como fechado"; }
+  salvar(); render(); toast(msg);
+}
+
+/* ---------- Tarefas (agenda por responsável) ---------- */
+let ftOcultar = false;
+function cartaoTarefa(t) {
+  const p = prosp(t.prospeccaoId), feita = t.andamento === "concluido";
+  return `<article class="kcard ${feita ? "feita" : ""}" draggable="true" data-drag="tarefa" data-id="${t.id}">
+    <a class="tit" href="#" data-act="editar-tarefa" data-id="${t.id}">${esc(t.titulo)}</a>
+    ${p ? `<div class="small"><a href="#/prospeccao/${p.id}" class="muted">${esc(cliente(p.clienteId)?.nome || "")} · ${esc(p.titulo)}</a></div>` : ""}
+    <div class="rod"><span class="actions">${t.urgente ? `<span class="urg">Urgente</span>` : ""}${andamentoTag(t.andamento)}${t.prazo && !feita ? `<span class="small muted">${dataBR(t.prazo)}</span>${situacaoPrazo(t.prazo)}` : ""}</span>
+      <span class="kmove"><button type="button" data-act="tarefa-ok" data-id="${t.id}" title="${feita ? "Reabrir" : "Concluir"}">${feita ? "↺" : "✓"}</button><button type="button" data-act="del-tarefa" data-id="${t.id}" title="Excluir">×</button></span></div>
+  </article>`;
+}
+const ordemTarefas = (a, b) => (b.urgente ? 1 : 0) - (a.urgente ? 1 : 0) || (a.andamento === "concluido") - (b.andamento === "concluido") || (a.prazo || "9999").localeCompare(b.prazo || "9999");
+function pgTarefas() {
+  const lista = db.tarefas.filter((t) => (!ftOcultar || t.andamento !== "concluido") && filtraBusca(t.titulo + " " + (prosp(t.prospeccaoId)?.titulo || "")));
+  const ids = new Set(pessoas.map((x) => x.id));
+  const colunas = [...pessoas.map((x) => ({ id: x.id, nome: x.nome })), { id: "", nome: "Compartilhadas" }];
+  return cabecalho("Tarefas", "Agenda de tarefas por responsável", `<button class="btn pri" data-act="nova-tarefa">Nova tarefa</button>`) +
+    `<div class="bar mb"><input class="input" id="busca-est" style="max-width:320px" placeholder="Buscar tarefa ou projeto" value="${esc(feBusca)}">
+      <label class="chip"><input type="checkbox" data-act="ft-ocultar" ${ftOcultar ? "checked" : ""}> Ocultar concluídas</label></div>
+    <div class="kanban">${colunas.map((col) => {
+      const ts = lista.filter((t) => (ids.has(t.responsavelId) ? t.responsavelId : "") === col.id).sort(ordemTarefas);
+      return `<section class="kcol" data-drop="tarefa" data-v="${col.id}"><header><span>${esc(col.nome)} <span class="muted">${ts.filter((t) => t.andamento !== "concluido").length}</span></span><button class="btn sm" data-act="nova-tarefa" data-resp="${col.id}" title="Nova tarefa">+</button></header><div class="kcards">${ts.map(cartaoTarefa).join("")}</div></section>`;
+    }).join("")}</div>`;
+}
+function blocoTarefas(prospeccaoId) {
+  const ts = db.tarefas.filter((t) => t.prospeccaoId === prospeccaoId).sort(ordemTarefas);
+  return `<div class="card mb"><div class="bar"><h2>Tarefas deste projeto</h2><button class="btn sm" data-act="nova-tarefa" data-prosp="${prospeccaoId}">Nova tarefa</button></div>
+    ${ts.length ? `<ul class="steps">${ts.map((t) => `<li class="${t.andamento === "concluido" ? "done" : ""}"><button class="btn sm" data-act="tarefa-ok" data-id="${t.id}">${t.andamento === "concluido" ? "✓" : "○"}</button>
+      <a href="#" class="nm" data-act="editar-tarefa" data-id="${t.id}">${esc(t.titulo)}</a>${t.urgente ? `<span class="urg">Urgente</span>` : ""}${andamentoTag(t.andamento)}${respTag(t.responsavelId)}${t.prazo ? `<span class="small muted">${dataBR(t.prazo)}</span>` : ""}</li>`).join("")}</ul>` : `<p class="muted">Nenhuma tarefa para este projeto.</p>`}</div>`;
+}
+function formTarefa(t = {}) {
+  const projetos = db.prospeccoes.filter((p) => p.status !== "cancelado" || p.id === t.prospeccaoId).sort((a, b) => a.titulo.localeCompare(b.titulo)).map((p) => [p.id, `${cliente(p.clienteId)?.nome || "?"} · ${p.titulo}`]);
+  abrir(t.id ? "Editar tarefa" : "Nova tarefa", `<div class="form">
+    ${campo("Tarefa *", inp("titulo", t.titulo, 'required placeholder="Ex.: Luminotécnico, alterações, orçamento..."'), true)}
+    ${campo("Responsável", `<select class="input" name="responsavelId">${opcoesPessoas(t.responsavelId, "Compartilhada (sem responsável)")}</select>`)}
+    ${campo("Andamento", `<select class="input" name="andamento">${opts(Object.entries(ANDAMENTOS).map(([k, a]) => [k, a.label]), t.andamento || "iniciar")}</select>`)}
+    ${campo("Projeto", `<select class="input" name="prospeccaoId">${opts(projetos, t.prospeccaoId, "Nenhum")}</select>`, true)}
+    ${campo("Prazo", inp("prazo", t.prazo, 'type="date"'))}
+    <label class="chip" style="align-self:end"><input type="checkbox" name="urgente" ${t.urgente ? "checked" : ""}> Urgente</label>
+    ${campo("Observações", `<textarea class="input" name="obs" rows="2">${esc(t.obs)}</textarea>`, true)}
+  </div>`, "tarefa", `data-id="${t.id || ""}"`);
 }
 
 /* ---------- Financeiro ---------- */
@@ -703,6 +834,9 @@ function formProsp(p = {}, cancelar = false) {
       <input class="input" name="novoTipo" placeholder="Outro tipo (cria um novo)" style="max-width:280px;margin-top:6px"></div>
     ${campo("Situação", `<select class="input" name="status" data-act="status-form">${opts(Object.keys(STATUS).map((s) => [s, STATUS[s].label]), st)}</select>`)}
     ${campo("Valor da proposta (R$)", inp("valor", p.valor != null ? String(p.valor).replace(".", ",") : "", 'inputmode="decimal" placeholder="0,00"'))}
+    ${campo("Etapa da esteira", `<select class="input" name="esteira">${opts(ESTEIRA, p.id ? etapaDe(p) : ESTEIRA[0])}</select>`)}
+    ${campo("Responsável", `<select class="input" name="responsavelId">${opcoesPessoas(p.responsavelId)}</select>`)}
+    ${campo("Andamento", `<select class="input" name="andamento">${opts(Object.entries(ANDAMENTOS).map(([k, a]) => [k, a.label]), p.andamento, "—")}</select>`)}
     ${campo("Data do primeiro contato", inp("contato", p.contato || HOJE, 'type="date" required'))}
     <label class="field" data-show="fechado cancelado"><span>Data do fechamento / cancelamento</span>${inp("fechamento", p.fechamento || HOJE, 'type="date"')}</label>
     <label class="field full" data-show="cancelado"><span>Motivo do cancelamento</span>${inp("motivo", p.motivo, 'list="motivos" placeholder="Ex.: Preço, prazo, desistiu da obra..."')}<datalist id="motivos">${MOTIVOS.map((m) => `<option value="${m}">`).join("")}</datalist></label>
@@ -1345,13 +1479,15 @@ function render() {
   if (carregando) { root.innerHTML = `<div class="center muted">Carregando…</div>`; return; }
   if (!sessao) { root.innerHTML = telaLogin(); return; }
   const [, rota = "painel", id] = ROTA.split("/");
-  const paginas = { painel: pgPainel, clientes: pgClientes, cliente: () => pgCliente(id), prospeccoes: pgProspeccoes, prospeccao: () => pgProspeccao(id), financeiro: () => pgFinanceiro(id), equipe: pgEquipe };
+  const paginas = { painel: pgPainel, clientes: pgClientes, cliente: () => pgCliente(id), prospeccoes: pgProspeccoes, prospeccao: () => pgProspeccao(id), financeiro: () => pgFinanceiro(id), equipe: pgEquipe, esteira: pgEsteira, tarefas: pgTarefas };
   const ativo = { cliente: "clientes", prospeccao: "prospeccoes" }[rota] || rota;
-  const nav = [["painel", "Painel"], ["clientes", "Clientes"], ["prospeccoes", "Prospecções"], ...(sessao.admin ? [["financeiro", "Financeiro"], ["equipe", "Equipe"]] : [])];
+  const nav = [["painel", "Painel"], ["esteira", "Esteira"], ["tarefas", "Tarefas"], ["clientes", "Clientes"], ["prospeccoes", "Prospecções"], ...(sessao.admin ? [["financeiro", "Financeiro"], ["equipe", "Equipe"]] : [])];
   root.innerHTML = `<div class="app"><aside class="side"><div class="brand">${simbolo()}<div><span class="wm" role="img" aria-label="Renan Grolli Arquitetura"></span><small>Gestão</small></div></div>
     <nav class="nav">${nav.map(([r, l]) => `<a href="#/${r}" class="${ativo === r ? "on" : ""}">${l}${r === "financeiro" ? `<span class="lock">${finLiberado() ? "🔓" : "🔒"}</span>` : ""}</a>`).join("")}</nav>
     <div class="me"><span class="small muted">${esc(sessao.nome)}${sessao.admin ? " · administrador" : ""}</span><button class="btn sm" data-act="sair">Sair</button><a href="#" class="small no-print" data-act="trocar-senha">Trocar minha senha</a></div></aside>
     <main>${(paginas[rota] || pgPainel)()}</main></div>`;
+  const buscaEst = $("#busca-est");
+  if (buscaEst) buscaEst.addEventListener("input", (e) => { feBusca = e.target.value; const pos = e.target.selectionStart; render(); const b = $("#busca-est"); b.focus(); b.setSelectionRange(pos, pos); });
   const busca = $("#busca");
   if (busca) busca.addEventListener("input", (e) => { buscaCliente = e.target.value; const pos = e.target.selectionStart; render(); const b = $("#busca"); b.focus(); b.setSelectionRange(pos, pos); });
 }
@@ -1383,15 +1519,20 @@ document.addEventListener("click", (e) => {
     csv: () => exportar(el.dataset.tipo),
     "novo-cliente": () => formCliente(),
     "editar-cliente": () => formCliente(cliente(id)),
-    "del-cliente": () => perguntar("Excluir este cliente e todas as prospecções dele?", "Excluir", () => { const ps = db.prospeccoes.filter((p) => p.clienteId === id).map((p) => p.id); db.clientes = db.clientes.filter((c) => c.id !== id); db.prospeccoes = db.prospeccoes.filter((p) => p.clienteId !== id); db.etapas = db.etapas.filter((x) => !ps.includes(x.prospeccaoId)); db.contatos = db.contatos.filter((k) => k.clienteId !== id); db.lancamentos.forEach((l) => { if (l.clienteId === id) { l.clienteId = null; l.prospeccaoId = null; } }); salvar(); ir("#/clientes"); }),
+    "del-cliente": () => perguntar("Excluir este cliente e todas as prospecções dele?", "Excluir", () => { const ps = db.prospeccoes.filter((p) => p.clienteId === id).map((p) => p.id); db.clientes = db.clientes.filter((c) => c.id !== id); db.prospeccoes = db.prospeccoes.filter((p) => p.clienteId !== id); db.etapas = db.etapas.filter((x) => !ps.includes(x.prospeccaoId)); db.tarefas.forEach((t) => { if (ps.includes(t.prospeccaoId)) t.prospeccaoId = null; }); db.contatos = db.contatos.filter((k) => k.clienteId !== id); db.lancamentos.forEach((l) => { if (l.clienteId === id) { l.clienteId = null; l.prospeccaoId = null; } }); salvar(); ir("#/clientes"); }),
     "nova-prosp": () => formProsp({ clienteId: el.dataset.cliente }),
     "editar-prosp": () => formProsp(prosp(id), !!el.dataset.cancelar),
-    "del-prosp": () => perguntar("Excluir esta prospecção?", "Excluir", () => { const p = prosp(id); db.prospeccoes = db.prospeccoes.filter((x) => x.id !== id); db.etapas = db.etapas.filter((x) => x.prospeccaoId !== id); db.lancamentos.forEach((l) => { if (l.prospeccaoId === id) l.prospeccaoId = null; }); salvar(); ir("#/cliente/" + p.clienteId); }),
+    "del-prosp": () => perguntar("Excluir esta prospecção?", "Excluir", () => { const p = prosp(id); db.prospeccoes = db.prospeccoes.filter((x) => x.id !== id); db.etapas = db.etapas.filter((x) => x.prospeccaoId !== id); db.tarefas.forEach((t) => { if (t.prospeccaoId === id) t.prospeccaoId = null; }); db.lancamentos.forEach((l) => { if (l.prospeccaoId === id) l.prospeccaoId = null; }); salvar(); ir("#/cliente/" + p.clienteId); }),
     fechou: () => { const p = prosp(id); p.status = "fechado"; p.fechamento = HOJE; salvar(); render(); toast("Marcado como fechado 🎉"); },
     "fp-status": () => { fpStatus = el.dataset.v; render(); },
     "etapa-ok": () => { const x = db.etapas.find((z) => z.id === id); x.concluida = !x.concluida; x.concluidaEm = x.concluida ? HOJE : null; salvar(); render(); },
     "del-etapa": () => { db.etapas = db.etapas.filter((z) => z.id !== id); salvar(); render(); },
     "etapas-padrao": () => { ETAPAS_PADRAO.forEach((nome, i) => db.etapas.push({ id: uid(), prospeccaoId: id, nome, ordem: i + 1, concluida: false, concluidaEm: null, prazo: null })); salvar(); render(); },
+    mover: () => { const p = prosp(id); moverProjeto(p, ESTEIRA.indexOf(etapaDe(p)) + Number(el.dataset.v)); },
+    "nova-tarefa": () => formTarefa({ responsavelId: el.dataset.resp ?? sessao.id, prospeccaoId: el.dataset.prosp || null }),
+    "editar-tarefa": () => formTarefa(db.tarefas.find((t) => t.id === id)),
+    "del-tarefa": () => perguntar("Excluir esta tarefa?", "Excluir", () => { db.tarefas = db.tarefas.filter((t) => t.id !== id); salvar(); render(); }),
+    "tarefa-ok": () => { const t = db.tarefas.find((z) => z.id === id); t.andamento = t.andamento === "concluido" ? "andamento" : "concluido"; t.concluidaEm = t.andamento === "concluido" ? HOJE : null; salvar(); render(); },
     "del-contato": () => { db.contatos = db.contatos.filter((k) => k.id !== id); salvar(); render(); },
   };
   if (acoes[act]) { if (el.tagName === "A") e.preventDefault(); acoes[act](); }
@@ -1402,6 +1543,12 @@ document.addEventListener("change", (e) => {
   if (act === "fp-ano") { fpAno = el.value; render(); }
   if (act === "fp-tipo") { fpTipo = el.value; render(); }
   if (act === "status-form") mostrarPorStatus();
+  if (act === "fe-tipo") { feTipo = el.value; render(); }
+  if (act === "fe-resp") { feResp = el.value; render(); }
+  if (act === "ft-ocultar") { ftOcultar = el.checked; render(); }
+  if (act === "prosp-esteira") { const p = prosp(el.dataset.id); moverProjeto(p, ESTEIRA.indexOf(el.value)); }
+  if (act === "prosp-andamento") { prosp(el.dataset.id).andamento = el.value || null; salvar(); render(); }
+  if (act === "prosp-resp") { prosp(el.dataset.id).responsavelId = el.value || null; salvar(); render(); }
   if (act === "etapa-prazo") { db.etapas.find((z) => z.id === el.dataset.id).prazo = el.value || null; salvar(); render(); }
 });
 document.addEventListener("submit", (e) => {
@@ -1452,7 +1599,7 @@ document.addEventListener("submit", (e) => {
       if (!t) { t = { id: Math.max(...db.tipos.map((x) => x.id)) + 1, nome: v("novoTipo") }; db.tipos.push(t); }
       tipos.push(t.id);
     }
-    const dados = { clienteId: v("clienteId"), titulo: v("titulo"), status, valor, contato: v("contato"), fechamento: status === "aberto" ? null : v("fechamento") || HOJE, motivo: status === "cancelado" ? v("motivo") : null, obs: v("obs"), tipos: [...new Set(tipos)] };
+    const dados = { clienteId: v("clienteId"), titulo: v("titulo"), status, valor, contato: v("contato"), fechamento: status === "aberto" ? null : v("fechamento") || HOJE, motivo: status === "cancelado" ? v("motivo") : null, obs: v("obs"), tipos: [...new Set(tipos)], esteira: v("esteira") || ESTEIRA[0], responsavelId: v("responsavelId") || null, andamento: v("andamento") || null };
     let id = f.dataset.id;
     if (id) Object.assign(prosp(id), dados); else { id = uid(); db.prospeccoes.push({ id, ...dados }); }
     salvar(); dlg.close(); return ir("#/prospeccao/" + id);
@@ -1460,6 +1607,13 @@ document.addEventListener("submit", (e) => {
   if (nome === "contato") {
     db.contatos.push({ id: uid(), clienteId: f.dataset.cliente, prospeccaoId: f.dataset.prosp || v("prospeccaoId") || null, data: v("data") || HOJE, tipo: v("tipo"), resumo: v("resumo") });
     salvar(); render(); toast("Contato registrado");
+  }
+  if (nome === "tarefa") {
+    const dados = { titulo: v("titulo"), responsavelId: v("responsavelId") || null, andamento: v("andamento") || "iniciar", prospeccaoId: v("prospeccaoId") || null, prazo: v("prazo") || null, urgente: fd.get("urgente") === "on", obs: v("obs") };
+    const t = f.dataset.id && db.tarefas.find((x) => x.id === f.dataset.id);
+    if (t) Object.assign(t, dados, { concluidaEm: dados.andamento === "concluido" ? t.concluidaEm || HOJE : null });
+    else db.tarefas.push({ id: uid(), criado: HOJE, criadoPor: sessao.id, concluidaEm: dados.andamento === "concluido" ? HOJE : null, ...dados });
+    salvar(); dlg.close(); render(); return toast("Tarefa salva");
   }
   if (nome === "etapa") {
     const pid = f.dataset.prosp, ordem = db.etapas.filter((x) => x.prospeccaoId === pid).length + 1;
@@ -1470,6 +1624,18 @@ document.addEventListener("submit", (e) => {
 
 dlg.addEventListener("close", () => { if (renderPendente) { renderPendente = false; setTimeout(render); } });
 document.addEventListener("focusout", () => setTimeout(() => { if (renderPendente && !dlg.open && !document.activeElement?.matches?.("input, textarea, select")) { renderPendente = false; render(); } }, 300));
+
+/* ===================== arrastar cartões entre colunas ===================== */
+let arrastando = null;
+document.addEventListener("dragstart", (e) => { const c = e.target.closest?.("[data-drag]"); if (!c) return; arrastando = { tipo: c.dataset.drag, id: c.dataset.id }; e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", c.dataset.id); });
+document.addEventListener("dragend", () => { arrastando = null; document.querySelectorAll(".kcol.over").forEach((x) => x.classList.remove("over")); });
+document.addEventListener("dragover", (e) => { const col = e.target.closest?.("[data-drop]"); if (!col || !arrastando || col.dataset.drop !== arrastando.tipo) return; e.preventDefault(); document.querySelectorAll(".kcol.over").forEach((x) => x !== col && x.classList.remove("over")); col.classList.add("over"); });
+document.addEventListener("drop", (e) => {
+  const col = e.target.closest?.("[data-drop]"); if (!col || !arrastando || col.dataset.drop !== arrastando.tipo) return;
+  e.preventDefault(); const { tipo, id } = arrastando; arrastando = null;
+  if (tipo === "prosp") moverProjeto(prosp(id), Number(col.dataset.v));
+  else { const t = db.tarefas.find((x) => x.id === id); if (t && (t.responsavelId || "") !== col.dataset.v) { t.responsavelId = col.dataset.v || null; salvar(); render(); } else render(); }
+});
 
 /* ===================== acesso e equipe ===================== */
 function telaNovaSenha() {
@@ -1484,7 +1650,7 @@ function formEsqueci() {
 let equipe = null;
 async function carregarEquipe() {
   const { data, error } = await sb.from("perfis").select("id, nome, email, admin, ativo").order("nome");
-  equipe = (!error && data) || []; render();
+  equipe = (!error && data) || []; await carregarPessoas(); render();
 }
 function pgEquipe() {
   if (!sessao.admin) return `<p class="empty">Acesso restrito.</p>`;

@@ -51,7 +51,8 @@ alter table public.perfis enable row level security;
 alter table public.registros enable row level security;
 
 drop policy if exists "ver perfis" on public.perfis;
-create policy "ver perfis" on public.perfis for select to authenticated using (id = auth.uid() or eh_admin());
+-- Toda a equipe liberada vê os nomes de quem está no sistema (para escolher responsáveis)
+create policy "ver perfis" on public.perfis for select to authenticated using (id = auth.uid() or perfil_ativo());
 drop policy if exists "admin altera perfis" on public.perfis;
 create policy "admin altera perfis" on public.perfis for update to authenticated using (eh_admin()) with check (eh_admin());
 
