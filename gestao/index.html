@@ -1,0 +1,1532 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"><title>Gestão do Escritório · Renan Grolli Arquitetura</title><link rel="icon" href="../favicon.ico"><link rel="apple-touch-icon" href="../apple-touch-icon.png"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+
+<style>
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Jost:wght@300;400;500;600&display=swap");
+:root {
+  color-scheme: light;
+  --serif: "Cormorant Garamond", Georgia, serif;
+  --sans: Jost, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --bg: #f2f1ed; --surface: #faf9f6; --surface-2: #eceae3;
+  --ink: #16171b; --ink-2: #55565b; --muted: #84858a;
+  --line: #d9d7d0; --axis: #c9c8c3; --accent: #16171b; --on-accent: #f2f1ed;
+  --series-1: #2b2c30; --series-2: #a08c6e;
+  --good: #5c8a5f; --warning: #c9a04a; --critical: #b5483f;
+  --good-text: #3f6b43; --critical-text: #a03a32;
+  --shadow: 0 18px 40px rgba(22,23,27,.14);
+  --rec: #5c8a5f; --desp: #b5483f; --warn-bar: #c9a04a;
+  --side-bg: #16171b; --side-ink: #f2f1ed; --side-muted: #9c9da2; --side-line: #2b2c30;
+  --wm: url("data:image/png;base64,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");
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #101115; --surface: #16171b; --surface-2: #222328;
+    --ink: #f2f1ed; --ink-2: #c9c8c3; --muted: #8e8f94; --line: #2b2c30; --axis: #3a3b40;
+    --accent: #f2f1ed; --on-accent: #16171b;
+    --series-1: #d9d7d0; --series-2: #a08c6e; --good-text: #8fbf91; --critical-text: #e08279;
+    --shadow: 0 18px 40px rgba(0,0,0,.5);
+    --rec: #6f9e72; --desp: #d0665c; --warn-bar: #c9a04a;
+    --side-bg: #0b0c0f; --side-line: #222328;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #101115; --surface: #16171b; --surface-2: #222328;
+  --ink: #f2f1ed; --ink-2: #c9c8c3; --muted: #8e8f94; --line: #2b2c30; --axis: #3a3b40;
+  --accent: #f2f1ed; --on-accent: #16171b;
+  --series-1: #d9d7d0; --series-2: #a08c6e; --good-text: #8fbf91; --critical-text: #e08279;
+  --shadow: 0 18px 40px rgba(0,0,0,.5);
+  --rec: #6f9e72; --desp: #d0665c; --warn-bar: #c9a04a;
+  --side-bg: #0b0c0f; --side-line: #222328;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--axis); text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--ink); }
+h1 { font: 400 38px/1.1 var(--serif); letter-spacing: -.01em; margin: 0; }
+h2 { font: 500 21px/1.2 var(--serif); margin: 0 0 12px; }
+.muted { color: var(--muted); } .ink2 { color: var(--ink-2); } .small { font-size: 12px; }
+
+/* layout */
+.app { display: flex; min-height: 100vh; }
+.side { width: 240px; flex-shrink: 0; background: var(--side-bg); color: var(--side-ink); padding: 28px 18px; display: flex; flex-direction: column; gap: 22px; position: sticky; top: 0; height: 100vh; }
+.brand { display: flex; align-items: center; gap: 12px; padding: 0 8px 18px; border-bottom: 1px solid var(--side-line); color: var(--side-ink); }
+.brand .simb { width: 38px; height: 38px; flex-shrink: 0; }
+.brand .wm { width: 80px; }
+.wm { display: block; aspect-ratio: 640 / 414; background: currentColor; -webkit-mask: var(--wm) center / contain no-repeat; mask: var(--wm) center / contain no-repeat; }
+.brand small { display: block; font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--side-muted); margin-top: 4px; }
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.nav a { padding: 10px 10px; color: var(--side-muted); font-size: 12px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase; text-decoration: none; border-left: 1px solid transparent; }
+.nav a:hover { color: var(--side-ink); }
+.nav a.on { color: var(--side-ink); border-left-color: var(--side-ink); background: rgba(255,255,255,.04); }
+.nav .lock { float: right; font-size: 11px; filter: grayscale(1); }
+.side .me .muted { color: var(--side-muted); }
+.side .me a { color: var(--side-muted); }
+.side .btn { background: transparent; color: var(--side-ink); border-color: var(--side-line); }
+.side .btn:hover { background: rgba(255,255,255,.06); }
+.me { margin-top: auto; padding: 0 8px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+main { flex: 1; min-width: 0; padding: 40px clamp(20px, 3vw, 56px) 64px; }
+.head { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between; margin-bottom: 20px; }
+.head p { margin: 8px 0 0; color: var(--muted); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; }
+.head p::before { content: ""; display: inline-block; width: 24px; height: 1px; background: var(--axis); vertical-align: middle; margin-right: 10px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.grid { display: grid; gap: 18px; }
+.g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.span2 { grid-column: span 2; } .span3 { grid-column: span 3; }
+.mb { margin-bottom: 18px; }
+@media (max-width: 900px) {
+  .app { flex-direction: column; }
+  .side { width: auto; height: auto; position: static; flex-direction: row; flex-wrap: wrap; align-items: center; padding: 10px 12px; gap: 10px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .brand { border: 0; padding: 0 4px; }
+  .brand .simb { width: 30px; height: 30px; } .brand .wm { width: 64px; }
+  .brand small { display: none; }
+  .nav { flex-direction: row; overflow-x: auto; order: 3; width: 100%; }
+  .nav a { border-left: 0; border-bottom: 1px solid transparent; } .nav a.on { border-bottom-color: var(--side-ink); }
+  .nav a { white-space: nowrap; }
+  .me { margin: 0 0 0 auto; flex-direction: row; align-items: center; padding: 0; }
+  main { padding: 18px 16px 50px; }
+  .card { padding: 16px; } .tile .val { font-size: 32px; } h1 { font-size: 32px; }
+  .g2, .g3 { grid-template-columns: minmax(0, 1fr); }
+  .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .span2, .span3 { grid-column: auto; }
+}
+
+/* components */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 2px; padding: 22px; min-width: 0; }
+.card.flush { padding: 0; overflow-x: auto; }
+.card.flush > h2, .card.flush > .bar { padding: 22px 22px 8px; margin: 0; }
+.card.alert { border-color: var(--critical); }
+.tile .lbl { color: var(--muted); font-size: 11px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase; }
+.tile .val { font: 400 40px/1.1 var(--serif); margin-top: 10px; font-variant-numeric: lining-nums; }
+.tile .det { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 0; padding: 10px 18px; font: inherit; font-size: 11px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase; text-decoration: none; cursor: pointer; white-space: nowrap; }
+.btn:hover { background: var(--surface-2); text-decoration: none; }
+.btn.pri { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn.pri:hover { background: var(--ink-2); border-color: var(--ink-2); }
+.btn.sm { padding: 6px 12px; font-size: 10px; }
+.btn.danger { color: var(--critical-text); }
+.btn.on { background: var(--surface-2); font-weight: 650; }
+.input { width: 100%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 0; padding: 9px 11px; font: inherit; }
+.input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+select.input { width: auto; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field > span { color: var(--muted); font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; }
+.field select.input { width: 100%; }
+.form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form .full { grid-column: 1 / -1; }
+@media (max-width: 600px) { .form { grid-template-columns: 1fr; } }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 0; padding: 5px 12px; cursor: pointer; }
+.chip:has(input:checked) { background: var(--surface-2); border-color: var(--accent); }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-weight: 500; color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .14em; padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.neg { color: var(--critical-text); } .pos { color: var(--good-text); }
+.badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 2px 9px; border-radius: 999px; background: var(--surface-2); white-space: nowrap; }
+.badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.b-good::before { background: var(--good); } .b-warning::before { background: var(--warning); } .b-critical::before { background: var(--critical); }
+.empty { color: var(--muted); text-align: center; padding: 28px 12px; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.progress { height: 8px; border-radius: 99px; background: var(--surface-2); margin-bottom: 12px; }
+.progress > div { height: 8px; border-radius: 99px; background: var(--good); }
+.steps { list-style: none; margin: 0; padding: 0; }
+.steps li { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.steps li .nm { flex: 1; min-width: 160px; }
+.steps li.done .nm { color: var(--muted); text-decoration: line-through; }
+.timeline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.timeline li { display: flex; gap: 12px; }
+.timeline .dt { width: 84px; flex-shrink: 0; color: var(--muted); }
+.timeline .bd { flex: 1; }
+dl { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+dt { font-size: 12px; color: var(--muted); } dd { margin: 0; }
+.note { background: var(--surface-2); border-radius: 0; padding: 10px 14px; color: var(--ink-2); font-size: 13px; }
+
+/* login / lock */
+.entrada { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+.entrada .arte { background: var(--side-bg); color: var(--side-ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 34px; padding: 48px 24px; position: relative; overflow: hidden; }
+.entrada .arte .simb { width: min(240px, 46vw); height: auto; }
+.entrada .arte .wm { width: min(230px, 44vw); }
+.entrada .arte .lema { position: absolute; bottom: 32px; left: 0; right: 0; text-align: center; font-size: 10px; letter-spacing: .3em; text-transform: uppercase; color: var(--side-muted); }
+.entrada .form-lado { display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
+.entrada .login { border: 0; background: transparent; max-width: 380px; padding: 0; gap: 18px; }
+.entrada .login h1 { font-size: 44px; }
+.entrada .login .eyebrow { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+.entrada .login .btn.pri { padding: 13px 18px; }
+@media (max-width: 800px) {
+  .entrada { grid-template-columns: minmax(0, 1fr); }
+  .entrada .arte { min-height: 46vh; gap: 22px; }
+  .entrada .arte .simb { width: 130px; } .entrada .arte .wm { width: 140px; }
+  .entrada .arte .lema { bottom: 16px; }
+}
+/* animação da logomarca */
+.anim .simb path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: tracar 1.5s cubic-bezier(.65,0,.35,1) forwards; }
+.anim .simb path:nth-child(2) { animation-delay: .25s; }
+.anim .simb path:nth-child(3) { animation-delay: .5s; }
+.anim .simb path:nth-child(4) { animation-delay: .75s; }
+.anim .simb { animation: girar 2.6s cubic-bezier(.2,.7,.2,1) both; }
+.anim .wm { opacity: 0; animation: surgir 1.2s ease-out 1.6s forwards; }
+.anim .lema { opacity: 0; animation: surgir 1.2s ease-out 2.2s forwards; }
+.entrada .login { animation: surgir .9s ease-out .3s both; }
+@keyframes tracar { to { stroke-dashoffset: 0; } }
+@keyframes girar { from { transform: rotate(-8deg) scale(.94); opacity: .2; } to { transform: none; opacity: 1; } }
+@keyframes surgir { from { opacity: 0; transform: translateY(10px); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .anim .simb, .anim .simb path, .anim .wm, .anim .lema, .entrada .login { animation: none; opacity: 1; stroke-dashoffset: 0; }
+}
+.center { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.login { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 14px; padding: 30px; }
+.lockbox { max-width: 420px; margin: 40px auto; display: flex; flex-direction: column; gap: 14px; padding: 30px; }
+.err { color: var(--critical-text); font-size: 13px; min-height: 1em; }
+
+/* dialog */
+dialog { border: 1px solid var(--line); border-radius: 2px; background: var(--surface); color: var(--ink); padding: 0; width: min(720px, calc(100vw - 24px)); box-shadow: var(--shadow); }
+dialog::backdrop { background: rgba(0,0,0,.35); }
+dialog .dh { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+dialog .db { padding: 20px; max-height: 70vh; overflow: auto; }
+dialog .df { padding: 14px 20px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 8px; }
+
+/* charts */
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { fill: var(--muted); font-size: 12px; font-family: var(--sans); }
+.chart .lab { fill: var(--ink-2); }
+.chart .grid line { stroke: var(--line); }
+.chart .axis { stroke: var(--axis); }
+.chart rect.hit { fill: transparent; }
+.chart g.mark:hover rect.m { opacity: .85; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 8px; font-size: 13px; color: var(--ink-2); }
+.legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; background: var(--c); }
+#tip { position: fixed; pointer-events: none; z-index: 50; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 13px; box-shadow: var(--shadow); display: none; max-width: 260px; }
+#tip b { display: block; margin-bottom: 2px; }
+.toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 0; font-size: 13px; z-index: 60; }
+.proto { position: fixed; right: 12px; bottom: 12px; z-index: 40; font-size: 12px; }
+
+[hidden] { display: none !important; }
+/* ---------- financeiro ---------- */
+.finnav { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; border-bottom: 1px solid var(--line); margin: -8px 0 20px; padding-bottom: 8px; }
+.finnav a { padding: 8px 12px; color: var(--ink-2); font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; text-decoration: none; }
+.finnav a:hover { background: var(--surface-2); text-decoration: none; }
+.finnav a.on { color: var(--ink); box-shadow: inset 0 -1px 0 var(--ink); }
+.col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.sub { color: var(--muted); font-size: 12px; margin: -8px 0 12px; }
+.lbl2 { font-size: 11px; font-weight: 600; letter-spacing: .06em; color: var(--muted); text-transform: uppercase; margin: 6px 0 4px; }
+.pxr { display: flex; flex-direction: column; align-items: stretch; }
+.pxr svg { align-self: center; }
+.pbar { height: 6px; border-radius: 9px; background: var(--surface-2); margin: 2px 0 8px; overflow: hidden; }
+.pbar > div { height: 6px; border-radius: 9px; }
+.kv { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; padding: 2px 0; }
+.kv span { color: var(--ink-2); }
+.big { font: 400 34px/1.1 var(--serif); }
+.saldo { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.comp .crow { display: grid; grid-template-columns: minmax(0, 1.3fr) 1fr auto; gap: 2px 10px; align-items: center; padding: 6px 0; font-size: 13px; }
+.comp .crow.ind { padding-left: 16px; }
+.comp .cn { font-weight: 500; } .comp .cv { color: var(--ink-2); font-variant-numeric: tabular-nums; } .comp .cp { text-align: right; font-variant-numeric: tabular-nums; }
+.comp .cb { grid-column: 1 / -1; height: 6px; border-radius: 9px; background: var(--surface-2); overflow: hidden; }
+.comp .cb > div { height: 6px; border-radius: 9px; }
+table.dre td { padding: 7px 10px; }
+table.dre tr.t td { font-weight: 650; background: var(--surface-2); }
+.cal .calh, .cal .calg { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
+.cal .calh div { font-size: 11px; color: var(--muted); font-weight: 600; padding: 4px 0; }
+.dia { border: 0; background: transparent; color: var(--ink); font: inherit; padding: 6px 0 4px; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 40px; }
+.dia:hover { background: var(--surface-2); }
+.dia.hoje { font-weight: 700; }
+.dia.sel { background: color-mix(in srgb, var(--rec) 18%, transparent); }
+.dia span { display: flex; gap: 2px; height: 6px; }
+.dia i { width: 6px; height: 6px; border-radius: 50%; display: block; }
+.atrasos { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 10px; }
+.atrasos.scroll { max-height: 420px; overflow: auto; }
+.atrasos li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.atrasos li:last-child { border-bottom: 0; }
+.sw { width: 38px; height: 22px; border-radius: 99px; border: 1px solid var(--axis); background: var(--surface-2); position: relative; cursor: pointer; flex-shrink: 0; padding: 0; }
+.sw span { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: left .15s; }
+.sw.on { background: var(--rec); border-color: var(--rec); }
+.sw.on span { left: 18px; }
+.mesnav { display: inline-flex; align-items: center; gap: 8px; }
+.mesnav b { min-width: 140px; text-align: center; color: var(--ink); font-size: 12px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase; }
+.tabs { display: inline-flex; flex-wrap: wrap; gap: 2px; border-bottom: 1px solid var(--line); }
+.tabs.full { display: flex; width: 100%; flex-wrap: nowrap; }
+.tabs.full button { flex: 1; padding: 8px 4px; font-size: 13px; }
+.tabs button { border: 0; background: transparent; color: var(--ink-2); font: inherit; font-weight: 500; padding: 8px 12px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tabs button.on { color: var(--ink); border-bottom-color: var(--ink); }
+.topo { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, .9fr); gap: 20px; align-items: start; }
+.mini .legend { display: none; }
+@media (max-width: 1000px) { .topo { grid-template-columns: minmax(0, 1fr); } }
+table.trans td { vertical-align: middle; }
+.addrow { width: 100%; border: 1.5px dashed var(--rec); background: transparent; color: var(--good-text); border-radius: 99px; padding: 6px; font: inherit; font-weight: 500; cursor: pointer; }
+.addrow:hover { background: color-mix(in srgb, var(--rec) 10%, transparent); }
+tr.clic { cursor: pointer; } tr.clic:hover td { background: var(--surface-2); }
+.alerta { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: var(--critical); color: #fff; font-size: 11px; font-weight: 700; }
+.tagp { font-size: 11px; background: var(--surface-2); color: var(--ink-2); border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
+.totais { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 18px; padding: 12px 18px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-2); }
+.totais b { color: var(--ink); margin-left: 4px; }
+.rel { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 900px) { .rel { grid-template-columns: minmax(0, 1fr); } }
+.relmenu { display: flex; flex-direction: column; gap: 1px; padding: 12px; }
+.relmenu .lbl2 { margin: 10px 8px 4px; }
+.relmenu button { text-align: left; border: 0; background: transparent; color: var(--ink-2); font: inherit; padding: 6px 8px; border-radius: 6px; cursor: pointer; }
+.relmenu button:hover { background: var(--surface-2); }
+.relmenu button.on { background: var(--surface-2); color: var(--ink); font-weight: 600; }
+.relbody { min-width: 0; }
+.relbody .field input.input { width: auto; }
+.relhead { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 14px; }
+.relt { text-align: center; letter-spacing: .04em; margin: 6px 0 16px; }
+.relcard { overflow-x: auto; }
+tr.t td { background: var(--surface-2); }
+.pizza { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; justify-content: center; margin-bottom: 14px; }
+.pleg { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; font-size: 13px; min-width: 200px; max-width: 360px; }
+.pleg li { display: flex; gap: 8px; align-items: center; }
+.pleg .nm { flex: 1; color: var(--ink-2); }
+.dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.perf { border-left: 3px solid var(--rec); padding-left: 14px; }
+.perf p { margin: 0; font-size: 13px; color: var(--ink-2); } .perf .mt { margin-top: 12px; }
+.ctgrid { grid-template-columns: minmax(0, 380px) minmax(0, 1fr); align-items: start; }
+@media (max-width: 900px) { .ctgrid { grid-template-columns: minmax(0, 1fr); } }
+.cts { list-style: none; margin: 0; padding: 0; max-height: 560px; overflow: auto; }
+.cts li { display: flex; justify-content: space-between; gap: 8px; padding: 9px 6px; border-bottom: 1px solid var(--line); cursor: pointer; font-size: 13px; font-weight: 500; }
+.cts li:hover, .cts li.on { background: var(--surface-2); }
+.impitem { display: flex; gap: 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.impitem:last-of-type { border-bottom: 0; }
+.ico { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--surface-2); font-size: 18px; }
+
+@media print {
+  :root { color-scheme: light; }
+  body { background: #fff; color: #000; }
+  .side, .btn, .no-print, .proto, form.inline, .addform { display: none !important; }
+  main { padding: 0; max-width: none; }
+  .card { break-inside: avoid; }
+}
+</style>
+<div id="root"></div>
+<div id="tip"></div>
+<dialog id="dlg"></dialog>
+
+<script>
+"use strict";
+/* ===================== utilidades ===================== */
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const compacto = new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 });
+const R$ = (v) => (v == null || v === "" ? "—" : brl.format(Number(v)));
+const R$c = (v) => "R$ " + compacto.format(v);
+const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+const pad = (n) => String(n).padStart(2, "0");
+const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const HOJE = iso(new Date());
+const dataBR = (s) => (s ? `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}` : "—");
+const addDias = (s, n) => { const d = new Date(s + "T12:00:00"); d.setDate(d.getDate() + n); return iso(d); };
+const addMeses = (s, n) => {
+  const [a, m, d] = s.split("-").map(Number);
+  const ult = new Date(a, m - 1 + n + 1, 0).getDate();
+  return iso(new Date(a, m - 1 + n, Math.min(d, ult)));
+};
+const mesRel = (n, dia) => addMeses(HOJE.slice(0, 8) + pad(Math.min(dia, 28)), n);
+const uid = () => Math.random().toString(36).slice(2, 10);
+const soma = (xs) => xs.reduce((t, x) => t + Number(x.valor || 0), 0);
+const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
+const parseValor = (v) => { v = String(v || "").replace(/[R$\s]/g, ""); return Number(v.includes(",") ? v.replace(/\./g, "").replace(",", ".") : v); };
+function contar(itens, fn) {
+  const m = new Map();
+  for (const i of itens) for (const k of [].concat(fn(i) || "Não informado")) m.set(k, (m.get(k) || 0) + 1);
+  return [...m].map(([nome, valor]) => ({ nome, valor })).sort((a, b) => b.valor - a.valor);
+}
+function toast(msg) {
+  const t = document.createElement("div"); t.className = "toast"; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 2200);
+}
+
+/* ===================== constantes ===================== */
+const STATUS = {
+  aberto: { label: "Em aberto", cor: "var(--warning)", cls: "b-warning" },
+  fechado: { label: "Fechado", cor: "var(--good)", cls: "b-good" },
+  cancelado: { label: "Cancelado", cor: "var(--critical)", cls: "b-critical" },
+};
+const ORIGENS = ["Indicação", "Instagram", "Site", "Google", "Ex-cliente", "Parceiro / Construtora", "Evento", "Outros"];
+const CAT_ENT = ["Honorários de projeto", "Acompanhamento de obra", "Consultoria", "RT / Comissão", "Outros"];
+const CAT_SAI = ["Aluguel", "Salários / Pró-labore", "Impostos", "Software / Licenças", "Terceirizados", "Marketing", "Material de escritório", "Contas (água, luz, internet)", "Transporte", "Outros"];
+const FORMAS = ["Pix", "Transferência", "Boleto", "Cartão de crédito", "Cartão de débito", "Dinheiro", "Cheque"];
+const TIPOS_CONTATO = ["Ligação", "WhatsApp", "Reunião", "E-mail", "Visita à obra", "Proposta enviada", "Outro"];
+const ETAPAS_PADRAO = ["Levantamento / briefing", "Estudo preliminar", "Anteprojeto", "Projeto executivo", "Aprovação (Prefeitura / Vigilância Sanitária)", "Entrega final"];
+const MOTIVOS = ["Preço", "Prazo", "Desistiu da obra", "Fechou com outro escritório", "Sem retorno do cliente"];
+
+/* ===================== dados iniciais ===================== */
+const COLECOES = ["tipos", "clientes", "prospeccoes", "etapas", "contatos", "contas", "categorias", "centros", "tags", "fornecedores", "lancamentos"];
+const COLECOES_FIN = ["contas", "categorias", "centros", "tags", "fornecedores", "lancamentos"];
+const vazio = () => Object.fromEntries(COLECOES.map((k) => [k, []]));
+// Cadastros básicos criados no primeiro acesso (tipos de projeto e, para o administrador, plano de contas)
+function completarBasicos() {
+  let mudou = false;
+  if (!db.tipos.length) { db.tipos = ["Arquitetura", "Complementares", "Interiores", "Vigilância Sanitária", "Outros"].map((nome, i) => ({ id: i + 1, nome })); mudou = true; }
+  if (sessao.admin && !db.categorias.length && !db.contas.length) {
+    Object.entries(CATEGORIAS_ZENPLY).forEach(([grupo, nomes]) => nomes.forEach((nome) => db.categorias.push({ id: uid(), nome, grupo })));
+    db.contas.push({ id: "cp", nome: "Conta Principal", tipo: "Conta Corrente", saldoInicial: 0, arquivada: false }, { id: "cx", nome: "Caixa do escritório", tipo: "Caixa", saldoInicial: 0, arquivada: false });
+    db.centros.push({ id: uid(), nome: "Escritório" }, { id: uid(), nome: "Obras" });
+    db.tags.push({ id: uid(), nome: "Recorrente" });
+    mudou = true;
+  }
+  if (mudou) salvar();
+}
+
+
+/* ===================== estado (Supabase) ===================== */
+const SUPABASE_URL = "COLE_AQUI_A_URL";
+const SUPABASE_KEY = "COLE_AQUI_A_CHAVE_ANON";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let db = vazio();
+let sessao = null;          // { id, email, nome, admin }
+let finAte = 0;             // financeiro liberado até (ms)
+let carregando = true, recuperandoSenha = false;
+try { finAte = Number(sessionStorage.getItem("gestao-fin-ate")) || 0; } catch {}
+const guardarSessao = () => { try { sessionStorage.setItem("gestao-fin-ate", String(finAte)); } catch {} };
+const finLiberado = () => sessao?.admin && finAte > Date.now();
+
+// Cada item de cada lista vira uma linha da tabela "registros". salvar() compara com a última
+// versão gravada e envia só o que mudou, para duas pessoas editarem ao mesmo tempo sem se sobrescrever.
+let espelho = new Map();    // "colecao/id" -> JSON gravado
+let fila = Promise.resolve();
+const chaveReg = (k, id) => k + "/" + id;
+function salvar() {
+  const atual = new Map();
+  for (const k of COLECOES) {
+    if (!sessao.admin && COLECOES_FIN.includes(k)) continue;
+    for (const item of db[k]) atual.set(chaveReg(k, item.id), JSON.stringify(item));
+  }
+  const gravar = [], apagar = [];
+  for (const [ch, txt] of atual) if (espelho.get(ch) !== txt) { const [k] = ch.split("/"); gravar.push({ colecao: k, id: String(JSON.parse(txt).id), dados: JSON.parse(txt) }); }
+  for (const ch of espelho.keys()) if (!atual.has(ch)) apagar.push(ch);
+  if (!gravar.length && !apagar.length) return;
+  espelho = atual;
+  fila = fila.then(async () => {
+    if (gravar.length) for (let i = 0; i < gravar.length; i += 500) { const { error } = await sb.from("registros").upsert(gravar.slice(i, i + 500)); if (error) throw error; }
+    const porCol = {};
+    apagar.forEach((ch) => { const i = ch.indexOf("/"); (porCol[ch.slice(0, i)] ||= []).push(ch.slice(i + 1)); });
+    for (const [k, ids] of Object.entries(porCol)) { const { error } = await sb.from("registros").delete().eq("colecao", k).in("id", ids); if (error) throw error; }
+  }).catch((e) => {
+    // Marca o que falhou como pendente, para ir de novo no próximo salvamento
+    gravar.forEach((r) => espelho.delete(chaveReg(r.colecao, r.id)));
+    apagar.forEach((ch) => espelho.set(ch, "?"));
+    console.error(e); toast("Não foi possível salvar. Verifique a internet e tente de novo.");
+  });
+}
+async function carregarDados() {
+  const novo = vazio(), esp = new Map();
+  for (let de = 0; ; de += 1000) {
+    const { data, error } = await sb.from("registros").select("colecao,id,dados").order("colecao").order("id").range(de, de + 999);
+    if (error) throw error;
+    for (const r of data) if (novo[r.colecao]) { novo[r.colecao].push(r.dados); esp.set(chaveReg(r.colecao, r.id), JSON.stringify(r.dados)); }
+    if (data.length < 1000) break;
+  }
+  db = novo; espelho = esp;
+}
+// Alterações feitas por outras pessoas chegam em tempo real
+let canal = null, renderPendente = false;
+function ouvirMudancas() {
+  if (canal) sb.removeChannel(canal);
+  canal = sb.channel("registros").on("postgres_changes", { event: "*", schema: "public", table: "registros" }, ({ eventType, new: n, old: o }) => {
+    const r = eventType === "DELETE" ? o : n;
+    if (!r || !db[r.colecao]) return;
+    const ch = chaveReg(r.colecao, r.id), lista = db[r.colecao], pos = lista.findIndex((x) => String(x.id) === r.id);
+    if (eventType === "DELETE") { if (!espelho.has(ch)) return; espelho.delete(ch); if (pos >= 0) lista.splice(pos, 1); }
+    else { const txt = JSON.stringify(n.dados); if (espelho.get(ch) === txt) return; espelho.set(ch, txt); if (pos >= 0) lista[pos] = n.dados; else lista.push(n.dados); }
+    atualizarTela();
+  }).subscribe();
+}
+// Não redesenha enquanto alguém digita num formulário; atualiza quando a janela fechar
+function atualizarTela() {
+  const ativo = document.activeElement;
+  if (dlg.open || (ativo && ativo.matches?.("input, textarea, select"))) { renderPendente = true; return; }
+  render();
+}
+let entrando = false;
+async function entrar(user) {
+  if (entrando) return; entrando = true;
+  carregando = true; render();
+  const { data: perfil, error } = await sb.from("perfis").select("nome, admin, ativo").eq("id", user.id).maybeSingle();
+  if (error || !perfil?.ativo) { sessao = null; carregando = false; entrando = false; await sb.auth.signOut(); render(); return toast(error ? "Erro ao abrir: " + error.message : "Seu acesso ainda não foi liberado pelo administrador."); }
+  sessao = { id: user.id, email: user.email, nome: perfil.nome, admin: perfil.admin };
+  try { await carregarDados(); } catch (e) { toast("Erro ao carregar os dados: " + e.message); }
+  completarBasicos(); ouvirMudancas();
+  carregando = false; entrando = false; render();
+}
+
+const cliente = (id) => db.clientes.find((c) => c.id === id);
+const prosp = (id) => db.prospeccoes.find((p) => p.id === id);
+const tipoNome = (id) => db.tipos.find((t) => t.id === id)?.nome || "?";
+const tiposDe = (p) => p.tipos.map(tipoNome).join(", ") || "—";
+const badge = (s) => `<span class="badge ${STATUS[s].cls}">${STATUS[s].label}</span>`;
+function situacaoLanc(l) {
+  if (l.pago) return `<span class="badge b-good">${l.tipo === "entrada" ? "Recebido" : "Pago"}</span>`;
+  return l.data < HOJE ? `<span class="badge b-critical">Atrasado</span>` : `<span class="badge b-warning">Pendente</span>`;
+}
+function situacaoPrazo(prazo) {
+  if (!prazo) return "";
+  if (prazo < HOJE) return `<span class="badge b-critical">Atrasada</span>`;
+  const dias = Math.round((Date.parse(prazo) - Date.parse(HOJE)) / 864e5);
+  if (dias <= 7) return `<span class="badge b-warning">${dias === 0 ? "Vence hoje" : `Faltam ${dias} dia(s)`}</span>`;
+  return "";
+}
+
+/* ===================== gráficos (SVG) ===================== */
+const tip = $("#tip");
+document.addEventListener("mousemove", (e) => {
+  const alvo = e.target.closest?.("[data-tip]");
+  if (!alvo) { tip.style.display = "none"; return; }
+  tip.innerHTML = alvo.getAttribute("data-tip");
+  tip.style.display = "block";
+  const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8);
+  tip.style.left = x + "px"; tip.style.top = e.clientY + 14 + "px";
+});
+function escala(max) {
+  if (max <= 0) return { max: 1, passos: [0, 1] };
+  const bruto = max / 4, mag = 10 ** Math.floor(Math.log10(bruto));
+  const passo = [1, 2, 2.5, 5, 10].map((f) => f * mag).find((s) => s >= bruto);
+  const topo = Math.ceil(max / passo) * passo;
+  const passos = []; for (let v = 0; v <= topo + 1e-9; v += passo) passos.push(v);
+  return { max: topo, passos };
+}
+function barrasH(dados, { moeda = false, cor = "var(--series-1)" } = {}) {
+  if (!dados.length || dados.every((d) => !d.valor)) return `<p class="empty">Sem dados no período.</p>`;
+  const W = Math.max(300, Math.min(520, innerWidth - 70)), rot = W < 400 ? 110 : 150, dir = 64, linha = 34, H = dados.length * linha + 22;
+  const { max, passos } = escala(Math.max(...dados.map((d) => d.valor)));
+  const x = (v) => rot + (v / max) * (W - rot - dir);
+  const fmt = (v) => (moeda ? R$c(v) : String(v));
+  let s = `<g class="grid">${passos.map((v) => `<line x1="${x(v)}" x2="${x(v)}" y1="0" y2="${H - 22}"/><text x="${x(v)}" y="${H - 6}" text-anchor="middle">${fmt(v)}</text>`).join("")}</g>`;
+  s += `<line class="axis" x1="${rot}" x2="${rot}" y1="0" y2="${H - 22}"/>`;
+  dados.forEach((d, i) => {
+    const y = i * linha + 7, w = Math.max(0, x(d.valor) - rot), c = d.cor || cor;
+    const t = `<b>${esc(d.nome)}</b>${moeda ? R$(d.valor) : d.valor + (d.valor === 1 ? " item" : " itens")}`;
+    s += `<g class="mark" data-tip="${esc(t)}"><rect class="hit" x="0" y="${y - 5}" width="${W}" height="${linha}"/>
+      <text class="lab" x="${rot - 8}" y="${y + 14}" text-anchor="end">${esc(d.nome.length > (rot < 150 ? 15 : 22) ? d.nome.slice(0, rot < 150 ? 14 : 21) + "…" : d.nome)}</text>
+      <path class="m" fill="${c}" d="M${rot},${y} h${Math.max(w - 4, 0)} a4,4 0 0 1 4,4 v12 a4,4 0 0 1 -4,4 h-${Math.max(w - 4, 0)} z"/>
+      <text class="lab" x="${rot + w + 6}" y="${y + 14}">${fmt(d.valor)}</text></g>`;
+  });
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img">${s}</svg></div>`;
+}
+function barrasMes(dados, series, { empilhado = false, moeda = false } = {}) {
+  const W = Math.max(340, Math.min(1000, innerWidth - (innerWidth > 900 ? 330 : 70))), H = 260, esq = moeda ? 64 : 34, base = H - 24, topo = 10;
+  const totais = dados.map((d) => (empilhado ? series.reduce((t, s) => t + d[s.k], 0) : Math.max(...series.map((s) => d[s.k]))));
+  const { max, passos } = escala(Math.max(...totais, 0));
+  const y = (v) => base - (v / max) * (base - topo);
+  const fmt = (v) => (moeda ? R$c(v) : String(v));
+  const col = (W - esq) / dados.length;
+  let s = `<g class="grid">${passos.map((v) => `<line x1="${esq}" x2="${W}" y1="${y(v)}" y2="${y(v)}"/><text x="${esq - 6}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text>`).join("")}</g>`;
+  s += `<line class="axis" x1="${esq}" x2="${W}" y1="${base}" y2="${base}"/>`;
+  dados.forEach((d, i) => {
+    const cx = esq + col * i + col / 2;
+    const t = `<b>${esc(d.mes)}</b>` + series.map((se) => `${esc(se.label)}: ${moeda ? R$(d[se.k]) : d[se.k]}`).join("<br>");
+    s += `<g class="mark" data-tip="${esc(t)}"><rect class="hit" x="${esq + col * i}" y="0" width="${col}" height="${base}"/>`;
+    if (empilhado) {
+      const bw = Math.min(30, col * 0.6); let acc = 0;
+      const vis = series.filter((se) => d[se.k] > 0);
+      vis.forEach((se, j) => {
+        const v = d[se.k], y1 = y(acc + v), h = y(acc) - y1; acc += v;
+        const ultimo = j === vis.length - 1, r = ultimo ? Math.min(4, h) : 0;
+        s += `<path class="m" fill="${se.cor}" stroke="var(--surface)" stroke-width="2" d="M${cx - bw / 2},${y1 + h} v-${h - r} ${r ? `a${r},${r} 0 0 1 ${r},-${r} h${bw - 2 * r} a${r},${r} 0 0 1 ${r},${r}` : `h${bw}`} v${h - r} z"/>`;
+      });
+    } else {
+      const bw = Math.min(16, (col * 0.7) / series.length);
+      series.forEach((se, j) => {
+        const v = d[se.k]; if (!v) return;
+        const x0 = cx - (bw * series.length + 2 * (series.length - 1)) / 2 + j * (bw + 2);
+        const y1 = y(v), h = base - y1, r = Math.min(4, h);
+        s += `<path class="m" fill="${se.cor}" d="M${x0},${base} v-${h - r} a${r},${r} 0 0 1 ${r},-${r} h${bw - 2 * r} a${r},${r} 0 0 1 ${r},${r} v${h - r} z"/>`;
+      });
+    }
+    s += `<text x="${cx}" y="${H - 6}" text-anchor="middle">${esc(d.mes)}</text></g>`;
+  });
+  const leg = `<div class="legend">${series.map((se) => `<span style="--c:${se.cor}">${esc(se.label)}</span>`).join("")}</div>`;
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img">${s}</svg>${leg}</div>`;
+}
+
+/* ===================== componentes de página ===================== */
+const tile = (lbl, val, det = "", tom = "") => `<div class="card tile"><div class="lbl">${lbl}</div><div class="val ${tom}">${val}</div>${det ? `<div class="det">${det}</div>` : ""}</div>`;
+const cabecalho = (titulo, sub, acoes = "") => `<div class="head"><div><h1>${titulo}</h1>${sub ? `<p>${sub}</p>` : ""}</div><div class="actions">${acoes}</div></div>`;
+const botoesExportar = (csv) => `${csv ? `<button class="btn" data-act="csv" data-tipo="${csv}" title="${EMBUTIDO ? "Copia a tabela para colar no Excel" : "Baixa uma planilha para abrir no Excel"}">${EMBUTIDO ? "Copiar p/ Excel" : "Excel"}</button>` : ""}${EMBUTIDO ? "" : `<button class="btn" data-act="pdf">PDF</button>`}`;
+const anosDe = (datas) => [...new Set([HOJE.slice(0, 4), ...datas.map((d) => d.slice(0, 4))])].sort().reverse();
+const selAno = (anos, atual, todos = true) => `<select class="input" data-act="ano" aria-label="Ano">${anos.map((a) => `<option ${a === atual ? "selected" : ""}>${a}</option>`).join("")}${todos ? `<option value="todos" ${atual === "todos" ? "selected" : ""}>Todos os anos</option>` : ""}</select>`;
+
+/* ---------- Painel ---------- */
+let filtroAnoPainel = HOJE.slice(0, 4);
+function pgPainel() {
+  const ano = filtroAnoPainel;
+  const lista = db.prospeccoes.filter((p) => ano === "todos" || p.contato.startsWith(ano));
+  const f = lista.filter((p) => p.status === "fechado"), a = lista.filter((p) => p.status === "aberto"), c = lista.filter((p) => p.status === "cancelado");
+  const limite = addDias(HOJE, 14);
+  const prazos = db.etapas.filter((e) => !e.concluida && e.prazo && e.prazo <= limite && prosp(e.prospeccaoId)?.status !== "cancelado").sort((x, y) => x.prazo.localeCompare(y.prazo));
+  const porMes = MESES.map((mes, i) => {
+    const doMes = lista.filter((p) => Number(p.contato.slice(5, 7)) === i + 1);
+    return { mes, fechado: doMes.filter((p) => p.status === "fechado").length, aberto: doMes.filter((p) => p.status === "aberto").length, cancelado: doMes.filter((p) => p.status === "cancelado").length };
+  });
+  return cabecalho(`Olá, ${esc(sessao.nome)}`, "Resumo das prospecções e projetos do escritório", selAno(anosDe(db.prospeccoes.map((p) => p.contato)), ano) + botoesExportar()) +
+    `<div class="grid g4 mb">
+      ${tile("Clientes cadastrados", db.clientes.length)}
+      ${tile("Projetos fechados", f.length, R$(soma(f)))}
+      ${tile("Em aberto", a.length, R$(soma(a)) + " em negociação")}
+      ${tile("Taxa de conversão", pct(f.length, f.length + c.length) + "%", `${f.length} fechados de ${f.length + c.length} decididos · ${c.length} cancelados`)}
+    </div>` +
+    (prazos.length ? `<div class="card flush mb"><h2>Prazos das próximas 2 semanas</h2><table><tbody>${prazos.map((e) => {
+      const p = prosp(e.prospeccaoId);
+      return `<tr><td class="num" style="text-align:left">${dataBR(e.prazo)}</td><td><a href="#/prospeccao/${p.id}">${esc(p.titulo)}</a> <span class="muted">· ${esc(cliente(p.clienteId)?.nome)}</span></td><td>${esc(e.nome)}</td><td>${situacaoPrazo(e.prazo)}</td></tr>`;
+    }).join("")}</tbody></table></div>` : "") +
+    `<div class="grid g2">
+      <div class="card"><h2>Prospecções por situação</h2>${barrasH(Object.keys(STATUS).map((s) => ({ nome: STATUS[s].label, valor: lista.filter((p) => p.status === s).length, cor: STATUS[s].cor })))}</div>
+      <div class="card"><h2>Tipos de projeto fechados</h2><p class="small muted" style="margin:-8px 0 10px">Um projeto pode ter mais de um tipo.</p>${barrasH(contar(f, (p) => p.tipos.map(tipoNome)))}</div>
+      ${ano !== "todos" ? `<div class="card span2"><h2>Prospecções por mês de contato · ${ano}</h2>${barrasMes(porMes, [
+        { k: "fechado", label: "Fechado", cor: STATUS.fechado.cor }, { k: "aberto", label: "Em aberto", cor: STATUS.aberto.cor }, { k: "cancelado", label: "Cancelado", cor: STATUS.cancelado.cor }], { empilhado: true })}</div>` : ""}
+      <div class="card"><h2>De onde vêm os projetos fechados</h2><p class="small muted" style="margin:-8px 0 10px">Origem do cliente informada no cadastro.</p>${barrasH(contar(f, (p) => cliente(p.clienteId)?.origem))}</div>
+      <div class="card"><h2>Motivos de cancelamento</h2>${c.length ? `<table><tbody>${contar(c, (p) => p.motivo || "Sem motivo informado").map((m) => `<tr><td>${esc(m.nome)}</td><td class="num">${m.valor}</td></tr>`).join("")}</tbody></table>` : `<p class="empty">Nenhum cancelamento no período.</p>`}</div>
+    </div>`;
+}
+
+/* ---------- Clientes ---------- */
+let buscaCliente = "";
+function pgClientes() {
+  const q = buscaCliente.toLowerCase();
+  const lista = db.clientes.filter((c) => !q || [c.nome, c.telefone, c.email, c.cidade].join(" ").toLowerCase().includes(q)).sort((a, b) => a.nome.localeCompare(b.nome));
+  return cabecalho("Clientes", `${lista.length} cliente(s)`, botoesExportar("clientes") + `<button class="btn pri" data-act="novo-cliente">Novo cliente</button>`) +
+    `<div class="mb" style="max-width:420px"><input class="input" id="busca" placeholder="Buscar por nome, telefone, e-mail ou cidade" value="${esc(buscaCliente)}"></div>
+    <div class="card flush">${lista.length ? `<table><thead><tr><th>Nome</th><th>Telefone</th><th>Cidade</th><th>Origem</th><th class="num">Fechados</th><th class="num">Em aberto</th></tr></thead><tbody>${lista.map((c) => {
+      const ps = db.prospeccoes.filter((p) => p.clienteId === c.id);
+      return `<tr><td><a href="#/cliente/${c.id}"><b>${esc(c.nome)}</b></a></td><td>${esc(c.telefone) || "—"}</td><td>${esc(c.cidade) || "—"}</td><td>${esc(c.origem) || "—"}</td><td class="num">${ps.filter((p) => p.status === "fechado").length}</td><td class="num">${ps.filter((p) => p.status === "aberto").length}</td></tr>`;
+    }).join("")}</tbody></table>` : `<p class="empty">Nenhum cliente encontrado.</p>`}</div>`;
+}
+function blocoContatos(clienteId, prospeccaoId) {
+  const lista = db.contatos.filter((k) => k.clienteId === clienteId && (!prospeccaoId || k.prospeccaoId === prospeccaoId)).sort((a, b) => b.data.localeCompare(a.data));
+  const projetos = db.prospeccoes.filter((p) => p.clienteId === clienteId);
+  return `<div class="card"><h2>Histórico de contatos</h2>
+    <form class="form addform mb" data-form="contato" data-cliente="${clienteId}" data-prosp="${prospeccaoId || ""}">
+      <input class="input" type="date" name="data" value="${HOJE}" aria-label="Data">
+      <select class="input" name="tipo" style="width:100%" aria-label="Tipo de contato">${TIPOS_CONTATO.map((t) => `<option>${t}</option>`).join("")}</select>
+      ${prospeccaoId ? "" : `<select class="input full" name="prospeccaoId" style="width:100%" aria-label="Projeto"><option value="">Projeto (opcional)</option>${projetos.map((p) => `<option value="${p.id}">${esc(p.titulo)}</option>`).join("")}</select>`}
+      <textarea class="input full" name="resumo" rows="2" placeholder="O que foi conversado / combinado" required></textarea>
+      <div class="full"><button class="btn">Registrar contato</button></div>
+    </form>
+    ${lista.length ? `<ol class="timeline">${lista.map((k) => `<li><div class="dt">${dataBR(k.data)}</div><div class="bd"><b>${esc(k.tipo)}</b>${!prospeccaoId && k.prospeccaoId ? ` <span class="muted">· ${esc(prosp(k.prospeccaoId)?.titulo)}</span>` : ""}<div class="ink2">${esc(k.resumo)}</div></div><button class="btn sm danger" data-act="del-contato" data-id="${k.id}" aria-label="Excluir">×</button></li>`).join("")}</ol>` : `<p class="muted">Nenhum contato registrado ainda.</p>`}
+  </div>`;
+}
+function tabelaLancamentos(lista) {
+  return lista.length ? `<table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Situação</th><th class="num">Valor</th></tr></thead><tbody>${lista.map((l) => `<tr><td>${dataBR(l.data)}</td><td><a href="#" data-act="editar-lanc" data-id="${l.id}">${esc(l.descricao) || "(sem descrição)"}</a></td><td class="ink2">${esc(catNome(l))}</td><td>${situacaoLanc(l)}</td><td class="num ${l.tipo === "saida" ? "neg" : "pos"}">${l.tipo === "saida" ? "− " : "+ "}${R$(l.valor)}</td></tr>`).join("")}</tbody></table>` : `<p class="empty">Nenhum lançamento vinculado.</p>`;
+}
+function blocoFinanceiroVinculado(filtro, rotulo, novoParams) {
+  if (!sessao.admin) return "";
+  if (!finLiberado()) return `<div class="card mb" style="margin-top:14px">O financeiro deste ${rotulo} está bloqueado. <a href="#/financeiro">Desbloquear com sua senha</a></div>`;
+  const ls = db.lancamentos.filter(filtro).sort((a, b) => a.data.localeCompare(b.data));
+  const ent = ls.filter((l) => l.tipo === "entrada");
+  return `<h2 style="margin-top:22px">Financeiro deste ${rotulo}</h2>
+    <div class="grid g3 mb">${tile("Recebido", R$(soma(ent.filter((l) => l.pago))), "", "pos")}${tile("A receber", R$(soma(ent.filter((l) => !l.pago))), ent.filter((l) => !l.pago && l.data < HOJE).length ? `<span class="neg">${ent.filter((l) => !l.pago && l.data < HOJE).length} parcela(s) atrasada(s)</span>` : "")}
+    <div class="card" style="display:flex;align-items:center"><button class="btn" data-act="novo-lanc" ${novoParams}>Lançar recebimento</button></div></div>
+    <div class="card flush">${tabelaLancamentos(ls)}</div>`;
+}
+function pgCliente(id) {
+  const c = cliente(id); if (!c) return `<p class="empty">Cliente não encontrado.</p>`;
+  const ps = db.prospeccoes.filter((p) => p.clienteId === id).sort((a, b) => b.contato.localeCompare(a.contato));
+  const info = [["Telefone / WhatsApp", c.telefone], ["E-mail", c.email], ["CPF / CNPJ", c.documento], ["Endereço", [c.endereco, c.cidade].filter(Boolean).join(" · ")], ["Origem", c.origem]];
+  return cabecalho(esc(c.nome), `Cliente desde ${dataBR(c.criado)}`, `<button class="btn pri" data-act="nova-prosp" data-cliente="${id}">Nova prospecção</button><button class="btn" data-act="editar-cliente" data-id="${id}">Editar</button>${botoesExportar()}<button class="btn danger" data-act="del-cliente" data-id="${id}">Excluir</button>`) +
+    `<div class="grid g3 mb">
+      <div class="card"><h2>Dados</h2><dl>${info.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v) || "—"}</dd></div>`).join("")}</dl>${c.observacoes ? `<p class="ink2">${esc(c.observacoes)}</p>` : ""}</div>
+      <div class="card flush span2"><h2>Prospecções e projetos</h2>${ps.length ? `<table><thead><tr><th>Projeto</th><th>Tipos</th><th>Situação</th><th>Contato</th><th class="num">Valor</th></tr></thead><tbody>${ps.map((p) => `<tr><td><a href="#/prospeccao/${p.id}">${esc(p.titulo)}</a></td><td class="ink2">${esc(tiposDe(p))}</td><td>${badge(p.status)}</td><td>${dataBR(p.contato)}</td><td class="num">${R$(p.valor)}</td></tr>`).join("")}</tbody></table>` : `<p class="empty">Nenhuma prospecção para este cliente.</p>`}</div>
+    </div>` + blocoContatos(id) + blocoFinanceiroVinculado((l) => l.clienteId === id, "cliente", `data-cliente="${id}"`);
+}
+
+/* ---------- Prospecções ---------- */
+let fpStatus = "", fpTipo = "", fpAno = "todos";
+function pgProspeccoes() {
+  const doPeriodo = db.prospeccoes.filter((p) => (fpAno === "todos" || p.contato.startsWith(fpAno)) && (!fpTipo || p.tipos.includes(Number(fpTipo))));
+  const lista = doPeriodo.filter((p) => !fpStatus || p.status === fpStatus).sort((a, b) => b.contato.localeCompare(a.contato));
+  const abas = [["", "Todas"], ...Object.keys(STATUS).map((s) => [s, STATUS[s].label])];
+  return cabecalho("Prospecções", `${lista.length} projeto(s) · ${R$(soma(lista))}`, botoesExportar("prospeccoes") + `<button class="btn pri" data-act="nova-prosp">Nova prospecção</button>`) +
+    `<div class="bar mb"><div class="actions">${abas.map(([s, l]) => `<button class="btn sm ${fpStatus === s ? "on" : ""}" data-act="fp-status" data-v="${s}">${l} <span class="muted">${s ? doPeriodo.filter((p) => p.status === s).length : doPeriodo.length}</span></button>`).join("")}</div>
+      <div class="actions"><select class="input" data-act="fp-tipo" aria-label="Tipo de projeto"><option value="">Todos os tipos</option>${db.tipos.map((t) => `<option value="${t.id}" ${String(t.id) === fpTipo ? "selected" : ""}>${esc(t.nome)}</option>`).join("")}</select>${selAno(anosDe(db.prospeccoes.map((p) => p.contato)), fpAno).replace('data-act="ano"', 'data-act="fp-ano"')}</div></div>
+    <div class="card flush">${lista.length ? `<table><thead><tr><th>Projeto</th><th>Cliente</th><th>Tipos</th><th>Situação</th><th>Contato</th><th class="num">Valor</th><th></th></tr></thead><tbody>${lista.map((p) => `<tr>
+      <td><a href="#/prospeccao/${p.id}"><b>${esc(p.titulo)}</b></a></td><td><a href="#/cliente/${p.clienteId}">${esc(cliente(p.clienteId)?.nome)}</a></td><td class="ink2">${esc(tiposDe(p))}</td><td>${badge(p.status)}</td><td>${dataBR(p.contato)}</td><td class="num">${R$(p.valor)}</td>
+      <td>${p.status === "aberto" ? `<span class="actions" style="flex-wrap:nowrap"><button class="btn sm" data-act="fechou" data-id="${p.id}">Fechou</button><button class="btn sm" data-act="editar-prosp" data-id="${p.id}" data-cancelar="1">Cancelar</button></span>` : ""}</td></tr>`).join("")}</tbody></table>` : `<p class="empty">Nenhuma prospecção encontrada.</p>`}</div>`;
+}
+function pgProspeccao(id) {
+  const p = prosp(id); if (!p) return `<p class="empty">Prospecção não encontrada.</p>`;
+  const c = cliente(p.clienteId);
+  const et = db.etapas.filter((e) => e.prospeccaoId === id).sort((a, b) => a.ordem - b.ordem);
+  const feitas = et.filter((e) => e.concluida).length;
+  return cabecalho(esc(p.titulo), `Cliente: <a href="#/cliente/${c.id}">${esc(c.nome)}</a>`, `<button class="btn pri" data-act="editar-prosp" data-id="${id}">Editar</button>${botoesExportar()}<button class="btn danger" data-act="del-prosp" data-id="${id}">Excluir</button>`) +
+    `<div class="card mb"><div class="grid g4">
+      <div><dt>Situação</dt><dd>${badge(p.status)}</dd></div><div><dt>Tipos de projeto</dt><dd>${esc(tiposDe(p))}</dd></div>
+      <div><dt>Valor</dt><dd>${R$(p.valor)}</dd></div><div><dt>Contato · ${p.status === "cancelado" ? "cancelamento" : "fechamento"}</dt><dd>${dataBR(p.contato)} · ${dataBR(p.fechamento)}</dd></div>
+      ${p.motivo ? `<div class="span2"><dt>Motivo do cancelamento</dt><dd>${esc(p.motivo)}</dd></div>` : ""}${p.obs ? `<div class="span2"><dt>Observações</dt><dd>${esc(p.obs)}</dd></div>` : ""}
+    </div></div>
+    <div class="grid g2">
+      <div class="card"><div class="bar"><h2>Etapas e prazos</h2>${et.length ? `<span class="muted">${feitas} de ${et.length} concluídas</span>` : ""}</div>
+        ${et.length ? `<div class="progress"><div style="width:${pct(feitas, et.length)}%"></div></div>` : ""}
+        <ul class="steps">${et.map((e) => `<li class="${e.concluida ? "done" : ""}">
+          <button class="btn sm" data-act="etapa-ok" data-id="${e.id}" title="${e.concluida ? "Reabrir" : "Concluir"}">${e.concluida ? "✓" : "○"}</button>
+          <span class="nm">${esc(e.nome)}</span>
+          ${e.concluida ? `<span class="small muted">concluída em ${dataBR(e.concluidaEm)}</span>` : `<input class="input" type="date" style="width:auto;padding:4px 6px" value="${e.prazo || ""}" data-act="etapa-prazo" data-id="${e.id}" aria-label="Prazo">${situacaoPrazo(e.prazo)}`}
+          <button class="btn sm danger" data-act="del-etapa" data-id="${e.id}" aria-label="Excluir etapa">×</button></li>`).join("")}</ul>
+        <form class="actions addform" style="margin-top:12px" data-form="etapa" data-prosp="${id}"><input class="input" name="nome" style="flex:1;min-width:180px" placeholder="Nova etapa (ex.: Aprovação na prefeitura)" required><input class="input" type="date" name="prazo" style="width:auto" aria-label="Prazo"><button class="btn">Adicionar</button></form>
+        ${et.length ? "" : `<button class="btn sm" style="margin-top:10px" data-act="etapas-padrao" data-id="${id}">Usar etapas padrão de arquitetura</button><p class="small muted" style="margin:6px 0 0">Briefing, estudo preliminar, anteprojeto, executivo, aprovação e entrega.</p>`}
+      </div>
+      ${blocoContatos(c.id, id)}
+    </div>` + blocoFinanceiroVinculado((l) => l.prospeccaoId === id, "projeto", `data-cliente="${c.id}" data-prosp="${id}"`);
+}
+
+/* ---------- Financeiro ---------- */
+/* ===================== formulários (janela) ===================== */
+const dlg = $("#dlg");
+function abrir(titulo, corpo, nomeForm, extra = "") {
+  dlg.innerHTML = `<form data-form="${nomeForm}" ${extra}><div class="dh"><h2 style="margin:0">${titulo}</h2><button type="button" class="btn sm" data-act="fechar" aria-label="Fechar">×</button></div><div class="db">${corpo}<div class="err" id="err-dlg"></div></div><div class="df"><button type="button" class="btn" data-act="fechar">Cancelar</button><button class="btn pri">Salvar</button></div></form>`;
+  dlg.showModal();
+}
+const campo = (rot, html, full = false) => `<label class="field ${full ? "full" : ""}"><span>${rot}</span>${html}</label>`;
+const inp = (name, val = "", attrs = "") => `<input class="input" name="${name}" value="${esc(val)}" ${attrs}>`;
+const opts = (lista, atual, vazio) => (vazio != null ? `<option value="">${vazio}</option>` : "") + lista.map((o) => { const [v, l] = Array.isArray(o) ? o : [o, o]; return `<option value="${esc(v)}" ${String(v) === String(atual ?? "") ? "selected" : ""}>${esc(l)}</option>`; }).join("");
+
+function formCliente(c = {}) {
+  abrir(c.id ? "Editar cliente" : "Novo cliente", `<div class="form">
+    ${campo("Nome *", inp("nome", c.nome, "required"), true)}
+    ${campo("CPF / CNPJ", inp("documento", c.documento))}
+    ${campo("Origem do cliente", `<select class="input" name="origem">${opts(ORIGENS, c.origem, "Selecione...")}</select>`)}
+    ${campo("Telefone / WhatsApp", inp("telefone", c.telefone))}
+    ${campo("E-mail", inp("email", c.email, 'type="email"'))}
+    ${campo("Endereço", inp("endereco", c.endereco))}
+    ${campo("Cidade", inp("cidade", c.cidade))}
+    ${campo("Observações", `<textarea class="input" name="observacoes" rows="3">${esc(c.observacoes)}</textarea>`, true)}
+  </div>`, "cliente", `data-id="${c.id || ""}"`);
+}
+function formProsp(p = {}, cancelar = false) {
+  const st = cancelar ? "cancelado" : p.status || "aberto";
+  abrir(p.id ? "Editar prospecção" : "Nova prospecção", `<div class="form">
+    ${campo("Cliente *", `<select class="input" name="clienteId" required>${opts(db.clientes.slice().sort((a, b) => a.nome.localeCompare(b.nome)).map((c) => [c.id, c.nome]), p.clienteId, "Selecione o cliente...")}</select>`, true)}
+    ${campo("Projeto *", inp("titulo", p.titulo, 'required placeholder="Ex.: Reforma apartamento Rua X"'), true)}
+    <div class="field full"><span>Tipos de projeto (marque quantos quiser)</span><div class="chips">${db.tipos.map((t) => `<label class="chip"><input type="checkbox" name="tipos" value="${t.id}" ${(p.tipos || []).includes(t.id) ? "checked" : ""}>${esc(t.nome)}</label>`).join("")}</div>
+      <input class="input" name="novoTipo" placeholder="Outro tipo (cria um novo)" style="max-width:280px;margin-top:6px"></div>
+    ${campo("Situação", `<select class="input" name="status" data-act="status-form">${opts(Object.keys(STATUS).map((s) => [s, STATUS[s].label]), st)}</select>`)}
+    ${campo("Valor da proposta (R$)", inp("valor", p.valor != null ? String(p.valor).replace(".", ",") : "", 'inputmode="decimal" placeholder="0,00"'))}
+    ${campo("Data do primeiro contato", inp("contato", p.contato || HOJE, 'type="date" required'))}
+    <label class="field" data-show="fechado cancelado"><span>Data do fechamento / cancelamento</span>${inp("fechamento", p.fechamento || HOJE, 'type="date"')}</label>
+    <label class="field full" data-show="cancelado"><span>Motivo do cancelamento</span>${inp("motivo", p.motivo, 'list="motivos" placeholder="Ex.: Preço, prazo, desistiu da obra..."')}<datalist id="motivos">${MOTIVOS.map((m) => `<option value="${m}">`).join("")}</datalist></label>
+    ${campo("Observações", `<textarea class="input" name="obs" rows="2">${esc(p.obs)}</textarea>`, true)}
+  </div>`, "prosp", `data-id="${p.id || ""}"`);
+  mostrarPorStatus();
+}
+function mostrarPorStatus() {
+  const st = dlg.querySelector('[name="status"]')?.value;
+  dlg.querySelectorAll("[data-show]").forEach((el) => (el.style.display = el.dataset.show.split(" ").includes(st) ? "" : "none"));
+}
+/* ===================== exportação ===================== */
+const EMBUTIDO = false;
+function baixarCSV(nome, cab, linhas) {
+  if (EMBUTIDO) {
+    // Dentro do app Claude downloads ficam bloqueados: copia a tabela para colar no Excel
+    const tsv = [cab, ...linhas].map((l) => l.map((v) => (v == null ? "" : typeof v === "number" ? v.toFixed(2).replace(".", ",") : String(v).replace(/[\t\n\r]+/g, " "))).join("\t")).join("\n");
+    navigator.clipboard.writeText(tsv).then(() => toast("Tabela copiada. Abra o Excel e cole (Ctrl+V)."), () => toast("Não foi possível copiar neste aparelho."));
+    return;
+  }
+  const cel = (v) => { if (v == null) return ""; const s = typeof v === "number" ? v.toFixed(2).replace(".", ",") : String(v); return /[;"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const txt = "﻿" + [cab, ...linhas].map((l) => l.map(cel).join(";")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([txt], { type: "text/csv;charset=utf-8" }));
+  a.download = `${nome}-${HOJE}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function exportar(tipo) {
+  if (tipo === "clientes") baixarCSV("clientes", ["Nome", "CPF/CNPJ", "Telefone", "E-mail", "Endereço", "Cidade", "Origem", "Observações"], db.clientes.map((c) => [c.nome, c.documento, c.telefone, c.email, c.endereco, c.cidade, c.origem, c.observacoes]));
+  if (tipo === "prospeccoes") baixarCSV("prospeccoes", ["Projeto", "Cliente", "Tipos", "Situação", "Valor (R$)", "Primeiro contato", "Fechamento/cancelamento", "Motivo do cancelamento"], db.prospeccoes.map((p) => [p.titulo, cliente(p.clienteId)?.nome, tiposDe(p), STATUS[p.status].label, p.valor, dataBR(p.contato), p.fechamento ? dataBR(p.fechamento) : "", p.motivo]));
+}
+
+/* ===================== FINANCEIRO (mesma estrutura do Zenply) ===================== */
+const GRUPOS = { receita: "Recebimentos", fixa: "Despesas Fixas", variavel: "Despesas Variáveis", pessoas: "Pessoas", impostos: "Impostos" };
+const GRUPOS_DESP = ["fixa", "variavel", "pessoas", "impostos"];
+const TIPOS_CONTA = ["Conta Corrente", "Poupança", "Caixa", "Investimento", "Cartão de crédito"];
+const TIPOS_CONTATO_FIN = ["Cliente", "Fornecedor", "Funcionário"];
+const CORES_CAT = ["#2b2c30", "#a08c6e", "#5c8a5f", "#c9a04a", "#b5674f", "#5f7489", "#8c8f5a", "#9c9da2"];
+const CATEGORIAS_ZENPLY = {
+  receita: ["ADMINISTRAÇÃO DE OBRA", "ALUGUEL", "CARTÃO DE CRÉDITO", "DEPÓSITO EM ESPÉCIE", "DIVISÃO DE GASTOS - PARTE DO RENAN", "EMPRESTIMO", "FINANCIAMENTO", "INVESTIMENTOS", "PROJETO 3D", "PROJETO ALVARÁ BOMBEIRO", "PROJETO APROVAÇÃO DO ATLANTIS", "PROJETO ARQUITETÔNICO", "PROJETO DE AMPLIAÇÃO", "PROJETO DE CONSULTORIA", "PROJETO DE INTERIORES", "PROJETO DE LAUDO DE OBRA", "PROJETO DE LAYOUT", "PROJETO DE LEVANTAMENTO", "PROJETO DE MEDIÇÃO AGRUPADA", "PROJETO DE PAISAGISMO", "PROJETO DE REFORMA", "PROJETO DE REFORMULAÇÃO DE FACHADA", "PROJETO DE REGULARIZAÇÃO", "PROJETO MURO", "PROJETO VIG. SANITÁRIA", "RECEBIMENTO DE EMPRESTIMO", "RESGATE DE INVESTIMENTO", "REST. CONFRATERNIZAÇÃO", "REST. PGTO CLIENTES (CARTÓRIO, GRÁFICA, TAXAS E IMPOSTOS)", "RT DE PARCEIROS", "SALÁRIO", "VENDAS DIVERSAS", "VIAGEM"],
+  fixa: ["ALUGUEL GM", "COMPRA DE MOTO", "COMPRA GM", "COMPRA PARA CLIENTE", "CONTABILIDADE", "DESP. CLIENTES", "DESP. RENAN", "DEVOLUÇÃO / RESTITUIÇÃO", "EMPRÉSTIMO", "ENERGIA ELÉTRICA", "EXAMES", "FINANCIAMENTO", "HOSPEDAGEM DE SITE", "IMPOSTO DIVERSO", "INTERNET", "LANCHE REUNIÃO CLIENTES", "LEVANTAMENTO ARQUITETONICO EXTERNO", "OBRA BEBE E LUCIRLEI", "SEGUROS", "TELEFONE", "TERCEIRIZAÇÃO DE PROJETO", "TERRENO", "ÁGUA"],
+  variavel: ["ALIMENTAÇÃO", "ANUIDADE CAU", "APLICAÇÃO / INVESTIMENTO", "BRINDES", "CAIXA", "CARTÃO DE CRÉDITO", "CARTÓRIO /TAXAS E IMPOSTO DE CLIENTE", "CARTÓRIO GM", "COMBUSTÍVEL", "COMPRAS E MANUTENÇÃO INFRAESTRUTURA", "CONFRATERNIZAÇÃO", "CURSOS", "DOAÇÃO", "INFR", "JARDINAGEM", "MANUTENÇÃO DE PC", "MANUTENÇÃO DE VEÍCULOS", "MARKETING", "MENSALIDADE APP E SOFTWARES", "PAPELARIA", "PGTO DE COMISSÃO", "PLOTAGEM / GRÁFICA", "PRESENTES", "PRODUTOS DE LIMPEZA / SUPERMERCADO", "PROJETOS COMPLEMENTARES (CLIENTES)", "PROJETOS DE MEDIÇÃO AGRUPADA (CLIENTES)", "RECANTO JAPARATINGA", "SAQUE EM ESPÉCIE", "SEG. TRABALHO", "TAXAS BANCÁRIAS", "VIAGEM"],
+  pessoas: ["BÔNUS SALARIAL", "SALÁRIO"],
+  impostos: ["ALVARÁ", "AVERBAÇÃO", "DARF (INSS E IRRF)", "DAS (SIMPLES NACIONAL)", "FGTS", "IMPOSTO DE RENDA", "IPTU", "IPVA", "ISSQN (PROFISSIONAL AUTONOMO)"],
+};
+
+/* ---------- consultas ---------- */
+const fcat = (id) => db.categorias.find((c) => c.id === id);
+const catNome = (l) => (l.tipo === "transf" ? "Transferência" : fcat(l.categoriaId)?.nome || "Sem categoria");
+const catGrupo = (l) => (l.tipo === "entrada" ? "receita" : fcat(l.categoriaId)?.grupo || "variavel");
+const conta = (id) => db.contas.find((c) => c.id === id);
+const pessoa = (id) => cliente(id) || db.fornecedores.find((f) => f.id === id);
+const pessoaNome = (id) => pessoa(id)?.nome || "—";
+const ehReceb = (l) => l.tipo === "entrada", ehDesp = (l) => l.tipo === "saida";
+const atrasado = (l) => !l.pago && l.data < HOJE && l.tipo !== "transf";
+const noMes = (l, ym) => l.data.startsWith(ym);
+const ymAdd = (ym, n) => addMeses(ym + "-01", n).slice(0, 7);
+const ymNome = (ym) => `${MESES[Number(ym.slice(5)) - 1]}/${ym.slice(0, 4)}`;
+const MESES_LONGOS = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+const filtraConta = (l) => fConta === "todas" || l.contaId === fConta || l.contaDestinoId === fConta;
+function saldoConta(contaId, ate = "9999-12-31") {
+  const c = conta(contaId); let s = Number(c?.saldoInicial || 0);
+  for (const l of db.lancamentos) {
+    if (!l.pago || (l.pagoEm || l.data) > ate) continue;
+    if (l.tipo === "entrada" && l.contaId === contaId) s += l.valor;
+    if (l.tipo === "saida" && l.contaId === contaId) s -= l.valor;
+    if (l.tipo === "transf") { if (l.contaId === contaId) s -= l.valor; if (l.contaDestinoId === contaId) s += l.valor; }
+  }
+  return s;
+}
+const saldoTotal = (ate) => (fConta === "todas" ? db.contas.filter((c) => !c.arquivada).reduce((t, c) => t + saldoConta(c.id, ate), 0) : saldoConta(fConta, ate));
+function resumoMes(ym) {
+  const ls = db.lancamentos.filter((l) => noMes(l, ym) && filtraConta(l));
+  const r = ls.filter(ehReceb), d = ls.filter(ehDesp);
+  return { r, d, rPrev: soma(r), rReal: soma(r.filter((l) => l.pago)), dPrev: soma(d), dReal: soma(d.filter((l) => l.pago)) };
+}
+
+/* ---------- estado da tela ---------- */
+let fMes = HOJE.slice(0, 7), fConta = "todas", fDia = HOJE, fAba = "entrada", fStatus = "todos", fBusca = "", fCentro = "";
+let fRel = "desp-categoria", fRelDe = HOJE.slice(0, 8) + "01", fRelAte = addDias(addMeses(HOJE.slice(0, 8) + "01", 1), -1), fRelPagos = true, fRelPend = true;
+let fCfg = "contas", fCfgGrupo = "receita", fCtAba = "Todos", fCtBusca = "", fCtSel = null;
+
+/* ---------- gráficos do financeiro ---------- */
+function rosca(p, cor) {
+  const r = 46, c = 2 * Math.PI * r, v = Math.max(0, Math.min(100, p));
+  return `<svg viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="${v}%"><circle cx="60" cy="60" r="${r}" fill="none" stroke="var(--surface-2)" stroke-width="12"/>
+    <circle cx="60" cy="60" r="${r}" fill="none" stroke="${cor}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${(c * v) / 100} ${c}" transform="rotate(-90 60 60)"/>
+    <text x="60" y="66" text-anchor="middle" style="font-size:20px;font-weight:600;fill:var(--ink)">${v}%</text></svg>`;
+}
+function pizza(dados, moeda = true) {
+  const tot = dados.reduce((t, d) => t + d.valor, 0);
+  if (!tot) return `<p class="empty">Sem dados no período.</p>`;
+  let lista = dados.slice().sort((a, b) => b.valor - a.valor);
+  if (lista.length > 8) { const resto = lista.slice(7); lista = [...lista.slice(0, 7), { nome: "Outros", valor: resto.reduce((t, d) => t + d.valor, 0), outros: true }]; }
+  const R = 70, r = 44; let ang = -Math.PI / 2, s = "";
+  lista.forEach((d, i) => {
+    const a = (d.valor / tot) * Math.PI * 2, a2 = ang + a, large = a > Math.PI ? 1 : 0, cor = d.outros ? "var(--muted)" : CORES_CAT[i];
+    const p = (rr, t) => `${90 + rr * Math.cos(t)},${90 + rr * Math.sin(t)}`;
+    const t = `<b>${esc(d.nome)}</b>${moeda ? R$(d.valor) : d.valor} · ${pct(d.valor, tot)}%`;
+    s += lista.length === 1 ? `<g data-tip="${esc(t)}"><circle cx="90" cy="90" r="${(R + r) / 2}" fill="none" stroke="${cor}" stroke-width="${R - r}"/></g>`
+      : `<path data-tip="${esc(t)}" d="M${p(R, ang)} A${R},${R} 0 ${large} 1 ${p(R, a2)} L${p(r, a2)} A${r},${r} 0 ${large} 0 ${p(r, ang)} Z" fill="${cor}" stroke="var(--surface)" stroke-width="2"/>`;
+    ang = a2;
+  });
+  return `<div class="pizza"><svg viewBox="0 0 180 180" width="180" height="180" role="img">${s}</svg>
+    <ul class="pleg">${lista.map((d, i) => `<li><span class="dot" style="background:${d.outros ? "var(--muted)" : CORES_CAT[i]}"></span><span class="nm">${esc(d.nome)}</span><span class="num">${pct(d.valor, tot)}%</span></li>`).join("")}</ul></div>`;
+}
+function fluxoSemestre(meses) {
+  const W = Math.max(320, Math.min(620, innerWidth - 80)), H = 250, esq = 70, topo = 10, base = H - 24;
+  const max = Math.max(1, ...meses.map((m) => Math.max(m.r, m.d)));
+  const { max: M, passos } = escala(max);
+  const meio = topo + (base - topo) / 2, y = (v) => meio - (v / M) * ((base - topo) / 2);
+  const col = (W - esq) / meses.length, bw = Math.min(46, col * 0.55);
+  let s = `<g class="grid">${passos.flatMap((v) => (v ? [v, -v] : [0])).map((v) => `<line x1="${esq}" x2="${W}" y1="${y(v)}" y2="${y(v)}"/><text x="${esq - 6}" y="${y(v) + 4}" text-anchor="end">${R$c(v)}</text>`).join("")}</g>`;
+  const pts = [];
+  meses.forEach((m, i) => {
+    const cx = esq + col * i + col / 2, x0 = cx - bw / 2, res = m.r - m.d;
+    const t = `<b>${ymNome(m.ym)}</b>Recebimentos: ${R$(m.r)}<br>Despesas: ${R$(m.d)}<br>Resultado: ${R$(res)}`;
+    s += `<g class="mark" data-tip="${esc(t)}"><rect class="hit" x="${esq + col * i}" y="0" width="${col}" height="${base}"/>
+      ${m.r ? `<rect class="m" x="${x0}" y="${y(m.r)}" width="${bw}" height="${meio - y(m.r)}" fill="var(--rec)" rx="2"/>` : ""}
+      ${m.d ? `<rect class="m" x="${x0}" y="${meio}" width="${bw}" height="${y(-m.d) - meio}" fill="var(--desp)" rx="2"/>` : ""}
+      <text x="${cx}" y="${H - 6}" text-anchor="middle">${MESES[Number(m.ym.slice(5)) - 1].toUpperCase()}</text></g>`;
+    pts.push([cx, y(res)]);
+  });
+  s += `<line x1="${esq}" x2="${W}" y1="${meio}" y2="${meio}" stroke="var(--ink)" stroke-width="2"/>`;
+  s += `<polyline points="${pts.map((p) => p.join(",")).join(" ")}" fill="none" stroke="var(--ink-2)" stroke-width="1.5" stroke-dasharray="3 3"/>`;
+  s += pts.map(([x, yy]) => `<circle cx="${x}" cy="${yy}" r="3.5" fill="var(--ink)"/>`).join("");
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img">${s}</svg><div class="legend"><span style="--c:var(--rec)">Recebimentos</span><span style="--c:var(--desp)">Despesas</span><span style="--c:var(--ink)">Resultado (linha)</span></div></div>`;
+}
+function calendario(ym) {
+  const [a, m] = ym.split("-").map(Number), primeiro = new Date(a, m - 1, 1).getDay(), dias = new Date(a, m, 0).getDate();
+  const ls = db.lancamentos.filter((l) => noMes(l, ym) && filtraConta(l));
+  let cel = Array.from({ length: primeiro }, () => `<div></div>`);
+  for (let d = 1; d <= dias; d++) {
+    const ds = `${ym}-${pad(d)}`, doDia = ls.filter((l) => l.data === ds);
+    const dots = [["entrada", "var(--rec)"], ["saida", "var(--desp)"], ["transf", "var(--series-1)"]].filter(([t]) => doDia.some((l) => l.tipo === t)).map(([, c]) => `<i style="background:${c}"></i>`).join("");
+    cel.push(`<button class="dia ${ds === fDia ? "sel" : ""} ${ds === HOJE ? "hoje" : ""}" data-act="f-dia" data-v="${ds}">${d}<span>${dots}</span></button>`);
+  }
+  return `<div class="cal"><div class="calh">${["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"].map((d) => `<div>${d}</div>`).join("")}</div><div class="calg">${cel.join("")}</div>
+    <div class="legend" style="justify-content:center"><span style="--c:var(--rec)">recebimentos</span><span style="--c:var(--desp)">despesas</span><span style="--c:var(--series-1)">transferências</span></div></div>`;
+}
+
+/* ---------- peças comuns ---------- */
+const seletorMes = () => `<div class="mesnav"><button class="btn sm" data-act="f-mes" data-v="-1" aria-label="Mês anterior">‹</button><b>${MESES_LONGOS[Number(fMes.slice(5)) - 1].toUpperCase()} ${fMes.slice(0, 4)}</b><button class="btn sm" data-act="f-mes" data-v="1" aria-label="Próximo mês">›</button></div>`;
+const seletorConta = () => `<select class="input" data-act="f-conta" aria-label="Conta bancária"><option value="todas">Todas as contas</option>${db.contas.filter((c) => !c.arquivada).map((c) => `<option value="${c.id}" ${fConta === c.id ? "selected" : ""}>${esc(c.nome)}</option>`).join("")}</select>`;
+const barraProg = (real, prev, cor) => `<div class="pbar"><div style="width:${pct(real, prev)}%;background:${cor}"></div></div>`;
+const linhaKV = (k, v, cls = "") => `<div class="kv"><span>${k}</span><b class="${cls}">${v}</b></div>`;
+const toggle = (l) => `<button class="sw ${l.pago ? "on" : ""}" data-act="f-pago" data-id="${l.id}" role="switch" aria-checked="${l.pago}" title="${l.pago ? "Marcar como não pago" : l.tipo === "entrada" ? "Marcar como recebido" : "Marcar como pago"}"><span></span></button>`;
+function itemAtraso(l) {
+  const cor = l.tipo === "entrada" ? "pos" : "neg";
+  return `<li><div><a href="#" data-act="editar-lanc" data-id="${l.id}">${esc(l.descricao || catNome(l))}${l.parcela ? ` (${l.parcela})` : ""}</a> - <b class="${cor}">${R$(l.valor)}</b>
+    <div class="small muted">${dataBR(l.data)}, ${l.tipo === "entrada" ? "de" : "para"}: ${esc(pessoaNome(l.clienteId)).toUpperCase()}</div></div>${toggle(l)}</li>`;
+}
+const SUBNAV = [["dashboard", "Dashboard"], ["transacoes", "Transações"], ["relatorios", "Relatórios"], ["contatos", "Contatos"], ["importar", "Importar / Exportar"], ["configuracoes", "Configurações"]];
+function moldura(sub, corpo) {
+  return `<div class="finnav no-print">${SUBNAV.map(([r, l]) => `<a href="#/financeiro/${r}" class="${sub === r ? "on" : ""}">${l}</a>`).join("")}<span style="flex:1"></span><button class="btn sm" data-act="bloquear" title="Fecha o financeiro até você digitar a senha de novo">🔒 Bloquear</button></div>${corpo}`;
+}
+
+/* ---------- Dashboard ---------- */
+function finDashboard() {
+  const atual = resumoMes(fMes), ant = resumoMes(ymAdd(fMes, -1));
+  const g = (ls, grupo) => soma(ls.filter((l) => catGrupo(l) === grupo));
+  const comp = [
+    ["↑ RECEBIMENTOS", atual.rPrev, ant.rPrev, "var(--rec)", true],
+    ["↓ DESPESAS", atual.dPrev, ant.dPrev, "var(--desp)", true],
+    ["Despesas fixas", g(atual.d, "fixa"), g(ant.d, "fixa"), "var(--warn-bar)"],
+    ["Despesas variáveis", g(atual.d, "variavel"), g(ant.d, "variavel"), "var(--warn-bar)"],
+    ["Pessoas", g(atual.d, "pessoas"), g(ant.d, "pessoas"), "var(--warn-bar)"],
+    ["Impostos", g(atual.d, "impostos"), g(ant.d, "impostos"), "var(--warn-bar)"],
+  ];
+  const semestre = [-5, -4, -3, -2, -1, 0].map((n) => { const ym = ymAdd(fMes, n), r = resumoMes(ym); return { ym, r: r.rPrev, d: r.dPrev }; });
+  const atrasos = db.lancamentos.filter((l) => atrasado(l) && filtraConta(l)).sort((a, b) => b.data.localeCompare(a.data));
+  const doDia = db.lancamentos.filter((l) => l.data === fDia && filtraConta(l));
+  const receita = atual.rPrev, imp = g(atual.d, "impostos"), varr = g(atual.d, "variavel"), fixa = g(atual.d, "fixa"), pes = g(atual.d, "pessoas");
+  const dre = [["Receita Bruta", receita, "b"], ["(−) Impostos", -imp], ["LUCRO BRUTO", receita - imp, "t"], ["(−) Total de Desp. Variáveis", -varr], ["LUCRO OPERACIONAL", receita - imp - varr, "t"], ["(−) Total de Desp. Fixas", -fixa], ["(−) Gastos com Pessoal", -pes], ["LUCRO LÍQUIDO DO EXERCÍCIO", receita - imp - varr - fixa - pes, "t"]];
+  return cabecalho("Dashboard", `Olá, ${esc(sessao.nome)}`, seletorConta() + seletorMes()) + `
+  <div class="grid g2 fin">
+    <div class="col">
+      <div class="card"><h2>Previsto x Realizado</h2><p class="sub">${fConta === "todas" ? "Todas as contas" : esc(conta(fConta).nome)}</p>
+        <div class="grid g2"><div class="pxr">${rosca(pct(atual.rReal, atual.rPrev), "var(--rec)")}<div class="lbl2">RECEBIMENTOS</div>${barraProg(atual.rReal, atual.rPrev, "var(--rec)")}
+          ${linhaKV("Realizado:", R$(atual.rReal))}${linhaKV("Falta:", R$(atual.rPrev - atual.rReal))}${linhaKV("Previsto:", R$(atual.rPrev), "muted")}</div>
+          <div class="pxr">${rosca(pct(atual.dReal, atual.dPrev), "var(--desp)")}<div class="lbl2">DESPESAS</div>${barraProg(atual.dReal, atual.dPrev, "var(--desp)")}
+          ${linhaKV("Realizado:", R$(atual.dReal))}${linhaKV("Falta:", R$(atual.dPrev - atual.dReal))}${linhaKV("Previsto:", R$(atual.dPrev), "muted")}</div></div></div>
+      <div class="card"><h2>Fluxo de caixa do semestre</h2><p class="sub">Recebimentos e despesas previstos por mês</p>${fluxoSemestre(semestre)}</div>
+      <div class="card"><h2>Comparativo mês anterior</h2><p class="sub">${ymNome(fMes)} comparado a ${ymNome(ymAdd(fMes, -1))}</p>
+        <div class="comp">${comp.map(([n, a, b, cor, forte]) => { const dif = a - b, pc = b ? Math.round((dif / b) * 10000) / 100 : 0; const bom = n.includes("RECEB") ? dif >= 0 : dif <= 0;
+          return `<div class="crow ${forte ? "" : "ind"}"><div class="cn">${n}</div><div class="cv">${dif >= 0 ? "+" : "−"}${R$(Math.abs(dif))}</div><div class="cp ${bom ? "pos" : "neg"}">${dif >= 0 ? "+" : ""}${pc.toFixed(2).replace(".", ",")} % ${dif >= 0 ? "↑" : "↓"}</div>
+          <div class="cb"><div style="width:${Math.min(100, pct(a, Math.max(a, b)))}%;background:${cor}"></div></div></div>`; }).join("")}</div></div>
+      <div class="card"><h2>Demonstração de Resultados</h2><p class="sub">${ymNome(fMes)} · valores previstos do mês</p>
+        <table class="dre"><tbody>${dre.map(([n, v, t]) => `<tr class="${t || ""}"><td>${n}</td><td class="num ${v < 0 ? "neg" : ""}">${R$(Math.abs(v))}</td></tr>`).join("")}</tbody></table></div>
+    </div>
+    <div class="col">
+      <div class="card saldo"><div><div class="small muted">Saldo · ${fConta === "todas" ? "todas as contas" : esc(conta(fConta).nome)}</div><div class="big ${saldoTotal() < 0 ? "neg" : "pos"}">${R$(saldoTotal())}</div></div>
+        <div class="small muted" style="text-align:right">Previsão de fechamento do mês<br><b class="ink2">${R$(saldoTotal() + (atual.rPrev - atual.rReal) - (atual.dPrev - atual.dReal))}</b></div></div>
+      <div class="card"><h2>Agenda do mês</h2>${calendario(fMes)}
+        <h2 style="margin-top:18px">Vencimentos do dia ${Number(fDia.slice(8))}</h2>
+        ${doDia.length ? `<ul class="atrasos">${doDia.map(itemAtraso).join("")}</ul>` : `<p class="muted">Você não tem lançamentos para este dia. =)</p>`}
+        <h2 style="margin-top:18px">Lançamentos em atraso</h2><p class="sub">${atrasos.length} movimentações</p>
+        ${atrasos.length ? `<ul class="atrasos scroll">${atrasos.map(itemAtraso).join("")}</ul>` : `<p class="muted">Nenhum lançamento em atraso.</p>`}
+        <div class="kv" style="margin-top:10px"><span>Recebimentos atrasados:</span><b class="pos">${R$(soma(atrasos.filter(ehReceb)))}</b></div>
+        <div class="kv"><span>Despesas atrasadas:</span><b class="neg">${R$(soma(atrasos.filter(ehDesp)))}</b></div></div>
+    </div>
+  </div>`;
+}
+
+/* ---------- Transações ---------- */
+function finTransacoes() {
+  const atual = resumoMes(fMes);
+  const tres = [-1, 0, 1].map((n) => { const ym = ymAdd(fMes, n), r = resumoMes(ym); return { ym, r: r.rPrev, d: r.dPrev }; });
+  const q = fBusca.toLowerCase();
+  let ls = db.lancamentos.filter((l) => noMes(l, fMes) && l.tipo === fAba && filtraConta(l));
+  const total = ls;
+  if (fStatus === "pagos") ls = ls.filter((l) => l.pago);
+  if (fStatus === "pendentes") ls = ls.filter((l) => !l.pago);
+  if (fCentro) ls = ls.filter((l) => l.centroId === fCentro || l.tags.includes(fCentro));
+  if (q) ls = ls.filter((l) => [l.descricao, catNome(l), pessoaNome(l.clienteId), l.documento].join(" ").toLowerCase().includes(q));
+  ls.sort((a, b) => b.data.localeCompare(a.data));
+  const rotulo = { entrada: ["Recebido de", "recebimento", "Recebido", "A receber"], saida: ["Pago a", "despesa", "Pago", "A pagar"], transf: ["Destino", "transferência", "Realizado", "Pendente"] }[fAba];
+  const resPrev = atual.rPrev - atual.dPrev;
+  return `<div class="card topo mb">
+      <div><div class="lbl2">RESULTADO PREVISTO PARA O MÊS</div><div class="big ${resPrev < 0 ? "neg" : ""}">${R$(resPrev)}</div>
+        <div class="grid g2" style="margin-top:10px">
+          <div><div class="lbl2">RECEBIMENTOS</div>${barraProg(atual.rReal, atual.rPrev, "var(--rec)")}${linhaKV("Recebido:", R$(atual.rReal))}${linhaKV("Falta:", R$(atual.rPrev - atual.rReal))}${linhaKV("Previsto:", R$(atual.rPrev), "muted")}</div>
+          <div><div class="lbl2">DESPESAS</div>${barraProg(atual.dReal, atual.dPrev, "var(--desp)")}${linhaKV("Pago:", R$(atual.dReal))}${linhaKV("Falta:", R$(atual.dPrev - atual.dReal))}${linhaKV("Previsto:", R$(atual.dPrev), "muted")}</div></div></div>
+      <div class="mini">${fluxoSemestre(tres)}</div>
+      <div><div class="lbl2">CONTA</div>${seletorConta()}<div class="big pos" style="margin-top:6px">${R$(saldoTotal())}</div>
+        <div class="small muted">Previsão de fechamento do mês: ${R$(saldoTotal() + (atual.rPrev - atual.rReal) - (atual.dPrev - atual.dReal))}</div>
+        <div class="actions" style="margin-top:10px"><a class="btn sm" href="#/financeiro/importar">Importar extrato OFX</a><a class="btn sm" href="#/financeiro/importar">Importar movimentações</a></div></div>
+    </div>
+    <div class="bar mb">${seletorMes()}<div class="tabs">${[["entrada", "Recebimentos"], ["saida", "Despesas"], ["transf", "Transferências"]].map(([v, l]) => `<button class="${fAba === v ? "on" : ""}" data-act="f-aba" data-v="${v}">${l}</button>`).join("")}</div></div>
+    <div class="actions mb">
+      <select class="input" data-act="f-status" aria-label="Status de pagamento">${[["todos", "Status: Todos"], ["pagos", "Status: Pagos"], ["pendentes", "Status: Não pagos"]].map(([v, l]) => `<option value="${v}" ${fStatus === v ? "selected" : ""}>${l}</option>`).join("")}</select>
+      <input class="input" id="f-busca" style="flex:1;min-width:180px;width:auto" placeholder="Pesquisar na tabela" value="${esc(fBusca)}">
+      <select class="input" data-act="f-centro" aria-label="Tags / Centro de custo"><option value="">Tags / Centro de custo</option>${db.centros.map((c) => `<option value="${c.id}" ${fCentro === c.id ? "selected" : ""}>Centro: ${esc(c.nome)}</option>`).join("")}${db.tags.map((t) => `<option value="${t.id}" ${fCentro === t.id ? "selected" : ""}>Tag: ${esc(t.nome)}</option>`).join("")}</select>
+    </div>
+    <div class="card flush">
+      <table class="trans"><thead><tr><th>Data</th><th>Descrição</th><th>${rotulo[0]}</th><th class="num">Valor</th><th>Categoria</th><th>Pagamento</th><th>Pago?</th></tr></thead><tbody>
+        <tr><td colspan="7"><button class="addrow" data-act="novo-lanc" data-tipo="${fAba}">+ Adicionar ${rotulo[1]}</button></td></tr>
+        ${ls.map((l) => `<tr class="clic" data-act="editar-lanc" data-id="${l.id}"><td><b>${dataBR(l.data).slice(0, 5)}</b></td>
+          <td>${atrasado(l) ? `<span class="alerta" title="Em atraso">!</span> ` : ""}${esc(l.descricao || catNome(l))} ${l.parcela ? `<span class="tagp">${l.parcela} mensal</span>` : ""}</td>
+          <td class="ink2">${l.tipo === "transf" ? `${esc(conta(l.contaId)?.nome)} → ${esc(conta(l.contaDestinoId)?.nome)}` : esc(pessoaNome(l.clienteId)).toUpperCase()}</td>
+          <td class="num ${l.tipo === "entrada" ? "pos" : l.tipo === "saida" ? "neg" : ""}"><b>${R$(l.valor)}</b></td>
+          <td class="small">${esc(catNome(l))}</td><td class="small">${l.parcela ? "Parcelado" : "À vista"}</td><td>${toggle(l)}</td></tr>`).join("")}
+        ${ls.length ? "" : `<tr><td colspan="7" class="empty">Nenhuma movimentação neste mês.</td></tr>`}
+      </tbody></table>
+      <div class="totais"><span>Total <b>${R$(soma(total))}</b></span><span>${rotulo[2]} <b>${R$(soma(total.filter((l) => l.pago)))}</b></span><span>${rotulo[3]} <b>${R$(soma(total.filter((l) => !l.pago)))}</b></span></div>
+    </div>`;
+}
+
+/* ---------- Relatórios ---------- */
+const RELATORIOS = [
+  ["DESPESAS", [["desp-descricao", "Por Descrição"], ["desp-dia", "Por Dia"], ["desp-tipo", "Por Tipo"], ["desp-categoria", "Por Categoria"], ["desp-tags", "Por Tags"], ["desp-centro", "Por Centro de Custo"], ["desp-contato", "Pago a..."]]],
+  ["RECEBIMENTOS", [["rec-descricao", "Por Descrição"], ["rec-dia", "Por Dia"], ["rec-categoria", "Por Categoria"], ["rec-tags", "Por Tags"], ["rec-centro", "Por Centro de Custo"], ["rec-contato", "Recebido de..."]]],
+  ["FLUXO DE CAIXA", [["extrato", "Extrato"], ["desp-rec", "Despesas/Receitas"], ["historico", "Histórico"], ["dre", "Demonstrativo (DRE)"], ["perf-mensal", "Performance Mensal"], ["perf-anual", "Performance Anual"], ["saldos", "Saldos"]]],
+];
+function lancPeriodo(de, ate) {
+  return db.lancamentos.filter((l) => l.data >= de && l.data <= ate && filtraConta(l) && ((l.pago && fRelPagos) || (!l.pago && fRelPend)));
+}
+function agrupar(ls, chave) {
+  const m = new Map();
+  for (const l of ls) for (const k of [].concat(chave(l))) { const o = m.get(k) || { nome: k, valor: 0, qtd: 0 }; o.valor += l.valor; o.qtd++; m.set(k, o); }
+  return [...m.values()].sort((a, b) => b.valor - a.valor);
+}
+function tabelaGrupo(grupos, titulo) {
+  const tot = grupos.reduce((t, g) => t + g.valor, 0);
+  return `<table><thead><tr><th>${titulo}</th><th class="num">Qtde</th><th class="num">Total</th><th class="num">%</th></tr></thead><tbody>${grupos.map((g) => `<tr><td>${esc(g.nome)}</td><td class="num">${g.qtd}</td><td class="num">${R$(g.valor)}</td><td class="num">${pct(g.valor, tot)}%</td></tr>`).join("")}
+    <tr class="t"><td><b>Total</b></td><td class="num"><b>${grupos.reduce((t, g) => t + g.qtd, 0)}</b></td><td class="num"><b>${R$(tot)}</b></td><td class="num">100%</td></tr></tbody></table>`;
+}
+function relatorio() {
+  const ls = lancPeriodo(fRelDe, fRelAte), D = ls.filter(ehDesp), Rc = ls.filter(ehReceb);
+  const chaves = {
+    descricao: (l) => l.descricao || catNome(l), dia: (l) => dataBR(l.data), tipo: (l) => GRUPOS[catGrupo(l)], categoria: catNome,
+    tags: (l) => (l.tags.length ? l.tags.map((t) => db.tags.find((x) => x.id === t)?.nome || "?") : "Sem tag"),
+    centro: (l) => db.centros.find((c) => c.id === l.centroId)?.nome || "Sem centro de custo", contato: (l) => pessoaNome(l.clienteId),
+  };
+  const titulos = { descricao: "Descrição", dia: "Dia", tipo: "Tipo", categoria: "Categoria", tags: "Tag", centro: "Centro de custo", contato: "Contato" };
+  const [lado, k] = fRel.split("-");
+  if ((lado === "desp" || lado === "rec") && chaves[k]) {
+    const base = lado === "desp" ? D : Rc, gs = agrupar(base, chaves[k]);
+    const nomeRel = `${lado === "desp" ? "DESPESAS" : "RECEBIMENTOS"} POR ${titulos[k].toUpperCase()}`;
+    return `<h2 class="relt">${nomeRel}</h2>${k === "dia" ? barrasH(gs.slice().sort((a, b) => a.nome.slice(3, 5) + a.nome.slice(0, 2) > b.nome.slice(3, 5) + b.nome.slice(0, 2) ? 1 : -1), { moeda: true, cor: lado === "desp" ? "var(--desp)" : "var(--rec)" }) : pizza(gs)}${tabelaGrupo(gs, titulos[k])}`;
+  }
+  if (fRel === "extrato") {
+    const pagos = db.lancamentos.filter((l) => l.pago && filtraConta(l) && (l.pagoEm || l.data) >= fRelDe && (l.pagoEm || l.data) <= fRelAte).sort((a, b) => (a.pagoEm || a.data).localeCompare(b.pagoEm || b.data));
+    let saldo = saldoTotal(addDias(fRelDe, -1));
+    const sinal = (l) => (l.tipo === "entrada" ? 1 : l.tipo === "saida" ? -1 : fConta === "todas" ? 0 : l.contaDestinoId === fConta ? 1 : -1);
+    return `<h2 class="relt">EXTRATO</h2><table><thead><tr><th>Data</th><th>Descrição</th><th>Contato</th><th class="num">Valor</th><th class="num">Saldo</th></tr></thead><tbody>
+      <tr><td colspan="4" class="muted">Saldo anterior</td><td class="num">${R$(saldo)}</td></tr>
+      ${pagos.map((l) => { saldo += sinal(l) * l.valor; return `<tr><td>${dataBR(l.pagoEm || l.data)}</td><td>${esc(l.descricao || catNome(l))}</td><td class="ink2">${esc(pessoaNome(l.clienteId))}</td><td class="num ${sinal(l) > 0 ? "pos" : sinal(l) < 0 ? "neg" : ""}">${sinal(l) < 0 ? "−" : ""}${R$(l.valor)}</td><td class="num">${R$(saldo)}</td></tr>`; }).join("")}</tbody></table>`;
+  }
+  if (fRel === "desp-rec") {
+    const lista = (xs, cls) => `<table><tbody>${xs.sort((a, b) => a.data.localeCompare(b.data)).map((l) => `<tr><td>${dataBR(l.data)}</td><td>${esc(l.descricao || catNome(l))}</td><td class="num ${cls}">${R$(l.valor)}</td></tr>`).join("")}<tr class="t"><td colspan="2"><b>Total</b></td><td class="num"><b>${R$(soma(xs))}</b></td></tr></tbody></table>`;
+    return `<h2 class="relt">DESPESAS / RECEITAS</h2><div class="grid g2"><div><h2>Receitas</h2>${lista(Rc, "pos")}</div><div><h2>Despesas</h2>${lista(D, "neg")}</div></div>`;
+  }
+  const mesesDoPeriodo = () => { const r = []; for (let ym = fRelDe.slice(0, 7); ym <= fRelAte.slice(0, 7); ym = ymAdd(ym, 1)) r.push(ym); return r; };
+  if (fRel === "historico") {
+    const ms = mesesDoPeriodo();
+    const linhas = ms.map((ym) => { const x = ls.filter((l) => noMes(l, ym)); const r = soma(x.filter(ehReceb)), d = soma(x.filter(ehDesp)); return { ym, r, d }; });
+    return `<h2 class="relt">HISTÓRICO</h2>${fluxoSemestre(linhas)}<table><thead><tr><th>Mês</th><th class="num">Receitas</th><th class="num">Despesas</th><th class="num">Resultado</th></tr></thead><tbody>${linhas.map((x) => `<tr><td>${ymNome(x.ym)}</td><td class="num pos">${R$(x.r)}</td><td class="num neg">${R$(x.d)}</td><td class="num ${x.r - x.d < 0 ? "neg" : ""}">${R$(x.r - x.d)}</td></tr>`).join("")}</tbody></table>`;
+  }
+  if (fRel === "dre") {
+    const ms = mesesDoPeriodo();
+    const linha = (ym) => { const x = ym ? ls.filter((l) => noMes(l, ym)) : ls; const g = (gr) => soma(x.filter((l) => ehDesp(l) && catGrupo(l) === gr)); const r = soma(x.filter(ehReceb)); return [r, g("impostos"), r - g("impostos"), g("variavel"), r - g("impostos") - g("variavel"), g("fixa"), g("pessoas"), r - g("impostos") - g("variavel") - g("fixa") - g("pessoas")]; };
+    const nomes = ["Receita Bruta", "(−) Impostos", "LUCRO BRUTO", "(−) Desp. Variáveis", "LUCRO OPERACIONAL", "(−) Desp. Fixas", "(−) Gastos com Pessoal", "LUCRO LÍQUIDO"];
+    const cols = ms.map(linha), tot = linha(null);
+    return `<h2 class="relt">DEMONSTRATIVO DE RESULTADOS (DRE)</h2><div style="overflow-x:auto"><table class="dre"><thead><tr><th></th>${ms.map((ym) => `<th class="num">${ymNome(ym)}</th>`).join("")}<th class="num">Total</th></tr></thead><tbody>
+      ${nomes.map((n, i) => `<tr class="${[2, 4, 7].includes(i) ? "t" : ""}"><td>${n}</td>${cols.map((c) => `<td class="num ${c[i] < 0 ? "neg" : ""}">${R$(c[i])}</td>`).join("")}<td class="num"><b>${R$(tot[i])}</b></td></tr>`).join("")}</tbody></table></div>`;
+  }
+  if (fRel === "perf-mensal" || fRel === "perf-anual") {
+    const anual = fRel === "perf-anual";
+    const de = anual ? fMes.slice(0, 4) + "-01-01" : fMes + "-01", ate = anual ? fMes.slice(0, 4) + "-12-31" : addDias(addMeses(fMes + "-01", 1), -1);
+    const deA = anual ? Number(de.slice(0, 4)) - 1 + "-01-01" : addMeses(de, -1), ateA = anual ? Number(de.slice(0, 4)) - 1 + "-12-31" : addDias(de, -1);
+    const x = lancPeriodo(de, ate), y = lancPeriodo(deA, ateA);
+    const gx = soma(x.filter(ehDesp)), gy = soma(y.filter(ehDesp)), rx = soma(x.filter(ehReceb)), ry = soma(y.filter(ehReceb));
+    const top = (xs) => xs.slice().sort((a, b) => b.valor - a.valor).slice(0, 3).map((l) => `<div class="small">${esc(l.descricao || catNome(l))}<br><b class="${ehReceb(l) ? "pos" : "neg"}">${R$(l.valor)}</b></div>`).join("");
+    return `${anual ? "" : `<div class="actions" style="justify-content:center;margin-bottom:6px">${seletorMes()}</div>`}<h2 class="relt">PERFORMANCE ${anual ? "ANUAL · " + de.slice(0, 4) : "MENSAL · " + ymNome(de.slice(0, 7))}</h2>
+      <div class="grid g2 mb"><div class="perf"><p>OS <b>GASTOS</b> ${gx <= gy ? "REDUZIRAM" : "AUMENTARAM"} NO PERÍODO:</p><div class="big">${R$(Math.abs(gx - gy))}</div><p class="mt">AS <b>RECEITAS</b> ${rx >= ry ? "AUMENTARAM" : "REDUZIRAM"}:</p><div class="big">${R$(Math.abs(rx - ry))}</div></div>
+        <div class="grid g2"><div><div class="lbl2">MAIORES GASTOS</div>${top(x.filter(ehDesp))}</div><div><div class="lbl2">MAIORES RECEITAS</div>${top(x.filter(ehReceb))}</div></div></div>
+      <h2>Receitas por categoria e despesas por tipo</h2><div class="grid g2"><div>${pizza(agrupar(x.filter(ehReceb), catNome))}</div><div>${pizza(agrupar(x.filter(ehDesp), (l) => GRUPOS[catGrupo(l)]))}</div></div>`;
+  }
+  if (fRel === "saldos") {
+    return `<h2 class="relt">SALDOS</h2><table><thead><tr><th>Conta</th><th>Tipo</th><th class="num">Saldo inicial</th><th class="num">Saldo em ${dataBR(fRelAte)}</th><th class="num">Saldo hoje</th></tr></thead><tbody>${db.contas.map((c) => `<tr><td>${esc(c.nome)}</td><td class="ink2">${esc(c.tipo)}</td><td class="num">${R$(c.saldoInicial)}</td><td class="num">${R$(saldoConta(c.id, fRelAte))}</td><td class="num"><b>${R$(saldoConta(c.id))}</b></td></tr>`).join("")}
+      <tr class="t"><td colspan="3"><b>Total</b></td><td class="num"><b>${R$(db.contas.reduce((t, c) => t + saldoConta(c.id, fRelAte), 0))}</b></td><td class="num"><b>${R$(db.contas.reduce((t, c) => t + saldoConta(c.id), 0))}</b></td></tr></tbody></table>`;
+  }
+  return "";
+}
+function finRelatorios() {
+  return `<div class="rel"><aside class="card relmenu">${RELATORIOS.map(([g, itens]) => `<div class="lbl2">${g}</div>${itens.map(([id, n]) => `<button class="${fRel === id ? "on" : ""}" data-act="f-rel" data-v="${id}">${n}</button>`).join("")}`).join("")}</aside>
+    <div class="relbody"><div class="card mb"><div class="actions">
+      <label class="field"><span>De</span><input class="input" type="date" data-act="f-rel-de" value="${fRelDe}"></label>
+      <label class="field"><span>Até</span><input class="input" type="date" data-act="f-rel-ate" value="${fRelAte}"></label>
+      <div class="field"><span>Atalhos</span><div class="actions"><button class="btn sm" data-act="f-rel-per" data-v="mes">Este mês</button><button class="btn sm" data-act="f-rel-per" data-v="ano">Este ano</button><button class="btn sm" data-act="f-rel-per" data-v="12">Últimos 12 meses</button></div></div>
+      <label class="field"><span>Conta</span>${seletorConta()}</label>
+      <div class="field"><span>Incluir lançamentos</span><div class="actions"><label><input type="checkbox" data-act="f-rel-pagos" ${fRelPagos ? "checked" : ""}> Pagos</label><label><input type="checkbox" data-act="f-rel-pend" ${fRelPend ? "checked" : ""}> Não pagos</label></div></div>
+    </div></div>
+    <div class="card relcard"><div class="relhead"><div><b>${esc(db.empresa || "Renan Grolli Arquitetura")}</b><div class="small muted">${dataBR(fRelDe)} – ${dataBR(fRelAte)}</div></div><div class="small muted">Gerado em ${dataBR(HOJE)}</div></div>${relatorio()}</div></div></div>`;
+}
+
+/* ---------- Contatos ---------- */
+function faixas(lista) {
+  const f = { "mais de 60 dias": [], "de 30 a 60 dias": [], "até 30 dias": [] };
+  for (const l of lista) { const dias = Math.round((Date.parse(HOJE) - Date.parse(l.data)) / 864e5); f[dias > 60 ? "mais de 60 dias" : dias >= 30 ? "de 30 a 60 dias" : "até 30 dias"].push(l); }
+  return f;
+}
+function painelDevendo(titulo, lista, cor) {
+  const f = faixas(lista), tot = soma(lista);
+  return `<div class="card"><div class="lbl2" style="color:${cor}">${titulo}</div><div class="big">${R$(tot)}</div><div class="pbar" style="margin:8px 0 12px"><div style="width:100%;background:${cor};opacity:.35"></div></div>
+    <table><thead><tr><th>Vencido há</th><th class="num">Qtde</th><th class="num">Total</th></tr></thead><tbody>${Object.entries(f).map(([k, xs]) => `<tr><td>${k}</td><td class="num">${xs.length}</td><td class="num">${R$(soma(xs))}</td></tr>`).join("")}</tbody></table></div>`;
+}
+function finContatos() {
+  const todos = [...db.clientes.map((c) => ({ ...c, tipo: "Cliente" })), ...db.fornecedores];
+  const q = fCtBusca.toLowerCase();
+  const lista = todos.filter((c) => (fCtAba === "Todos" || c.tipo === fCtAba) && (!q || c.nome.toLowerCase().includes(q))).sort((a, b) => a.nome.localeCompare(b.nome));
+  const atr = db.lancamentos.filter(atrasado);
+  const sel = fCtSel && todos.find((c) => c.id === fCtSel);
+  const abas = ["Todos", "Cliente", "Fornecedor", "Funcionário"];
+  let det = "";
+  if (sel) {
+    const ls = db.lancamentos.filter((l) => l.clienteId === sel.id).sort((a, b) => b.data.localeCompare(a.data));
+    det = `<div class="card"><div class="bar"><h2 style="margin:0">${esc(sel.nome)} <span class="badge">${sel.tipo}</span></h2>${sel.tipo === "Cliente" ? `<a class="btn sm" href="#/cliente/${sel.id}">Abrir ficha do cliente</a>` : `<button class="btn sm" data-act="f-ct-edit" data-id="${sel.id}">Editar</button>`}</div>
+      <div class="grid g3" style="margin:12px 0">${tile("Recebido", R$(soma(ls.filter((l) => ehReceb(l) && l.pago))), "", "pos")}${tile("Pago", R$(soma(ls.filter((l) => ehDesp(l) && l.pago))), "", "neg")}${tile("Em aberto", R$(soma(ls.filter((l) => !l.pago))), `${ls.filter(atrasado).length} em atraso`)}</div>
+      ${ls.length ? `<table><tbody>${ls.slice(0, 40).map((l) => `<tr class="clic" data-act="editar-lanc" data-id="${l.id}"><td>${dataBR(l.data)}</td><td>${esc(l.descricao || catNome(l))}${l.parcela ? ` (${l.parcela})` : ""}</td><td class="num ${ehReceb(l) ? "pos" : "neg"}">${R$(l.valor)}</td><td>${situacaoLanc(l)}</td></tr>`).join("")}</tbody></table>` : `<p class="muted">Nenhuma movimentação com este contato.</p>`}</div>`;
+  }
+  return `<div class="grid ctgrid">
+    <div class="card ctlist"><div class="bar"><div><h2 style="margin:0">Lista de contatos</h2><p class="sub" style="margin:2px 0 0">${lista.length} encontrados</p></div><button class="btn pri sm" data-act="f-ct-novo">+ Criar novo</button></div>
+      <input class="input" id="f-ct-busca" placeholder="Pesquisar contatos por nome" value="${esc(fCtBusca)}" style="margin:8px 0">
+      <div class="tabs full">${abas.map((a) => `<button class="${fCtAba === a ? "on" : ""}" data-act="f-ct-aba" data-v="${a}">${{ Todos: "Todos", Cliente: "Clientes", Fornecedor: "Fornecedores", "Funcionário": "Funcionários" }[a]}</button>`).join("")}</div>
+      <ul class="cts">${lista.map((c) => `<li class="${fCtSel === c.id ? "on" : ""}" data-act="f-ct-sel" data-id="${c.id}"><span>${esc(c.nome).toUpperCase()}</span><span class="small muted">${c.tipo}</span></li>`).join("")}</ul></div>
+    <div class="col">
+      <div class="grid g2">${painelDevendo("Quem está me devendo?", atr.filter(ehReceb), "var(--rec)")}${painelDevendo("Quem estou devendo?", atr.filter(ehDesp), "var(--warn-bar)")}</div>
+      ${det || `<div class="card muted">Selecione um contato na lista para ver as movimentações dele.</div>`}
+    </div></div>`;
+}
+function formContato(c = {}) {
+  abrir(c.id ? "Editar contato" : "Novo contato", `<div class="form">
+    <div class="field full"><span>Tipo de contato</span><div class="chips">${TIPOS_CONTATO_FIN.map((t) => `<label class="chip"><input type="radio" name="tipo" value="${t}" ${(c.tipo || "Fornecedor") === t ? "checked" : ""}>${t}</label>`).join("")}</div></div>
+    ${campo("Nome / Razão social *", inp("nome", c.nome, "required"), true)}${campo("CPF / CNPJ", inp("documento", c.documento))}${campo("E-mail", inp("email", c.email, 'type="email"'))}
+    ${campo("Telefone / Celular", inp("telefone", c.telefone))}${campo("Cidade", inp("cidade", c.cidade))}
+    <p class="small muted full">Clientes cadastrados aqui também aparecem em Clientes, ligados às prospecções.</p></div>`, "f-contato", `data-id="${c.id || ""}"`);
+}
+
+/* ---------- Importar / Exportar ---------- */
+function finImportar() {
+  const it = (icone, t, d, act, extra = "") => `<div class="impitem"><span class="ico">${icone}</span><div style="flex:1"><b>${t}</b><div class="small muted">${d}</div></div>${extra || `<button class="btn sm" data-act="${act}">${EMBUTIDO ? "Copiar" : "Exportar"}</button>`}</div>`;
+  return `<div style="max-width:820px">
+    <div class="card mb"><h2>⇪ O que deseja importar?</h2>
+      ${it("▦", "Movimentações por planilha", "Arquivo .csv com as colunas: Data; Descrição; Valor; Tipo (Recebimento/Despesa); Categoria; Contato; Pago (Sim/Não).", "", `<label class="btn sm">Escolher arquivo<input type="file" accept=".csv,.txt" data-act="f-imp-csv" hidden></label>`)}
+      ${it("⌂", "Extrato bancário OFX", "Importe as movimentações do extrato OFX do seu banco. Entram como pagas, sem categoria, para você classificar.", "", `<label class="btn sm">Escolher arquivo<input type="file" accept=".ofx" data-act="f-imp-ofx" hidden></label>`)}
+      ${it("☺", "Contatos", "Arquivo .csv com as colunas: Nome; Tipo (Cliente/Fornecedor/Funcionário); CPF/CNPJ; E-mail; Telefone; Cidade.", "", `<label class="btn sm">Escolher arquivo<input type="file" accept=".csv,.txt" data-act="f-imp-ct" hidden></label>`)}
+      <p class="small muted" style="margin:10px 0 0">Para migrar do Zenply: em Importar / Exportar &gt; Transações, exporte a planilha, salve como CSV e importe aqui.</p></div>
+    <div class="card"><h2>⇩ O que deseja exportar?</h2>
+      ${it("☺", "Contatos", EMBUTIDO ? "Copia seus contatos para colar no Excel." : "Exporta seus contatos para uma planilha Excel.", "f-exp-ct")}
+      ${it("⇅", "Transações", EMBUTIDO ? "Copia todas as movimentações para colar no Excel." : "Exporta suas movimentações para uma planilha Excel.", "f-exp-tr")}</div></div>`;
+}
+function lerCSV(txt) {
+  const sep = (txt.split("\n")[0].match(/;/g) || []).length >= (txt.split("\n")[0].match(/,/g) || []).length ? ";" : ",";
+  return txt.replace(/^﻿/, "").split(/\r?\n/).filter((l) => l.trim()).map((l) => { const out = []; let cur = "", aspas = false; for (const ch of l) { if (ch === '"') aspas = !aspas; else if (ch === sep && !aspas) { out.push(cur.trim()); cur = ""; } else cur += ch; } out.push(cur.trim()); return out; });
+}
+const dataDe = (s) => { s = String(s || "").trim(); const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/); if (m) return `${m[3]}-${m[2]}-${m[1]}`; const n = s.match(/^(\d{4})(\d{2})(\d{2})/); if (n) return `${n[1]}-${n[2]}-${n[3]}`; return /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : null; };
+function acharCategoria(nome, tipo) {
+  if (!nome) return null; const n = nome.toUpperCase().trim();
+  const c = db.categorias.find((x) => x.nome === n && (tipo === "entrada" ? x.grupo === "receita" : x.grupo !== "receita"));
+  if (c) return c.id; const nova = { id: uid(), nome: n, grupo: tipo === "entrada" ? "receita" : "variavel" }; db.categorias.push(nova); return nova.id;
+}
+function acharContato(nome, tipo) {
+  if (!nome) return null; const n = nome.trim().toLowerCase();
+  const c = db.clientes.find((x) => x.nome.toLowerCase() === n) || db.fornecedores.find((x) => x.nome.toLowerCase() === n);
+  if (c) return c.id; const novo = { id: uid(), nome: nome.trim(), tipo: tipo === "entrada" ? "Fornecedor" : "Fornecedor", documento: "", email: "", telefone: "", cidade: "" };
+  if (tipo === "entrada") { const cl = { id: uid(), nome: nome.trim(), origem: "", telefone: "", cidade: "", email: "", documento: "", endereco: "", observacoes: "", criado: HOJE }; db.clientes.push(cl); return cl.id; }
+  db.fornecedores.push(novo); return novo.id;
+}
+const novoLanc = (o) => ({ id: uid(), categoriaId: null, contaId: fConta === "todas" ? db.contas[0].id : fConta, contaDestinoId: null, competencia: o.data.slice(0, 7), forma: "", documento: "", centroId: null, tags: [], obs: "", descricao: "", clienteId: null, prospeccaoId: null, parcela: null, pagoEm: o.pago ? o.data : null, ...o });
+function importarArquivo(input, tipo) {
+  const arq = input.files[0]; if (!arq) return;
+  const fr = new FileReader();
+  fr.onload = () => {
+    const txt = String(fr.result); let n = 0;
+    if (tipo === "ofx") {
+      for (const bloco of txt.split(/<STMTTRN>/i).slice(1)) {
+        const campoO = (t) => (bloco.match(new RegExp(`<${t}>([^<\\r\\n]*)`, "i")) || [])[1]?.trim();
+        const v = Number(String(campoO("TRNAMT") || "0").replace(",", ".")), data = dataDe(campoO("DTPOSTED"));
+        if (!v || !data) continue;
+        db.lancamentos.push(novoLanc({ tipo: v > 0 ? "entrada" : "saida", valor: Math.abs(v), data, pago: true, descricao: (campoO("MEMO") || campoO("NAME") || "MOVIMENTAÇÃO OFX").toUpperCase(), documento: campoO("FITID") || "" })); n++;
+      }
+    } else if (tipo === "csv") {
+      const linhas = lerCSV(txt); const cab = linhas[0].map((c) => c.toLowerCase());
+      const ix = (nome) => cab.findIndex((c) => c.startsWith(nome));
+      for (const l of linhas.slice(1)) {
+        const data = dataDe(l[ix("data")]), valorBruto = parseValor(l[ix("valor")]); if (!data || isNaN(valorBruto)) continue;
+        const tCol = (l[ix("tipo")] || "").toLowerCase(), t = tCol.startsWith("rec") || tCol.startsWith("ent") ? "entrada" : tCol ? "saida" : valorBruto >= 0 ? "entrada" : "saida";
+        db.lancamentos.push(novoLanc({ tipo: t, valor: Math.abs(valorBruto), data, pago: /^s/i.test(l[ix("pago")] || ""), descricao: (l[ix("descri")] || "").toUpperCase(), categoriaId: acharCategoria(l[ix("categ")], t), clienteId: acharContato(l[ix("contato")], t) })); n++;
+      }
+    } else {
+      const linhas = lerCSV(txt);
+      for (const l of linhas.slice(1)) {
+        if (!l[0]) continue; const tp = TIPOS_CONTATO_FIN.find((x) => x.toLowerCase() === (l[1] || "").toLowerCase()) || "Fornecedor";
+        if (tp === "Cliente") db.clientes.push({ id: uid(), nome: l[0], documento: l[2] || "", email: l[3] || "", telefone: l[4] || "", cidade: l[5] || "", origem: "", endereco: "", observacoes: "", criado: HOJE });
+        else db.fornecedores.push({ id: uid(), nome: l[0], tipo: tp, documento: l[2] || "", email: l[3] || "", telefone: l[4] || "", cidade: l[5] || "" });
+        n++;
+      }
+    }
+    salvar(); render(); toast(n ? `${n} registro(s) importado(s)` : "Nenhum registro reconhecido no arquivo");
+  };
+  fr.readAsText(arq, "utf-8");
+}
+
+/* ---------- Configurações ---------- */
+function finConfig() {
+  const menu = [["contas", "Contas bancárias"], ["categorias", "Categorias"], ["centros", "Centros de custo"], ["tags", "Marcadores (tags)"]];
+  let corpo = "";
+  if (fCfg === "contas") {
+    corpo = `<div class="bar"><h2 style="margin:0">Contas bancárias</h2><button class="btn pri sm" data-act="f-conta-nova">Nova conta</button></div>
+      <table style="margin-top:10px"><thead><tr><th>Conta</th><th class="num">Saldo inicial</th><th>Tipo</th><th class="num">Saldo atual</th><th></th></tr></thead><tbody>${db.contas.map((c) => `<tr><td>${esc(c.nome)}${c.arquivada ? ' <span class="badge">arquivada</span>' : ""}</td><td class="num">${R$(c.saldoInicial)}</td><td class="ink2">${esc(c.tipo)}</td><td class="num"><b>${R$(saldoConta(c.id))}</b></td>
+        <td class="actions" style="flex-wrap:nowrap"><button class="btn sm" data-act="f-conta-edit" data-id="${c.id}">Editar</button><button class="btn sm" data-act="f-conta-arq" data-id="${c.id}">${c.arquivada ? "Reativar" : "Arquivar"}</button></td></tr>`).join("")}</tbody></table>`;
+  } else if (fCfg === "categorias") {
+    const lista = db.categorias.filter((c) => c.grupo === fCfgGrupo).sort((a, b) => a.nome.localeCompare(b.nome));
+    corpo = `<h2>Cadastrar Categoria</h2><form class="actions" data-form="f-cat"><input class="input" name="nome" style="flex:1;width:auto" placeholder="Adicione uma nova categoria de ${GRUPOS[fCfgGrupo]}" required><button class="btn pri">Salvar</button></form>
+      <div class="tabs" style="margin:14px 0">${Object.entries(GRUPOS).map(([k, n]) => `<button class="${fCfgGrupo === k ? "on" : ""}" data-act="f-cfg-grupo" data-v="${k}">${n}</button>`).join("")}</div>
+      <table><thead><tr><th style="width:90px">Ações</th><th>Categoria</th><th class="num">Lançamentos</th></tr></thead><tbody>${lista.map((c) => `<tr><td><button class="btn sm" data-act="f-cat-ren" data-id="${c.id}" aria-label="Renomear">✎</button> <button class="btn sm danger" data-act="f-cat-del" data-id="${c.id}" aria-label="Excluir">×</button></td><td>${esc(c.nome)}</td><td class="num">${db.lancamentos.filter((l) => l.categoriaId === c.id).length}</td></tr>`).join("")}</tbody></table>`;
+  } else {
+    const chave = fCfg, nome = fCfg === "centros" ? "Centro de Custo" : "Tag";
+    corpo = `<h2>Cadastrar ${nome}</h2><form class="actions" data-form="f-${chave}"><input class="input" name="nome" style="flex:1;width:auto" placeholder="Descrição" required><button class="btn pri">Salvar</button></form>
+      <table style="margin-top:12px"><thead><tr><th style="width:60px">Ações</th><th>Descrição</th></tr></thead><tbody>${db[chave].length ? db[chave].map((x) => `<tr><td><button class="btn sm danger" data-act="f-item-del" data-k="${chave}" data-id="${x.id}" aria-label="Excluir">×</button></td><td>${esc(x.nome)}</td></tr>`).join("") : `<tr><td colspan="2" class="empty">Nenhum registro encontrado.</td></tr>`}</tbody></table>`;
+  }
+  return `<div class="rel"><aside class="card relmenu"><div class="lbl2">SOBRE A EMPRESA</div>${menu.map(([k, n]) => `<button class="${fCfg === k ? "on" : ""}" data-act="f-cfg" data-v="${k}">${n}</button>`).join("")}</aside><div class="relbody card">${corpo}</div></div>`;
+}
+function formConta(c = {}) {
+  abrir(c.id ? "Editar conta" : "Nova conta", `<div class="form">${campo("Nome da conta *", inp("nome", c.nome, "required"), true)}${campo("Saldo inicial (R$)", inp("saldo", c.saldoInicial != null ? String(c.saldoInicial).replace(".", ",") : "0,00", 'inputmode="decimal"'))}
+    ${campo("Tipo", `<select class="input" name="tipo">${opts(TIPOS_CONTA, c.tipo || "Conta Corrente")}</select>`)}</div>`, "f-conta", `data-id="${c.id || ""}"`);
+}
+
+/* ---------- formulário de transação ---------- */
+function opcoesCategoria(tipo, atual) {
+  const grupos = tipo === "entrada" ? ["receita"] : GRUPOS_DESP;
+  return `<option value="">Aplicar a categoria...</option>` + grupos.map((g) => `<optgroup label="${GRUPOS[g]}">${db.categorias.filter((c) => c.grupo === g).sort((a, b) => a.nome.localeCompare(b.nome)).map((c) => `<option value="${c.id}" ${c.id === atual ? "selected" : ""}>${esc(c.nome)}</option>`).join("")}</optgroup>`).join("");
+}
+function opcoesPessoa(atual) {
+  const g = (rot, xs) => `<optgroup label="${rot}">${xs.slice().sort((a, b) => a.nome.localeCompare(b.nome)).map((c) => `<option value="${c.id}" ${c.id === atual ? "selected" : ""}>${esc(c.nome)}</option>`).join("")}</optgroup>`;
+  return `<option value="">Selecione...</option>${g("Clientes", db.clientes)}${g("Fornecedores", db.fornecedores.filter((f) => f.tipo === "Fornecedor"))}${g("Funcionários", db.fornecedores.filter((f) => f.tipo === "Funcionário"))}`;
+}
+const opcoesProjeto = (clienteId, atual) => (cliente(clienteId) ? opts(db.prospeccoes.filter((p) => p.clienteId === clienteId).map((p) => [p.id, p.titulo]), atual, "Nenhum") : `<option value="">Só para clientes</option>`);
+function formLanc(l = {}) {
+  const tipo = l.tipo || "entrada", novo = !l.id;
+  const contas = db.contas.filter((c) => !c.arquivada || c.id === l.contaId).map((c) => [c.id, c.nome]);
+  abrir(novo ? { entrada: "Novo recebimento", saida: "Nova despesa", transf: "Nova transferência" }[tipo] : "Detalhes da transação", `<div class="form">
+    <div class="field full"><span>Tipo</span><div class="chips">${[["entrada", "Recebimento"], ["saida", "Despesa"], ["transf", "Transferência"]].map(([v, r]) => `<label class="chip"><input type="radio" name="tipo" value="${v}" ${tipo === v ? "checked" : ""} data-act="tipo-lanc">${r}</label>`).join("")}</div></div>
+    ${campo("Data / vencimento *", inp("data", l.data || (fMes === HOJE.slice(0, 7) ? HOJE : fMes + "-01"), 'type="date" required'))}
+    ${campo("Valor *", inp("valor", l.valor != null ? String(l.valor).replace(".", ",") : "", 'inputmode="decimal" placeholder="0,00" required'))}
+    ${campo("Descrição", inp("descricao", l.descricao, 'placeholder="Ex.: PROJETO ARQUITETÔNICO - NOME DO CLIENTE"'), true)}
+    <label class="field" data-show-t="entrada saida"><span>${tipo === "saida" ? "Pago a" : "Recebido de"}</span><select class="input" name="clienteId" data-act="cliente-lanc">${opcoesPessoa(l.clienteId)}</select></label>
+    <label class="field" data-show-t="entrada saida"><span>Categoria</span><select class="input" name="categoriaId" id="sel-cat">${opcoesCategoria(tipo, l.categoriaId)}</select></label>
+    ${campo(tipo === "transf" ? "Conta de origem" : "Conta bancária", `<select class="input" name="contaId">${opts(contas, l.contaId || (fConta !== "todas" ? fConta : db.contas[0]?.id))}</select>`)}
+    <label class="field" data-show-t="transf"><span>Conta de destino</span><select class="input" name="contaDestinoId">${opts(contas, l.contaDestinoId, "Selecione...")}</select></label>
+    <div class="field"><span>Pago?</span><label style="display:flex;gap:8px;align-items:center;padding:8px 0"><input type="checkbox" name="pago" ${l.pago ? "checked" : ""}> Já ${tipo === "entrada" ? "recebido" : "pago"}, em</label>${inp("pagoEm", l.pagoEm || HOJE, 'type="date" aria-label="Data do pagamento"')}</div>
+    ${campo("Competência", inp("competencia", l.competencia || "", 'type="month"'))}
+    ${campo("Forma de pagamento", `<select class="input" name="forma">${opts([...FORMAS, "Débito automático"], l.forma, "Selecione...")}</select>`)}
+    ${campo("Número de documento / Nosso número", inp("documento", l.documento))}
+    ${campo("Centro de custo", `<select class="input" name="centroId">${opts(db.centros.map((c) => [c.id, c.nome]), l.centroId, "Selecione...")}</select>`)}
+    <label class="field" data-show-t="entrada saida"><span>Projeto (opcional)</span><select class="input" name="prospeccaoId">${opcoesProjeto(l.clienteId, l.prospeccaoId)}</select></label>
+    <div class="field full"><span>Tags</span><div class="chips">${db.tags.length ? db.tags.map((t) => `<label class="chip"><input type="checkbox" name="tags" value="${t.id}" ${(l.tags || []).includes(t.id) ? "checked" : ""}>${esc(t.nome)}</label>`).join("") : `<span class="small muted">Cadastre tags em Configurações.</span>`}</div></div>
+    ${novo ? `<div class="field full" data-show-t="entrada saida"><span>Repetição</span><div class="actions"><select class="input" name="repeticao"><option value="">Não repetir (à vista)</option><option value="parcelado">Parcelado: dividir o valor em</option><option value="mensal">Fixo mensal: repetir o valor por</option></select><input class="input" type="number" name="vezes" min="2" max="120" value="2" style="width:80px"><span class="small muted">vezes / meses</span></div></div>` : l.parcela ? `<p class="small muted full">Parcela ${l.parcela}.</p>` : ""}
+    ${campo("Observações", `<textarea class="input" name="obs" rows="2">${esc(l.obs)}</textarea>`, true)}
+  </div>`, "lanc", `data-id="${l.id || ""}"`);
+  if (l.id) dlg.querySelector(".df").insertAdjacentHTML("afterbegin", `<button type="button" class="btn danger" style="margin-right:auto" data-act="del-lanc" data-id="${l.id}">Excluir</button>`);
+  mostrarPorTipo();
+}
+function mostrarPorTipo() {
+  const t = dlg.querySelector('[name="tipo"]:checked')?.value;
+  dlg.querySelectorAll("[data-show-t]").forEach((el) => (el.hidden = !el.dataset.showT.split(" ").includes(t)));
+}
+
+/* ---------- página e ações do financeiro ---------- */
+function pgFinanceiro(sub = "dashboard") {
+  if (!sessao.admin) return `<p class="empty">Acesso restrito.</p>`;
+  if (!finLiberado()) return `<form class="card lockbox" data-form="desbloquear">
+    <div><h1>Financeiro</h1><p class="muted" style="margin:4px 0 0">Área restrita. Digite sua senha para abrir. Ela fica liberada por 30 minutos.</p></div>
+    <label class="field"><span>Senha</span><input class="input" type="password" name="senha" autofocus required></label>
+    <div class="err" id="err-fin"></div><button class="btn pri" style="justify-content:center">Abrir financeiro</button>
+</form>`;
+  const paginas = { dashboard: finDashboard, transacoes: finTransacoes, relatorios: finRelatorios, contatos: finContatos, importar: finImportar, configuracoes: finConfig };
+  return moldura(sub, (paginas[sub] || finDashboard)());
+}
+function exportarFin(tipo) {
+  if (tipo === "ct") baixarCSV("contatos", ["Nome", "Tipo", "CPF/CNPJ", "E-mail", "Telefone", "Cidade"], [...db.clientes.map((c) => [c.nome, "Cliente", c.documento, c.email, c.telefone, c.cidade]), ...db.fornecedores.map((c) => [c.nome, c.tipo, c.documento, c.email, c.telefone, c.cidade])]);
+  else baixarCSV("transacoes", ["Data", "Descrição", "Valor", "Tipo", "Categoria", "Grupo", "Contato", "Pago", "Pago em", "Conta", "Competência", "Forma", "Documento", "Centro de custo", "Parcela"],
+    db.lancamentos.slice().sort((a, b) => a.data.localeCompare(b.data)).map((l) => [dataBR(l.data), l.descricao, l.valor, { entrada: "Recebimento", saida: "Despesa", transf: "Transferência" }[l.tipo], catNome(l), l.tipo === "transf" ? "" : GRUPOS[catGrupo(l)], pessoaNome(l.clienteId), l.pago ? "Sim" : "Não", l.pagoEm ? dataBR(l.pagoEm) : "", conta(l.contaId)?.nome, l.competencia, l.forma, l.documento, db.centros.find((c) => c.id === l.centroId)?.nome, l.parcela]));
+}
+document.addEventListener("click", (e) => {
+  const el = e.target.closest("[data-act]"); if (!el) return;
+  const { act, id, v } = el.dataset;
+  if (el.tagName === "INPUT" || el.tagName === "SELECT") { if (act === "tipo-lanc") { $("#sel-cat", dlg).innerHTML = opcoesCategoria(el.value, null); mostrarPorTipo(); } return; }
+  const A = {
+    bloquear: () => { finAte = 0; guardarSessao(); ir("#/painel"); },
+    "novo-lanc": () => formLanc({ tipo: el.dataset.tipo || "entrada", clienteId: el.dataset.cliente || null, prospeccaoId: el.dataset.prosp || null }),
+    "editar-lanc": () => { if (finLiberado()) formLanc(db.lancamentos.find((l) => l.id === id)); },
+    "del-lanc": () => perguntar("Excluir este lançamento?", "Excluir", () => { db.lancamentos = db.lancamentos.filter((l) => l.id !== id); salvar(); render(); }),
+    "f-pago": () => { const l = db.lancamentos.find((z) => z.id === id); l.pago = !l.pago; l.pagoEm = l.pago ? HOJE : null; salvar(); render(); toast(l.pago ? (l.tipo === "entrada" ? "Marcado como recebido" : "Marcado como pago") : "Marcado como não pago"); },
+    "f-mes": () => { fMes = ymAdd(fMes, Number(v)); fDia = fMes === HOJE.slice(0, 7) ? HOJE : fMes + "-01"; render(); },
+    "f-dia": () => { fDia = v; render(); },
+    "f-aba": () => { fAba = v; render(); },
+    "f-rel": () => { fRel = v; render(); },
+    "f-rel-per": () => { if (v === "mes") { fRelDe = fMes + "-01"; fRelAte = addDias(addMeses(fRelDe, 1), -1); } else if (v === "ano") { fRelDe = fMes.slice(0, 4) + "-01-01"; fRelAte = fMes.slice(0, 4) + "-12-31"; } else { fRelAte = addDias(addMeses(HOJE.slice(0, 8) + "01", 1), -1); fRelDe = addMeses(HOJE.slice(0, 8) + "01", -11); } render(); },
+    "f-ct-aba": () => { fCtAba = v; render(); },
+    "f-ct-sel": () => { fCtSel = id; render(); },
+    "f-ct-novo": () => formContato(),
+    "f-ct-edit": () => formContato(db.fornecedores.find((f) => f.id === id)),
+    "f-exp-ct": () => exportarFin("ct"),
+    "f-exp-tr": () => exportarFin("tr"),
+    "f-cfg": () => { fCfg = v; render(); },
+    "f-cfg-grupo": () => { fCfgGrupo = v; render(); },
+    "f-cat-del": () => { const n = db.lancamentos.filter((l) => l.categoriaId === id).length; perguntar(n ? `Esta categoria tem ${n} lançamento(s). Eles ficarão sem categoria. Excluir mesmo assim?` : "Excluir esta categoria?", "Excluir", () => { db.categorias = db.categorias.filter((c) => c.id !== id); db.lancamentos.forEach((l) => { if (l.categoriaId === id) l.categoriaId = null; }); salvar(); render(); }); },
+    "f-cat-ren": () => { const c = fcat(id); abrir("Editar categoria", `<div class="form">${campo("Descrição *", inp("nome", c.nome, "required"), true)}${campo("Tipo", `<select class="input" name="grupo">${opts(Object.entries(GRUPOS), c.grupo)}</select>`)}</div>`, "f-cat-edit", `data-id="${id}"`); },
+    "f-item-del": () => { const k = el.dataset.k; db[k] = db[k].filter((x) => x.id !== id); db.lancamentos.forEach((l) => { if (l.centroId === id) l.centroId = null; l.tags = l.tags.filter((t) => t !== id); }); salvar(); render(); },
+    "f-conta-nova": () => formConta(),
+    "f-conta-edit": () => formConta(conta(id)),
+    "f-conta-arq": () => { const c = conta(id); c.arquivada = !c.arquivada; if (fConta === id) fConta = "todas"; salvar(); render(); },
+  };
+  if (A[act]) { e.preventDefault(); e.stopImmediatePropagation(); A[act](); }
+}, true);
+document.addEventListener("change", (e) => {
+  const el = e.target, act = el.dataset?.act; if (!act) return;
+  const A = {
+    "f-conta": () => { fConta = el.value; render(); },
+    "f-status": () => { fStatus = el.value; render(); },
+    "f-centro": () => { fCentro = el.value; render(); },
+    "f-rel-de": () => { fRelDe = el.value || fRelDe; render(); },
+    "f-rel-ate": () => { fRelAte = el.value || fRelAte; render(); },
+    "f-rel-pagos": () => { fRelPagos = el.checked; render(); },
+    "f-rel-pend": () => { fRelPend = el.checked; render(); },
+    "f-imp-csv": () => importarArquivo(el, "csv"),
+    "f-imp-ofx": () => importarArquivo(el, "ofx"),
+    "f-imp-ct": () => importarArquivo(el, "ct"),
+    "cliente-lanc": () => { dlg.querySelector('[name="prospeccaoId"]').innerHTML = opcoesProjeto(el.value, null); },
+  };
+  if (A[act]) A[act]();
+});
+document.addEventListener("input", (e) => {
+  const id = e.target.id; if (id !== "f-busca" && id !== "f-ct-busca") return;
+  if (id === "f-busca") fBusca = e.target.value; else fCtBusca = e.target.value;
+  const pos = e.target.selectionStart; render(); const b = document.getElementById(id); if (b) { b.focus(); b.setSelectionRange(pos, pos); }
+});
+document.addEventListener("submit", (e) => {
+  const f = e.target, nome = f.dataset.form; if (!nome || !(nome === "lanc" || nome.startsWith("f-"))) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  const fd = new FormData(f), v = (k) => String(fd.get(k) ?? "").trim();
+  const erro = (msg) => { const el = $("#err-dlg"); if (el) el.textContent = msg; };
+  if (nome === "lanc") {
+    const valor = parseValor(v("valor")), tipo = v("tipo");
+    if (!valor || isNaN(valor) || valor <= 0) return erro("Informe um valor maior que zero.");
+    if (tipo === "transf" && (!v("contaDestinoId") || v("contaDestinoId") === v("contaId"))) return erro("Escolha uma conta de destino diferente da origem.");
+    const pago = fd.get("pago") === "on";
+    const base = { tipo, valor, data: v("data"), descricao: v("descricao").toUpperCase(), pago, pagoEm: pago ? v("pagoEm") || v("data") : null, contaId: v("contaId"), contaDestinoId: tipo === "transf" ? v("contaDestinoId") : null,
+      categoriaId: tipo === "transf" ? null : v("categoriaId") || null, clienteId: tipo === "transf" ? null : v("clienteId") || null, prospeccaoId: tipo === "transf" ? null : v("prospeccaoId") || null,
+      competencia: v("competencia") || v("data").slice(0, 7), forma: v("forma"), documento: v("documento"), centroId: v("centroId") || null, tags: fd.getAll("tags").map(String), obs: v("obs") };
+    if (f.dataset.id) Object.assign(db.lancamentos.find((l) => l.id === f.dataset.id), base);
+    else {
+      const rep = v("repeticao"), n = rep ? Math.min(Math.max(Number(v("vezes")) || 2, 2), 120) : 1;
+      const parte = rep === "parcelado" ? Math.floor((valor / n) * 100) / 100 : valor;
+      for (let i = 0; i < n; i++) {
+        const d = addMeses(base.data, i);
+        db.lancamentos.push({ ...base, id: uid(), data: d, competencia: addMeses(base.competencia + "-01", i).slice(0, 7), valor: rep === "parcelado" && i === n - 1 ? Math.round((valor - parte * (n - 1)) * 100) / 100 : parte, parcela: n > 1 ? `${i + 1}/${n}` : null, pago: i === 0 && pago, pagoEm: i === 0 ? base.pagoEm : null });
+      }
+      toast(n > 1 ? `${n} lançamentos criados` : "Lançamento salvo");
+    }
+    salvar(); dlg.close(); return render();
+  }
+  if (nome === "f-contato") {
+    const dados = { nome: v("nome"), tipo: v("tipo"), documento: v("documento"), email: v("email"), telefone: v("telefone"), cidade: v("cidade") };
+    if (f.dataset.id) { const c = db.fornecedores.find((x) => x.id === f.dataset.id); if (dados.tipo === "Cliente") { db.fornecedores = db.fornecedores.filter((x) => x !== c); db.clientes.push({ ...c, ...dados, origem: "", endereco: "", observacoes: "", criado: HOJE }); } else Object.assign(c, dados); }
+    else if (dados.tipo === "Cliente") db.clientes.push({ id: uid(), ...dados, origem: "", endereco: "", observacoes: "", criado: HOJE });
+    else db.fornecedores.push({ id: uid(), ...dados });
+    salvar(); dlg.close(); toast("Contato salvo"); return render();
+  }
+  if (nome === "f-cat") { db.categorias.push({ id: uid(), nome: v("nome").toUpperCase(), grupo: fCfgGrupo }); salvar(); toast("Categoria cadastrada"); return render(); }
+  if (nome === "f-cat-edit") { Object.assign(fcat(f.dataset.id), { nome: v("nome").toUpperCase(), grupo: v("grupo") }); salvar(); dlg.close(); return render(); }
+  if (nome === "f-centros" || nome === "f-tags") { db[nome.slice(2)].push({ id: uid(), nome: v("nome") }); salvar(); return render(); }
+  if (nome === "f-conta") {
+    const dados = { nome: v("nome"), saldoInicial: parseValor(v("saldo")) || 0, tipo: v("tipo") };
+    if (f.dataset.id) Object.assign(conta(f.dataset.id), dados); else db.contas.push({ id: uid(), arquivada: false, ...dados });
+    salvar(); dlg.close(); return render();
+  }
+}, true);
+
+/* ===================== renderização ===================== */
+// Símbolo da logomarca redesenhado em vetor (quatro quartos de círculo), para poder animar o traço.
+const simbolo = () => `<svg class="simb" viewBox="-14 -14 828 828" fill="none" stroke="currentColor" stroke-width="22" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="M400 0H800A400 400 0 0 1 400 400Z"/><path pathLength="1" d="M400 400V200A400 400 0 0 0 0 600H54"/><path pathLength="1" d="M400 400V800H0A400 400 0 0 1 400 400Z"/><path pathLength="1" d="M400 400H800V800A400 400 0 0 1 400 400Z"/></svg>`;
+function telaLogin() {
+  return `<div class="entrada"><div class="arte anim" role="img" aria-label="Renan Grolli Arquitetura">${simbolo()}<span class="wm"></span><div class="lema">Gestão do escritório</div></div>
+  <div class="form-lado"><form class="card login" data-form="login">
+    <div><p class="eyebrow">Área interna</p><h1>Bem-vindo</h1><p class="muted" style="margin:8px 0 0">Entre com seu e-mail e senha.</p></div>
+    <label class="field"><span>E-mail</span><input class="input" name="email" type="email" required autocomplete="username"></label>
+    <label class="field"><span>Senha</span><input class="input" name="senha" type="password" required autocomplete="current-password"></label>
+    <div class="err" id="err-login"></div>
+    <button class="btn pri" style="justify-content:center">Entrar</button>
+    <a href="#" class="small muted" data-act="esqueci">Esqueci minha senha</a>
+  </form></div></div>`;
+}
+function render() {
+  tip.style.display = "none";
+  const root = $("#root");
+  if (recuperandoSenha) { root.innerHTML = telaNovaSenha(); return; }
+  if (carregando) { root.innerHTML = `<div class="center muted">Carregando…</div>`; return; }
+  if (!sessao) { root.innerHTML = telaLogin(); return; }
+  const [, rota = "painel", id] = ROTA.split("/");
+  const paginas = { painel: pgPainel, clientes: pgClientes, cliente: () => pgCliente(id), prospeccoes: pgProspeccoes, prospeccao: () => pgProspeccao(id), financeiro: () => pgFinanceiro(id), equipe: pgEquipe };
+  const ativo = { cliente: "clientes", prospeccao: "prospeccoes" }[rota] || rota;
+  const nav = [["painel", "Painel"], ["clientes", "Clientes"], ["prospeccoes", "Prospecções"], ...(sessao.admin ? [["financeiro", "Financeiro"], ["equipe", "Equipe"]] : [])];
+  root.innerHTML = `<div class="app"><aside class="side"><div class="brand">${simbolo()}<div><span class="wm" role="img" aria-label="Renan Grolli Arquitetura"></span><small>Gestão</small></div></div>
+    <nav class="nav">${nav.map(([r, l]) => `<a href="#/${r}" class="${ativo === r ? "on" : ""}">${l}${r === "financeiro" ? `<span class="lock">${finLiberado() ? "🔓" : "🔒"}</span>` : ""}</a>`).join("")}</nav>
+    <div class="me"><span class="small muted">${esc(sessao.nome)}${sessao.admin ? " · administrador" : ""}</span><button class="btn sm" data-act="sair">Sair</button><a href="#" class="small no-print" data-act="trocar-senha">Trocar minha senha</a></div></aside>
+    <main>${(paginas[rota] || pgPainel)()}</main></div>`;
+  const busca = $("#busca");
+  if (busca) busca.addEventListener("input", (e) => { buscaCliente = e.target.value; const pos = e.target.selectionStart; render(); const b = $("#busca"); b.focus(); b.setSelectionRange(pos, pos); });
+}
+let larguraAnterior = innerWidth;
+addEventListener("resize", () => { if (Math.abs(innerWidth - larguraAnterior) > 40 && !dlg.open) { larguraAnterior = innerWidth; render(); } });
+
+/* ===================== ações ===================== */
+let ROTA = "#/painel";
+const ir = (h) => { ROTA = h || "#/painel"; render(); scrollTo(0, 0); };
+// Confirmação dentro da página (sem a caixa do navegador)
+function perguntar(msg, rotulo, fn) {
+  dlg.innerHTML = `<div class="dh"><h2 style="margin:0">Confirmar</h2></div><div class="db">${esc(msg)}</div><div class="df"><button type="button" class="btn" data-act="fechar">Cancelar</button><button type="button" class="btn pri" id="confirmar">${esc(rotulo)}</button></div>`;
+  if (!dlg.open) dlg.showModal();
+  $("#confirmar", dlg).onclick = () => { dlg.close(); fn(); };
+}
+document.addEventListener("click", (e) => {
+  const link = e.target.closest('a[href^="#/"]');
+  if (link) { e.preventDefault(); return ir(link.getAttribute("href")); }
+  const el = e.target.closest("[data-act]"); if (!el || el.tagName === "SELECT" || el.tagName === "INPUT" && el.type !== "radio") return;
+  const { act, id } = el.dataset;
+  const acoes = {
+    sair: async () => { finAte = 0; guardarSessao(); if (canal) sb.removeChannel(canal); await sb.auth.signOut(); sessao = null; db = vazio(); espelho = new Map(); ir("#/painel"); },
+    esqueci: () => formEsqueci(),
+    "trocar-senha": () => abrir("Trocar minha senha", `<div class="form">${campo("Nova senha (mínimo 6 caracteres) *", `<input class="input" type="password" name="senha" minlength="6" required autocomplete="new-password">`, true)}</div>`, "trocar-senha"),
+    "eq-admin": () => alterarPerfil(id, { admin: el.dataset.v === "1" }),
+    "eq-ativo": () => alterarPerfil(id, { ativo: el.dataset.v === "1" }),
+    fechar: () => dlg.close(),
+    pdf: () => print(),
+    csv: () => exportar(el.dataset.tipo),
+    "novo-cliente": () => formCliente(),
+    "editar-cliente": () => formCliente(cliente(id)),
+    "del-cliente": () => perguntar("Excluir este cliente e todas as prospecções dele?", "Excluir", () => { const ps = db.prospeccoes.filter((p) => p.clienteId === id).map((p) => p.id); db.clientes = db.clientes.filter((c) => c.id !== id); db.prospeccoes = db.prospeccoes.filter((p) => p.clienteId !== id); db.etapas = db.etapas.filter((x) => !ps.includes(x.prospeccaoId)); db.contatos = db.contatos.filter((k) => k.clienteId !== id); db.lancamentos.forEach((l) => { if (l.clienteId === id) { l.clienteId = null; l.prospeccaoId = null; } }); salvar(); ir("#/clientes"); }),
+    "nova-prosp": () => formProsp({ clienteId: el.dataset.cliente }),
+    "editar-prosp": () => formProsp(prosp(id), !!el.dataset.cancelar),
+    "del-prosp": () => perguntar("Excluir esta prospecção?", "Excluir", () => { const p = prosp(id); db.prospeccoes = db.prospeccoes.filter((x) => x.id !== id); db.etapas = db.etapas.filter((x) => x.prospeccaoId !== id); db.lancamentos.forEach((l) => { if (l.prospeccaoId === id) l.prospeccaoId = null; }); salvar(); ir("#/cliente/" + p.clienteId); }),
+    fechou: () => { const p = prosp(id); p.status = "fechado"; p.fechamento = HOJE; salvar(); render(); toast("Marcado como fechado 🎉"); },
+    "fp-status": () => { fpStatus = el.dataset.v; render(); },
+    "etapa-ok": () => { const x = db.etapas.find((z) => z.id === id); x.concluida = !x.concluida; x.concluidaEm = x.concluida ? HOJE : null; salvar(); render(); },
+    "del-etapa": () => { db.etapas = db.etapas.filter((z) => z.id !== id); salvar(); render(); },
+    "etapas-padrao": () => { ETAPAS_PADRAO.forEach((nome, i) => db.etapas.push({ id: uid(), prospeccaoId: id, nome, ordem: i + 1, concluida: false, concluidaEm: null, prazo: null })); salvar(); render(); },
+    "del-contato": () => { db.contatos = db.contatos.filter((k) => k.id !== id); salvar(); render(); },
+  };
+  if (acoes[act]) { if (el.tagName === "A") e.preventDefault(); acoes[act](); }
+});
+document.addEventListener("change", (e) => {
+  const el = e.target, act = el.dataset?.act;
+  if (act === "ano") { filtroAnoPainel = el.value; render(); }
+  if (act === "fp-ano") { fpAno = el.value; render(); }
+  if (act === "fp-tipo") { fpTipo = el.value; render(); }
+  if (act === "status-form") mostrarPorStatus();
+  if (act === "etapa-prazo") { db.etapas.find((z) => z.id === el.dataset.id).prazo = el.value || null; salvar(); render(); }
+});
+document.addEventListener("submit", (e) => {
+  const f = e.target, nome = f.dataset.form; if (!nome) return;
+  e.preventDefault();
+  const fd = new FormData(f), v = (k) => String(fd.get(k) ?? "").trim();
+  const erro = (msg, alvo = "#err-dlg") => { const el = $(alvo); if (el) el.textContent = msg; };
+  if (nome === "login") {
+    erro("Entrando…", "#err-login");
+    sb.auth.signInWithPassword({ email: v("email").toLowerCase(), password: v("senha") }).then(({ error }) => { if (error) erro("E-mail ou senha incorretos.", "#err-login"); });
+    return;
+  }
+  if (nome === "desbloquear") {
+    sb.auth.signInWithPassword({ email: sessao.email, password: v("senha") }).then(({ error }) => {
+      if (error) return erro("Senha incorreta.", "#err-fin");
+      finAte = Date.now() + 30 * 60 * 1000; guardarSessao(); render();
+    });
+    return;
+  }
+  if (nome === "esqueci") {
+    sb.auth.resetPasswordForEmail(v("email").toLowerCase(), { redirectTo: location.origin + location.pathname }).then(({ error }) => {
+      if (error) return erro("Não foi possível enviar: " + error.message);
+      dlg.close(); toast("Enviamos um link para o seu e-mail.");
+    });
+    return;
+  }
+  if (nome === "trocar-senha" || nome === "nova-senha") {
+    sb.auth.updateUser({ password: v("senha") }).then(({ error }) => {
+      if (error) return erro("Não foi possível trocar: " + error.message, nome === "nova-senha" ? "#err-login" : "#err-dlg");
+      if (dlg.open) dlg.close();
+      toast("Senha alterada"); if (recuperandoSenha) { recuperandoSenha = false; history.replaceState(null, "", location.pathname); render(); }
+    });
+    return;
+  }
+  if (nome === "novo-membro") return criarMembro(v("nome"), v("email").toLowerCase(), v("senha"), fd.get("admin") === "on");
+  if (nome === "cliente") {
+    const dados = { nome: v("nome"), documento: v("documento"), origem: v("origem"), telefone: v("telefone"), email: v("email"), endereco: v("endereco"), cidade: v("cidade"), observacoes: v("observacoes") };
+    let id = f.dataset.id;
+    if (id) Object.assign(cliente(id), dados); else { id = uid(); db.clientes.push({ id, criado: HOJE, ...dados }); }
+    salvar(); dlg.close(); return ir("#/cliente/" + id);
+  }
+  if (nome === "prosp") {
+    const status = v("status"), valor = v("valor") ? parseValor(v("valor")) : null;
+    if (valor != null && isNaN(valor)) return erro("Valor inválido.");
+    const tipos = fd.getAll("tipos").map(Number);
+    if (v("novoTipo")) {
+      let t = db.tipos.find((x) => x.nome.toLowerCase() === v("novoTipo").toLowerCase());
+      if (!t) { t = { id: Math.max(...db.tipos.map((x) => x.id)) + 1, nome: v("novoTipo") }; db.tipos.push(t); }
+      tipos.push(t.id);
+    }
+    const dados = { clienteId: v("clienteId"), titulo: v("titulo"), status, valor, contato: v("contato"), fechamento: status === "aberto" ? null : v("fechamento") || HOJE, motivo: status === "cancelado" ? v("motivo") : null, obs: v("obs"), tipos: [...new Set(tipos)] };
+    let id = f.dataset.id;
+    if (id) Object.assign(prosp(id), dados); else { id = uid(); db.prospeccoes.push({ id, ...dados }); }
+    salvar(); dlg.close(); return ir("#/prospeccao/" + id);
+  }
+  if (nome === "contato") {
+    db.contatos.push({ id: uid(), clienteId: f.dataset.cliente, prospeccaoId: f.dataset.prosp || v("prospeccaoId") || null, data: v("data") || HOJE, tipo: v("tipo"), resumo: v("resumo") });
+    salvar(); render(); toast("Contato registrado");
+  }
+  if (nome === "etapa") {
+    const pid = f.dataset.prosp, ordem = db.etapas.filter((x) => x.prospeccaoId === pid).length + 1;
+    db.etapas.push({ id: uid(), prospeccaoId: pid, nome: v("nome"), prazo: v("prazo") || null, ordem, concluida: false, concluidaEm: null });
+    salvar(); render();
+  }
+});
+
+dlg.addEventListener("close", () => { if (renderPendente) { renderPendente = false; setTimeout(render); } });
+document.addEventListener("focusout", () => setTimeout(() => { if (renderPendente && !dlg.open && !document.activeElement?.matches?.("input, textarea, select")) { renderPendente = false; render(); } }, 300));
+
+/* ===================== acesso e equipe ===================== */
+function telaNovaSenha() {
+  return `<div class="center"><form class="card login" data-form="nova-senha">
+    <div><p class="eyebrow">Área interna</p><h1>Nova senha</h1><p class="muted" style="margin:8px 0 0">Escolha a sua nova senha.</p></div>
+    <label class="field"><span>Nova senha (mínimo 6 caracteres)</span><input class="input" name="senha" type="password" minlength="6" required autocomplete="new-password"></label>
+    <div class="err" id="err-login"></div><button class="btn pri" style="justify-content:center">Salvar senha</button></form></div>`;
+}
+function formEsqueci() {
+  abrir("Esqueci minha senha", `<p class="muted" style="margin-top:0">Digite seu e-mail. Você vai receber um link para criar uma nova senha.</p><div class="form">${campo("E-mail *", `<input class="input" type="email" name="email" required>`, true)}</div>`, "esqueci");
+}
+let equipe = null;
+async function carregarEquipe() {
+  const { data, error } = await sb.from("perfis").select("id, nome, email, admin, ativo").order("nome");
+  equipe = (!error && data) || []; render();
+}
+function pgEquipe() {
+  if (!sessao.admin) return `<p class="empty">Acesso restrito.</p>`;
+  if (!equipe) { carregarEquipe(); return `<p class="empty">Carregando…</p>`; }
+  const linhas = equipe.map((p) => `<tr><td><b>${esc(p.nome)}</b><div class="small muted">${esc(p.email)}</div></td>
+    <td>${p.ativo ? `<span class="badge b-good">Ativo</span>` : `<span class="badge b-critical">Bloqueado</span>`}</td>
+    <td>${p.admin ? "Administrador (vê o financeiro)" : "Equipe"}</td>
+    <td class="num">${p.id === sessao.id ? `<span class="small muted">você</span>` : `<button class="btn sm" data-act="eq-admin" data-id="${p.id}" data-v="${p.admin ? 0 : 1}">${p.admin ? "Tirar admin" : "Tornar admin"}</button> <button class="btn sm ${p.ativo ? "danger" : ""}" data-act="eq-ativo" data-id="${p.id}" data-v="${p.ativo ? 0 : 1}">${p.ativo ? "Bloquear" : "Liberar"}</button>`}</td></tr>`).join("");
+  return cabecalho("Equipe", "Quem pode entrar no sistema") + `
+    <div class="grid g2 mb"><div class="card flush span2"><table><thead><tr><th>Pessoa</th><th>Acesso</th><th>Perfil</th><th></th></tr></thead><tbody>${linhas || `<tr><td colspan="4" class="empty">Ninguém cadastrado.</td></tr>`}</tbody></table></div></div>
+    <form class="card" data-form="novo-membro" style="max-width:640px"><h2>Cadastrar pessoa</h2><div class="form">
+      ${campo("Nome *", `<input class="input" name="nome" required>`)}${campo("E-mail *", `<input class="input" type="email" name="email" required>`)}
+      ${campo("Senha inicial (mínimo 6) *", `<input class="input" name="senha" minlength="6" required>`)}
+      <label class="chip" style="align-self:end"><input type="checkbox" name="admin"> Administrador (vê o financeiro)</label>
+    </div><button class="btn pri" style="margin-top:14px">Cadastrar</button>
+    <p class="small muted">Passe o e-mail e a senha inicial para a pessoa. Ela pode trocar a senha depois em "Trocar minha senha".</p></form>`;
+}
+async function criarMembro(nome, email, senha, admin) {
+  // Cliente separado, sem guardar sessão, para não deslogar o administrador
+  const aux = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false, storageKey: "gestao-aux" } });
+  const { data, error } = await aux.auth.signUp({ email, password: senha, options: { data: { nome } } });
+  if (error || !data.user) return toast("Não foi possível cadastrar: " + (error?.message || "erro desconhecido"));
+  const { error: e2 } = await sb.from("perfis").update({ nome, admin, ativo: true }).eq("id", data.user.id);
+  if (e2) return toast("Cadastrado, mas não liberado: " + e2.message);
+  toast(nome + " cadastrado(a)"); equipe = null; render();
+}
+async function alterarPerfil(id, dados) {
+  const { error } = await sb.from("perfis").update(dados).eq("id", id);
+  if (error) return toast("Não foi possível alterar: " + error.message);
+  equipe = null; render();
+}
+
+// Começa pela sessão salva no navegador; o Supabase avisa quando alguém entra ou sai
+sb.auth.onAuthStateChange((evento, s) => {
+  if (evento === "PASSWORD_RECOVERY") { recuperandoSenha = true; carregando = false; return render(); }
+  if (evento === "SIGNED_IN" || evento === "INITIAL_SESSION") {
+    if (s?.user && sessao?.id !== s.user.id) setTimeout(() => entrar(s.user));
+    else if (!s) { carregando = false; render(); }
+  }
+  if (evento === "SIGNED_OUT") { sessao = null; carregando = false; render(); }
+});
+render();
+</script>
+
+</body></html>
