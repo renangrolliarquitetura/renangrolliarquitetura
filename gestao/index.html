@@ -374,7 +374,7 @@ function completarBasicos() {
 
 /* ===================== estado (Supabase) ===================== */
 const SUPABASE_URL = "https://myanxaivsildxtxvenup.supabase.co";
-const SUPABASE_KEY = "COLE_AQUI_A_CHAVE_ANON";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15YW54YWl2c2lsZHh0eHZlbnVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMDI5OTUsImV4cCI6MjEwODc3ODk5NX0.gsMQxna_dG0OoMGWtSXD-BKoUi5H1eGu93KUPQQr6hI"; // chave pública (anon), protegida pelas regras do banco
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let db = vazio();
 let sessao = null;          // { id, email, nome, admin }
