@@ -373,7 +373,7 @@ function completarBasicos() {
 
 
 /* ===================== estado (Supabase) ===================== */
-const SUPABASE_URL = "COLE_AQUI_A_URL";
+const SUPABASE_URL = "https://myanxaivsildxtxvenup.supabase.co";
 const SUPABASE_KEY = "COLE_AQUI_A_CHAVE_ANON";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let db = vazio();
@@ -1500,7 +1500,7 @@ function pgEquipe() {
       ${campo("Senha inicial (mínimo 6) *", `<input class="input" name="senha" minlength="6" required>`)}
       <label class="chip" style="align-self:end"><input type="checkbox" name="admin"> Administrador (vê o financeiro)</label>
     </div><button class="btn pri" style="margin-top:14px">Cadastrar</button>
-    <p class="small muted">Passe o e-mail e a senha inicial para a pessoa. Ela pode trocar a senha depois em "Trocar minha senha".</p></form>`;
+    <p class="small muted">A pessoa recebe um e-mail para confirmar o cadastro. Depois é só entrar com o e-mail e a senha inicial, que ela pode trocar em "Trocar minha senha".</p></form>`;
 }
 async function criarMembro(nome, email, senha, admin) {
   // Cliente separado, sem guardar sessão, para não deslogar o administrador
@@ -1509,7 +1509,7 @@ async function criarMembro(nome, email, senha, admin) {
   if (error || !data.user) return toast("Não foi possível cadastrar: " + (error?.message || "erro desconhecido"));
   const { error: e2 } = await sb.from("perfis").update({ nome, admin, ativo: true }).eq("id", data.user.id);
   if (e2) return toast("Cadastrado, mas não liberado: " + e2.message);
-  toast(nome + " cadastrado(a)"); equipe = null; render();
+  toast(data.session ? nome + " cadastrado(a)" : nome + " cadastrado(a). Ela precisa confirmar pelo e-mail que vai receber."); equipe = null; render();
 }
 async function alterarPerfil(id, dados) {
   const { error } = await sb.from("perfis").update(dados).eq("id", id);
