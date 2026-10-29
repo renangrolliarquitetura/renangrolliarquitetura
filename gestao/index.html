@@ -389,7 +389,7 @@ const vazio = () => Object.fromEntries(COLECOES.map((k) => [k, []]));
 function completarBasicos() {
   let mudou = false;
   if (!db.tipos.length) { db.tipos = ["Arquitetura", "Complementares", "Interiores", "Vigilância Sanitária", "Outros"].map((nome, i) => ({ id: i + 1, nome })); mudou = true; }
-  if (sessao.admin && !db.categorias.length && !db.contas.length) {
+  if (pode("financeiro") && !db.categorias.length && !db.contas.length) {
     Object.entries(CATEGORIAS_ZENPLY).forEach(([grupo, nomes]) => nomes.forEach((nome) => db.categorias.push({ id: uid(), nome, grupo })));
     db.contas.push({ id: "cp", nome: "Conta Principal", tipo: "Conta Corrente", saldoInicial: 0, arquivada: false }, { id: "cx", nome: "Caixa do escritório", tipo: "Caixa", saldoInicial: 0, arquivada: false });
     db.centros.push({ id: uid(), nome: "Escritório" }, { id: uid(), nome: "Obras" });
@@ -405,13 +405,17 @@ const SUPABASE_URL = "https://myanxaivsildxtxvenup.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15YW54YWl2c2lsZHh0eHZlbnVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMDI5OTUsImV4cCI6MjEwODc3ODk5NX0.gsMQxna_dG0OoMGWtSXD-BKoUi5H1eGu93KUPQQr6hI"; // chave pública (anon), protegida pelas regras do banco
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let db = vazio();
-let sessao = null;          // { id, email, nome, admin }
+let sessao = null;          // { id, email, nome, admin, menus }
 let pessoas = [];           // equipe ativa, para escolher responsáveis
 let finAte = 0;             // financeiro liberado até (ms)
 let carregando = true, recuperandoSenha = false;
 try { finAte = Number(sessionStorage.getItem("gestao-fin-ate")) || 0; } catch {}
 const guardarSessao = () => { try { sessionStorage.setItem("gestao-fin-ate", String(finAte)); } catch {} };
-const finLiberado = () => sessao?.admin && finAte > Date.now();
+// Menus do app; administrador vê todos, os demais só os marcados na Equipe
+const MENUS = [["painel", "Painel"], ["esteira", "Esteira"], ["tarefas", "Tarefas"], ["clientes", "Clientes"], ["prospeccoes", "Prospecções"], ["financeiro", "Financeiro"], ["equipe", "Equipe"]];
+const MENUS_PADRAO = ["painel", "esteira", "tarefas", "clientes", "prospeccoes"];
+const pode = (m) => !!sessao && (sessao.admin || sessao.menus.includes(m));
+const finLiberado = () => (pode("financeiro") || pode("equipe")) && finAte > Date.now();
 
 // Cada item de cada lista vira uma linha da tabela "registros". salvar() compara com a última
 // versão gravada e envia só o que mudou, para duas pessoas editarem ao mesmo tempo sem se sobrescrever.
@@ -421,7 +425,7 @@ const chaveReg = (k, id) => k + "/" + id;
 function salvar() {
   const atual = new Map();
   for (const k of COLECOES) {
-    if (!sessao.admin && COLECOES_FIN.includes(k)) continue;
+    if (!pode("financeiro") && COLECOES_FIN.includes(k)) continue;
     for (const item of db[k]) atual.set(chaveReg(k, item.id), JSON.stringify(item));
   }
   const gravar = [], apagar = [];
@@ -479,9 +483,9 @@ let entrando = false;
 async function entrar(user) {
   if (entrando) return; entrando = true;
   carregando = true; render();
-  const { data: perfil, error } = await sb.from("perfis").select("nome, admin, ativo").eq("id", user.id).maybeSingle();
+  const { data: perfil, error } = await sb.from("perfis").select("nome, admin, ativo, menus").eq("id", user.id).maybeSingle();
   if (error || !perfil?.ativo) { sessao = null; carregando = false; entrando = false; await sb.auth.signOut(); render(); return toast(error ? "Erro ao abrir: " + error.message : "Seu acesso ainda não foi liberado pelo administrador."); }
-  sessao = { id: user.id, email: user.email, nome: perfil.nome, admin: perfil.admin };
+  sessao = { id: user.id, email: user.email, nome: perfil.nome, admin: perfil.admin, menus: perfil.menus || MENUS_PADRAO };
   await carregarPessoas();
   try { await carregarDados(); } catch (e) { toast("Erro ao carregar os dados: " + e.message); }
   completarBasicos(); ouvirMudancas();
@@ -655,7 +659,7 @@ function tabelaLancamentos(lista) {
   return lista.length ? `<table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Situação</th><th class="num">Valor</th></tr></thead><tbody>${lista.map((l) => `<tr><td>${dataBR(l.data)}</td><td><a href="#" data-act="editar-lanc" data-id="${l.id}">${esc(l.descricao) || "(sem descrição)"}</a></td><td class="ink2">${esc(catNome(l))}</td><td>${situacaoLanc(l)}</td><td class="num ${l.tipo === "saida" ? "neg" : "pos"}">${l.tipo === "saida" ? "− " : "+ "}${R$(l.valor)}</td></tr>`).join("")}</tbody></table>` : `<p class="empty">Nenhum lançamento vinculado.</p>`;
 }
 function blocoFinanceiroVinculado(filtro, rotulo, novoParams) {
-  if (!sessao.admin) return "";
+  if (!pode("financeiro")) return "";
   if (!finLiberado()) return `<div class="card mb" style="margin-top:14px">O financeiro deste ${rotulo} está bloqueado. <a href="#/financeiro">Desbloquear com a senha</a></div>`;
   const ls = db.lancamentos.filter(filtro).sort((a, b) => a.data.localeCompare(b.data));
   const ent = ls.filter((l) => l.tipo === "entrada");
@@ -1356,7 +1360,7 @@ function telaBloqueio(area) {
   </form>`;
 }
 function pgFinanceiro(sub = "dashboard") {
-  if (!sessao.admin) return `<p class="empty">Acesso restrito.</p>`;
+  if (!pode("financeiro")) return `<p class="empty">Acesso restrito.</p>`;
   if (!finLiberado()) return telaBloqueio("Financeiro");
   const paginas = { dashboard: finDashboard, transacoes: finTransacoes, relatorios: finRelatorios, contatos: finContatos, importar: finImportar, configuracoes: finConfig };
   return moldura(sub, (paginas[sub] || finDashboard)());
@@ -1484,12 +1488,15 @@ function render() {
   if (!sessao) { root.innerHTML = telaLogin(); return; }
   const [, rota = "painel", id] = ROTA.split("/");
   const paginas = { painel: pgPainel, clientes: pgClientes, cliente: () => pgCliente(id), prospeccoes: pgProspeccoes, prospeccao: () => pgProspeccao(id), financeiro: () => pgFinanceiro(id), equipe: pgEquipe, esteira: pgEsteira, tarefas: pgTarefas };
-  const ativo = { cliente: "clientes", prospeccao: "prospeccoes" }[rota] || rota;
-  const nav = [["painel", "Painel"], ["esteira", "Esteira"], ["tarefas", "Tarefas"], ["clientes", "Clientes"], ["prospeccoes", "Prospecções"], ...(sessao.admin ? [["financeiro", "Financeiro"], ["equipe", "Equipe"]] : [])];
+  const nav = MENUS.filter(([r]) => pode(r));
+  let ativo = { cliente: "clientes", prospeccao: "prospeccoes" }[rota] || (paginas[rota] ? rota : "painel");
+  // Página fora dos menus liberados: abre o primeiro menu que a pessoa pode ver
+  if (!pode(ativo) && nav.length) { ROTA = "#/" + nav[0][0]; return render(); }
+  const conteudo = nav.length ? (paginas[rota] || pgPainel)() : `<p class="empty">Nenhum menu liberado para você ainda. Fale com o administrador.</p>`;
   root.innerHTML = `<div class="app"><aside class="side"><div class="brand">${simbolo()}<div><span class="wm" role="img" aria-label="Renan Grolli Arquitetura"></span><small>Gestão</small></div></div>
     <nav class="nav">${nav.map(([r, l]) => `<a href="#/${r}" class="${ativo === r ? "on" : ""}">${l}${r === "financeiro" || r === "equipe" ? `<span class="lock">${finLiberado() ? "🔓" : "🔒"}</span>` : ""}</a>`).join("")}</nav>
     <div class="me"><span class="small muted">${esc(sessao.nome)}${sessao.admin ? " · administrador" : ""}</span><button class="btn sm" data-act="sair">Sair</button><a href="#" class="small no-print" data-act="trocar-senha">Trocar minha senha</a></div></aside>
-    <main>${(paginas[rota] || pgPainel)()}</main></div>`;
+    <main>${conteudo}</main></div>`;
   const buscaEst = $("#busca-est");
   if (buscaEst) buscaEst.addEventListener("input", (e) => { feBusca = e.target.value; const pos = e.target.selectionStart; render(); const b = $("#busca-est"); b.focus(); b.setSelectionRange(pos, pos); });
   const busca = $("#busca");
@@ -1516,7 +1523,7 @@ document.addEventListener("click", (e) => {
     sair: async () => { finAte = 0; guardarSessao(); if (canal) sb.removeChannel(canal); await sb.auth.signOut(); sessao = null; db = vazio(); espelho = new Map(); ir("#/painel"); },
     esqueci: () => formEsqueci(),
     "trocar-senha": () => abrir("Trocar minha senha", `<div class="form">${campo("Nova senha (mínimo 6 caracteres) *", `<input class="input" type="password" name="senha" minlength="6" required autocomplete="new-password">`, true)}</div>`, "trocar-senha"),
-    "eq-admin": () => alterarPerfil(id, { admin: el.dataset.v === "1" }),
+    "eq-editar": () => formEditarMembro(equipe.find((x) => x.id === id)),
     "eq-ativo": () => alterarPerfil(id, { ativo: el.dataset.v === "1" }),
     fechar: () => dlg.close(),
     pdf: () => print(),
@@ -1590,7 +1597,14 @@ document.addEventListener("submit", (e) => {
     });
     return;
   }
-  if (nome === "novo-membro") return criarMembro(v("nome"), v("email").toLowerCase(), v("senha"), fd.get("admin") === "on");
+  if (nome === "novo-membro") return criarMembro(v("nome"), v("email").toLowerCase(), v("senha"), fd.get("admin") === "on", fd.getAll("menus"));
+  if (nome === "editar-membro") {
+    // Caixas desabilitadas não entram no FormData: lê direto do formulário
+    const marcados = [...f.querySelectorAll("[name=menus]:checked")].map((c) => c.value);
+    const adm = f.querySelector("[name=admin]").checked;
+    erro("Salvando…");
+    return salvarMembro(f.dataset.id, v("nome"), v("email").toLowerCase(), v("senha"), adm, adm ? MENUS.map(([m]) => m) : marcados);
+  }
   if (nome === "cliente") {
     const dados = { nome: v("nome"), documento: v("documento"), origem: v("origem"), telefone: v("telefone"), email: v("email"), endereco: v("endereco"), cidade: v("cidade"), observacoes: v("observacoes") };
     let id = f.dataset.id;
@@ -1681,35 +1695,59 @@ function formEsqueci() {
 }
 let equipe = null, acessos = [];
 async function carregarEquipe() {
-  const { data, error } = await sb.from("perfis").select("id, nome, email, admin, ativo").order("nome");
+  const { data, error } = await sb.from("perfis").select("id, nome, email, admin, ativo, menus").order("nome");
   const ac = await sb.from("acessos").select("nome, area, quando").order("quando", { ascending: false }).limit(20);
   acessos = ac.data || [];
   equipe = (!error && data) || []; await carregarPessoas(); render();
 }
 function pgEquipe() {
-  if (!sessao.admin) return `<p class="empty">Acesso restrito.</p>`;
+  if (!pode("equipe")) return `<p class="empty">Acesso restrito.</p>`;
   if (!finLiberado()) return telaBloqueio("Equipe");
   if (!equipe) { carregarEquipe(); return `<p class="empty">Carregando…</p>`; }
+  const menusDe = (p) => (p.admin ? "Todos os menus" : MENUS.filter(([m]) => (p.menus || []).includes(m)).map(([, l]) => l).join(", ") || "Nenhum menu");
   const linhas = equipe.map((p) => `<tr><td><b>${esc(p.nome)}</b><div class="small muted">${esc(p.email)}</div></td>
     <td>${p.ativo ? `<span class="badge b-good">Ativo</span>` : `<span class="badge b-critical">Bloqueado</span>`}</td>
-    <td>${p.admin ? "Administrador (vê o financeiro)" : "Equipe"}</td>
-    <td class="num">${p.id === sessao.id ? `<span class="small muted">você</span>` : `<button class="btn sm" data-act="eq-admin" data-id="${p.id}" data-v="${p.admin ? 0 : 1}">${p.admin ? "Tirar admin" : "Tornar admin"}</button> <button class="btn sm ${p.ativo ? "danger" : ""}" data-act="eq-ativo" data-id="${p.id}" data-v="${p.ativo ? 0 : 1}">${p.ativo ? "Bloquear" : "Liberar"}</button>`}</td></tr>`).join("");
+    <td>${p.admin ? "Administrador" : "Equipe"}<div class="small muted">${esc(menusDe(p))}</div></td>
+    <td class="num"><button class="btn sm" data-act="eq-editar" data-id="${p.id}">Editar</button>${p.id === sessao.id ? ` <span class="small muted">você</span>` : ` <button class="btn sm ${p.ativo ? "danger" : ""}" data-act="eq-ativo" data-id="${p.id}" data-v="${p.ativo ? 0 : 1}">${p.ativo ? "Bloquear" : "Liberar"}</button>`}</td></tr>`).join("");
   return cabecalho("Equipe", "Quem pode entrar no sistema") + `
     <div class="grid g2 mb"><div class="card flush span2"><table><thead><tr><th>Pessoa</th><th>Acesso</th><th>Perfil</th><th></th></tr></thead><tbody>${linhas || `<tr><td colspan="4" class="empty">Ninguém cadastrado.</td></tr>`}</tbody></table></div></div>
     ${acessos.length ? `<div class="card flush mb" style="max-width:640px"><h2>Últimos acessos ao Financeiro / Equipe</h2><table><tbody>${acessos.map((a) => `<tr><td>${new Date(a.quando).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</td><td>${esc(a.nome)}</td><td class="ink2">${esc(a.area)}</td></tr>`).join("")}</tbody></table></div>` : ""}
     <form class="card" data-form="novo-membro" style="max-width:640px"><h2>Cadastrar pessoa</h2><div class="form">
       ${campo("Nome *", `<input class="input" name="nome" required>`)}${campo("E-mail *", `<input class="input" type="email" name="email" required>`)}
       ${campo("Senha inicial (mínimo 6) *", `<input class="input" name="senha" minlength="6" required>`)}
-      <label class="chip" style="align-self:end"><input type="checkbox" name="admin"> Administrador (vê o financeiro)</label>
-    </div><button class="btn pri" style="margin-top:14px">Cadastrar</button>
+    </div>${camposAcesso({ admin: false, menus: MENUS_PADRAO })}<button class="btn pri" style="margin-top:14px">Cadastrar</button>
     <p class="small muted">A pessoa recebe um e-mail para confirmar o cadastro. Depois é só entrar com o e-mail e a senha inicial, que ela pode trocar em "Trocar minha senha".</p></form>`;
 }
-async function criarMembro(nome, email, senha, admin) {
+// Marcações de administrador e de menus, usadas no cadastro e na edição
+function camposAcesso(p, travar = false) {
+  return `<div class="field" style="margin-top:14px"><span>Acesso</span>
+    <label class="chip"><input type="checkbox" name="admin" ${p.admin ? "checked" : ""} ${travar ? "disabled" : ""} onchange="this.closest('form').querySelectorAll('[name=menus]').forEach((c) => (c.disabled = this.checked))"> Administrador (todos os menus)</label>
+    <div class="chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">${MENUS.map(([m, l]) => `<label class="chip"><input type="checkbox" name="menus" value="${m}" ${p.admin || (p.menus || []).includes(m) ? "checked" : ""} ${p.admin ? "disabled" : ""}> ${l}</label>`).join("")}</div>
+    ${travar ? `<span class="small muted">Você não pode tirar o seu próprio acesso de administrador.</span>` : `<span class="small muted">Financeiro e Equipe continuam pedindo a senha da área restrita.</span>`}</div>`;
+}
+function formEditarMembro(p) {
+  const eu = p.id === sessao.id;
+  abrir("Editar " + esc(p.nome), `<div class="form">
+    ${campo("Nome *", `<input class="input" name="nome" value="${esc(p.nome)}" required>`)}${campo("E-mail *", `<input class="input" type="email" name="email" value="${esc(p.email || "")}" required>`)}
+    ${campo("Nova senha (deixe em branco para manter)", `<input class="input" type="password" name="senha" minlength="6" autocomplete="new-password">`, true)}
+  </div>${camposAcesso(p, eu && p.admin)}`, "editar-membro", `data-id="${p.id}"`);
+}
+async function salvarMembro(id, nome, email, senha, admin, menus) {
+  const p = equipe.find((x) => x.id === id);
+  const { data, error } = await sb.rpc("editar_usuario", { alvo: id, novo_nome: nome, novo_email: email, nova_senha: senha || null });
+  if (error || data !== "ok") return toast("Não foi possível salvar: " + (error?.message || data));
+  const acesso = id === sessao.id && p.admin ? { menus } : { admin, menus };
+  const { error: e2 } = await sb.from("perfis").update(acesso).eq("id", id);
+  if (e2) return toast("Dados salvos, mas o acesso não: " + e2.message);
+  if (id === sessao.id) { sessao.nome = nome; sessao.email = email; }
+  dlg.close(); toast(nome + " atualizado(a)" + (senha ? ", com senha nova" : "")); equipe = null; render();
+}
+async function criarMembro(nome, email, senha, admin, menus) {
   // Cliente separado, sem guardar sessão, para não deslogar o administrador
   const aux = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false, storageKey: "gestao-aux" } });
   const { data, error } = await aux.auth.signUp({ email, password: senha, options: { data: { nome } } });
   if (error || !data.user) return toast("Não foi possível cadastrar: " + (error?.message || "erro desconhecido"));
-  const { error: e2 } = await sb.from("perfis").update({ nome, admin, ativo: true }).eq("id", data.user.id);
+  const { error: e2 } = await sb.from("perfis").update({ nome, admin, menus, ativo: true }).eq("id", data.user.id);
   if (e2) return toast("Cadastrado, mas não liberado: " + e2.message);
   toast(data.session ? nome + " cadastrado(a)" : nome + " cadastrado(a). Ela precisa confirmar pelo e-mail que vai receber."); equipe = null; render();
 }
