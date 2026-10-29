@@ -113,7 +113,8 @@ main { flex: 1; min-width: 0; padding: 40px clamp(20px, 3vw, 56px) 64px; }
 .input { width: 100%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 0; padding: 9px 11px; font: inherit; }
 .input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 select.input { width: auto; }
-td select.input.sm { padding: 4px 8px; font-size: 13px; }
+.st-sel { padding: 2px 4px 2px 9px; cursor: pointer; }
+.st-sel select { border: 0; background: transparent; color: inherit; font: inherit; padding: 0 2px; cursor: pointer; }
 .field { display: flex; flex-direction: column; gap: 4px; }
 .field > span { color: var(--muted); font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; }
 .field select.input, dd select.input { width: 100%; }
@@ -718,7 +719,7 @@ function pgCliente(id) {
   return cabecalho(esc(c.nome), `Cliente desde ${dataBR(c.criado)}`, `<button class="btn pri" data-act="nova-prosp" data-cliente="${id}">Nova prospecção</button><button class="btn" data-act="editar-cliente" data-id="${id}">Editar</button>${botoesExportar()}<button class="btn danger" data-act="del-cliente" data-id="${id}">Excluir</button>`) +
     `<div class="grid g3 mb">
       <div class="card"><h2>Dados</h2><dl>${info.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v) || "—"}</dd></div>`).join("")}</dl>${c.observacoes ? `<p class="ink2">${esc(c.observacoes)}</p>` : ""}</div>
-      <div class="card flush span2"><h2>Prospecções e projetos</h2>${ps.length ? `<table><thead><tr><th>Projeto</th><th>Tipos</th><th>Situação</th><th>Etapa</th><th>Contato</th>${verValores() ? `<th class="num">Valor</th>` : ""}</tr></thead><tbody>${ps.map((p) => `<tr><td><a href="#/prospeccao/${p.id}">${esc(p.titulo)}</a></td><td class="ink2">${esc(tiposDe(p))}</td><td><select class="input sm" data-act="prosp-status" data-id="${p.id}" aria-label="Situação">${opts(Object.keys(STATUS).map((k) => [k, STATUS[k].label]), p.status)}</select></td><td class="ink2">${p.status === "cancelado" ? "—" : esc(etapaDe(p))}</td><td>${dataBR(p.contato)}</td>${verValores() ? `<td class="num">${R$(p.valor)}</td>` : ""}</tr>`).join("")}</tbody></table>` : `<p class="empty">Nenhuma prospecção para este cliente.</p>`}</div>
+      <div class="card flush span2"><h2>Prospecções e projetos</h2>${ps.length ? `<table><thead><tr><th>Projeto</th><th>Tipos</th><th>Situação</th><th>Etapa</th><th>Contato</th>${verValores() ? `<th class="num">Valor</th>` : ""}</tr></thead><tbody>${ps.map((p) => `<tr><td><a href="#/prospeccao/${p.id}">${esc(p.titulo)}</a></td><td class="ink2">${esc(tiposDe(p))}</td><td><label class="badge st-sel ${STATUS[p.status].cls}"><select data-act="prosp-status" data-id="${p.id}" aria-label="Situação">${opts(Object.keys(STATUS).map((k) => [k, STATUS[k].label]), p.status)}</select></label></td><td class="ink2">${p.status === "cancelado" ? "—" : esc(etapaDe(p))}</td><td>${dataBR(p.contato)}</td>${verValores() ? `<td class="num">${R$(p.valor)}</td>` : ""}</tr>`).join("")}</tbody></table>` : `<p class="empty">Nenhuma prospecção para este cliente.</p>`}</div>
     </div>` + blocoContatos(id) + blocoFinanceiroVinculado((l) => l.clienteId === id, "cliente", `data-cliente="${id}"`);
 }
 
