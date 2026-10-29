@@ -76,6 +76,10 @@ main { flex: 1; min-width: 0; padding: 40px clamp(20px, 3vw, 56px) 64px; }
 .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.g5 { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.tile-sel { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px; }
+.tile-medio .val { font-size: 32px; white-space: nowrap; }
+.tile-sel select { border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); font: inherit; font-size: 12px; padding: 2px 4px; max-width: 120px; }
 .span2 { grid-column: span 2; } .span3 { grid-column: span 3; }
 .mb { margin-bottom: 18px; }
 @media (max-width: 900px) {
@@ -583,10 +587,11 @@ document.addEventListener("mousemove", (e) => {
   const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8);
   tip.style.left = x + "px"; tip.style.top = e.clientY + 14 + "px";
 });
-function escala(max) {
+// inteiro: contagens (projetos, itens) usam só números inteiros no eixo
+function escala(max, inteiro = false) {
   if (max <= 0) return { max: 1, passos: [0, 1] };
-  const bruto = max / 4, mag = 10 ** Math.floor(Math.log10(bruto));
-  const passo = [1, 2, 2.5, 5, 10].map((f) => f * mag).find((s) => s >= bruto);
+  const bruto = max / 4, mag = Math.max(inteiro ? 1 : 0, 10 ** Math.floor(Math.log10(bruto)));
+  const passo = (inteiro ? [1, 2, 5, 10] : [1, 2, 2.5, 5, 10]).map((f) => f * mag).find((s) => s >= bruto);
   const topo = Math.ceil(max / passo) * passo;
   const passos = []; for (let v = 0; v <= topo + 1e-9; v += passo) passos.push(v);
   return { max: topo, passos };
@@ -594,7 +599,7 @@ function escala(max) {
 function barrasH(dados, { moeda = false, cor = "var(--series-1)" } = {}) {
   if (!dados.length || dados.every((d) => !d.valor)) return `<p class="empty">Sem dados no período.</p>`;
   const W = Math.max(300, Math.min(520, innerWidth - 70)), rot = W < 400 ? 110 : 150, dir = 64, linha = 34, H = dados.length * linha + 22;
-  const { max, passos } = escala(Math.max(...dados.map((d) => d.valor)));
+  const { max, passos } = escala(Math.max(...dados.map((d) => d.valor)), !moeda);
   const x = (v) => rot + (v / max) * (W - rot - dir);
   const fmt = (v) => (moeda ? R$c(v) : String(v));
   let s = `<g class="grid">${passos.map((v) => `<line x1="${x(v)}" x2="${x(v)}" y1="0" y2="${H - 22}"/><text x="${x(v)}" y="${H - 6}" text-anchor="middle">${fmt(v)}</text>`).join("")}</g>`;
@@ -612,7 +617,7 @@ function barrasH(dados, { moeda = false, cor = "var(--series-1)" } = {}) {
 function barrasMes(dados, series, { empilhado = false, moeda = false } = {}) {
   const W = Math.max(340, Math.min(1000, innerWidth - (innerWidth > 900 ? 330 : 70))), H = 260, esq = moeda ? 64 : 34, base = H - 24, topo = 10;
   const totais = dados.map((d) => (empilhado ? series.reduce((t, s) => t + d[s.k], 0) : Math.max(...series.map((s) => d[s.k]))));
-  const { max, passos } = escala(Math.max(...totais, 0));
+  const { max, passos } = escala(Math.max(...totais, 0), !moeda);
   const y = (v) => base - (v / max) * (base - topo);
   const fmt = (v) => (moeda ? R$c(v) : String(v));
   const col = (W - esq) / dados.length;
@@ -653,7 +658,7 @@ const anosDe = (datas) => [...new Set([HOJE.slice(0, 4), ...datas.map((d) => d.s
 const selAno = (anos, atual, todos = true) => `<select class="input" data-act="ano" aria-label="Ano">${anos.map((a) => `<option ${a === atual ? "selected" : ""}>${a}</option>`).join("")}${todos ? `<option value="todos" ${atual === "todos" ? "selected" : ""}>Todos os anos</option>` : ""}</select>`;
 
 /* ---------- Painel ---------- */
-let filtroAnoPainel = HOJE.slice(0, 4);
+let filtroAnoPainel = HOJE.slice(0, 4), filtroTipoMedio = "";
 function pgPainel() {
   const ano = filtroAnoPainel;
   const lista = db.prospeccoes.filter((p) => ano === "todos" || p.contato.startsWith(ano));
@@ -666,11 +671,12 @@ function pgPainel() {
   });
   const minhas = db.tarefas.filter((t) => t.responsavelId === sessao.id && t.andamento !== "concluido").sort(ordemTarefas);
   return cabecalho(`Olá, ${esc(sessao.nome)}`, "Resumo das prospecções e projetos do escritório", selAno(anosDe(db.prospeccoes.map((p) => p.contato)), ano) + botoesExportar()) +
-    `<div class="grid g4 mb">
+    `<div class="grid ${verValores() ? "g5" : "g4"} mb">
       ${tile("Clientes cadastrados", db.clientes.length)}
       ${tile("Projetos fechados", f.length, verValores() ? R$(soma(f)) : "")}
       ${tile("Em aberto", a.length, verValores() ? R$(soma(a)) + " em negociação" : "em negociação")}
       ${tile("Taxa de conversão", pct(f.length, f.length + c.length) + "%", `${f.length} fechados de ${f.length + c.length} decididos · ${c.length} cancelados`)}
+      ${verValores() ? tileMedio(f) : ""}
     </div>` +
     (minhas.length ? `<div class="card mb"><div class="bar"><h2>Minhas tarefas</h2><a href="#/tarefas" class="small">Ver todas</a></div><ul class="steps">${minhas.slice(0, 8).map((t) => `<li><button class="btn sm" data-act="tarefa-ok" data-id="${t.id}">○</button><a href="#" class="nm" data-act="editar-tarefa" data-id="${t.id}">${esc(t.titulo)}</a>${t.urgente ? `<span class="urg">Urgente</span>` : ""}${andamentoTag(t.andamento)}${prosp(t.prospeccaoId) ? `<a href="#/prospeccao/${t.prospeccaoId}" class="small muted">${esc(prosp(t.prospeccaoId).titulo)}</a>` : ""}${t.prazo ? situacaoPrazo(t.prazo) : ""}</li>`).join("")}</ul></div>` : "") +
     (prazos.length ? `<div class="card flush mb"><h2>Prazos das próximas 2 semanas</h2><table><tbody>${prazos.map((e) => {
@@ -685,6 +691,15 @@ function pgPainel() {
       <div class="card"><h2>De onde vêm os projetos fechados</h2><p class="small muted" style="margin:-8px 0 10px">Origem do cliente informada no cadastro.</p>${barrasH(contar(f, (p) => cliente(p.clienteId)?.origem))}</div>
       <div class="card"><h2>Motivos de cancelamento</h2>${c.length ? `<table><tbody>${contar(c, (p) => p.motivo || "Sem motivo informado").map((m) => `<tr><td>${esc(m.nome)}</td><td class="num">${m.valor}</td></tr>`).join("")}</tbody></table>` : `<p class="empty">Nenhum cancelamento no período.</p>`}</div>
     </div>`;
+}
+
+// Valor médio dos projetos fechados (com valor informado), com filtro por tipo de projeto
+function tileMedio(fechados) {
+  const tipo = Number(filtroTipoMedio) || null;
+  const ps = fechados.filter((p) => Number(p.valor) > 0 && (!tipo || p.tipos.includes(tipo)));
+  const media = ps.length ? soma(ps) / ps.length : 0;
+  return `<div class="card tile tile-medio"><div class="tile-sel"><div class="lbl">Valor médio</div><select data-act="tipo-medio" aria-label="Tipo de projeto"><option value="">Todos os tipos</option>${db.tipos.map((t) => `<option value="${t.id}" ${t.id === tipo ? "selected" : ""}>${esc(t.nome)}</option>`).join("")}</select></div>
+    <div class="val" title="${R$(media)}">${ps.length ? R$(Math.round(media)).replace(/,00$/, "") : "—"}</div><div class="det">${ps.length ? `média de ${ps.length} projeto(s) fechado(s)` : "nenhum projeto fechado com valor"}</div></div>`;
 }
 
 /* ---------- Clientes ---------- */
@@ -1829,6 +1844,7 @@ document.addEventListener("click", (e) => {
 document.addEventListener("change", (e) => {
   const el = e.target, act = el.dataset?.act;
   if (act === "ano") { filtroAnoPainel = el.value; render(); }
+  if (act === "tipo-medio") { filtroTipoMedio = el.value; render(); }
   if (act === "fp-ano") { fpAno = el.value; render(); }
   if (act === "fp-tipo") { fpTipo = el.value; render(); }
   if (act === "status-form") mostrarPorStatus();
