@@ -355,6 +355,7 @@ tr.t td { background: var(--surface-2); }
 <div id="root"></div>
 <div id="tip"></div>
 <dialog id="dlg"></dialog>
+<dialog id="dlg2" style="width:min(460px, calc(100vw - 24px))"></dialog>
 
 <script>
 "use strict";
@@ -1477,17 +1478,61 @@ function formConta(c = {}) {
 /* ---------- formulário de transação ---------- */
 function opcoesCategoria(tipo, atual) {
   const grupos = tipo === "entrada" ? ["receita"] : GRUPOS_DESP;
-  return `<option value="">Aplicar a categoria...</option>` + grupos.map((g) => `<optgroup label="${GRUPOS[g]}">${db.categorias.filter((c) => c.grupo === g).sort((a, b) => a.nome.localeCompare(b.nome)).map((c) => `<option value="${c.id}" ${c.id === atual ? "selected" : ""}>${esc(c.nome)}</option>`).join("")}</optgroup>`).join("");
+  return `<option value="">Aplicar a categoria...</option>` + grupos.map((g) => `<optgroup label="${GRUPOS[g]}">${db.categorias.filter((c) => c.grupo === g).sort((a, b) => a.nome.localeCompare(b.nome)).map((c) => `<option value="${c.id}" ${c.id === atual ? "selected" : ""}>${esc(c.nome)}</option>`).join("")}</optgroup>`).join("")
+    + `<option value="__novo">+ Nova categoria...</option>${fcat(atual) ? `<option value="__editar">✎ Editar "${esc(fcat(atual).nome)}"...</option>` : ""}`;
 }
 function opcoesPessoa(atual) {
   const g = (rot, xs) => `<optgroup label="${rot}">${xs.slice().sort((a, b) => a.nome.localeCompare(b.nome)).map((c) => `<option value="${c.id}" ${c.id === atual ? "selected" : ""}>${esc(c.nome)}</option>`).join("")}</optgroup>`;
-  return `<option value="">Selecione...</option>${g("Clientes", db.clientes)}${g("Fornecedores", db.fornecedores.filter((f) => f.tipo === "Fornecedor"))}${g("Funcionários", db.fornecedores.filter((f) => f.tipo === "Funcionário"))}`;
+  return `<option value="">Selecione...</option>${g("Clientes", db.clientes)}${g("Fornecedores", db.fornecedores.filter((f) => f.tipo === "Fornecedor"))}${g("Funcionários", db.fornecedores.filter((f) => f.tipo === "Funcionário"))}`
+    + `<option value="__novo">+ Novo contato...</option>${pessoa(atual) ? `<option value="__editar">✎ Editar "${esc(pessoa(atual).nome)}"...</option>` : ""}`;
+}
+// Cadastro rápido (janela por cima) de categoria ou contato a partir dos menus da transação
+const dlg2 = $("#dlg2");
+function cadastroRapido(qual, editarId, tipoLanc, pronto) {
+  const cat = qual === "cat", item = editarId ? (cat ? fcat(editarId) : pessoa(editarId)) : null;
+  const ehCliente = !cat && item && db.clientes.includes(item);
+  const grupos = tipoLanc === "entrada" ? ["receita"] : GRUPOS_DESP;
+  const tipoPessoa = item ? (ehCliente ? "Cliente" : item.tipo) : tipoLanc === "entrada" ? "Cliente" : "Fornecedor";
+  dlg2.innerHTML = `<form><div class="dh"><h2 style="margin:0">${cat ? (item ? "Editar categoria" : "Nova categoria") : item ? "Editar contato" : "Novo contato"}</h2></div><div class="db"><div class="form">
+    ${campo(cat ? "Nome da categoria *" : "Nome / Razão social *", inp("nome", item?.nome, "required autofocus"), true)}
+    ${cat ? campo("Grupo", `<select class="input" name="grupo">${opts(grupos.map((g) => [g, GRUPOS[g]]), item?.grupo || grupos[0])}</select>`, true)
+      : ehCliente ? "" : `<div class="field full"><span>Tipo</span><div class="chips">${TIPOS_CONTATO_FIN.filter((t) => !item || t !== "Cliente").map((t) => `<label class="chip"><input type="radio" name="tipo" value="${t}" ${tipoPessoa === t ? "checked" : ""}>${t}</label>`).join("")}</div></div>`}
+    </div><div class="err" id="err-dlg2"></div></div><div class="df"><button type="button" class="btn" id="dlg2-x">Cancelar</button><button class="btn pri">Salvar</button></div></form>`;
+  dlg2.showModal();
+  $("#dlg2-x", dlg2).onclick = () => dlg2.close();
+  dlg2.querySelector("form").onsubmit = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const fd = new FormData(e.target), nome = String(fd.get("nome") || "").trim().toUpperCase();
+    if (!nome) return;
+    let id = item?.id;
+    if (cat) { if (item) Object.assign(item, { nome, grupo: fd.get("grupo") }); else { id = uid(); db.categorias.push({ id, nome, grupo: fd.get("grupo") }); } }
+    else {
+      const tipo = String(fd.get("tipo") || tipoPessoa);
+      if (item) { item.nome = nome; if (!ehCliente) item.tipo = tipo; }
+      else if (tipo === "Cliente") { id = uid(); db.clientes.push({ id, nome, origem: "", telefone: "", cidade: "", email: "", documento: "", endereco: "", observacoes: "", criado: HOJE }); }
+      else { id = uid(); db.fornecedores.push({ id, nome, tipo, documento: "", email: "", telefone: "", cidade: "" }); }
+    }
+    salvar(); dlg2.close(); toast(item ? "Alteração salva" : cat ? "Categoria cadastrada" : "Contato cadastrado"); pronto(id);
+  };
 }
 const opcoesProjeto = (clienteId, atual) => (cliente(clienteId) ? opts(db.prospeccoes.filter((p) => p.clienteId === clienteId).map((p) => [p.id, p.titulo]), atual, "Nenhum") : `<option value="">Só para clientes</option>`);
+// "+ Novo" / "✎ Editar" nos menus da janela de transação: abre o cadastro rápido e já deixa o item escolhido
+function menuNovo(el, qual) {
+  const val = el.value;
+  if (!val.startsWith("__")) { el.dataset.prev = val; return false; }
+  const prev = el.dataset.prev || "", tipo = dlg.querySelector('[name="tipo"]:checked')?.value || "entrada";
+  el.value = prev;
+  cadastroRapido(qual, val === "__editar" ? prev : null, tipo, (id) => {
+    el.innerHTML = qual === "cat" ? opcoesCategoria(tipo, id) : opcoesPessoa(id); el.dataset.prev = id;
+    if (qual === "pessoa") dlg.querySelector('[name="prospeccaoId"]').innerHTML = opcoesProjeto(id, null);
+  });
+  return true;
+}
 // Edição direto na tabela de transações: salva na hora; a tela se atualiza quando o cursor sai dos campos
 function editarNaLinha(el) {
   const l = db.lancamentos.find((z) => z.id === el.dataset.id); if (!l) return;
   const k = el.dataset.k, val = el.value.trim();
+  if (val.startsWith("__")) { el.value = l[k] || ""; return cadastroRapido(k === "categoriaId" ? "cat" : "pessoa", val === "__editar" ? l[k] : null, l.tipo, (id) => { l[k] = id; salvar(); render(); }); }
   if (k === "descricao") l.descricao = val.toUpperCase();
   else if (k === "valor") { const n = parseValor(val); if (!n || isNaN(n) || n <= 0) { toast("Informe um valor maior que zero."); return render(); } l.valor = Math.round(n * 100) / 100; }
   else if (k === "data") { if (!val) return render(); if (l.competencia === l.data.slice(0, 7)) l.competencia = val.slice(0, 7); l.data = val; }
@@ -1505,8 +1550,8 @@ function formLanc(l = {}) {
     ${campo("Data / vencimento *", inp("data", l.data || (fMes === HOJE.slice(0, 7) ? HOJE : fMes + "-01"), 'type="date" required'))}
     ${campo("Valor *", inp("valor", l.valor != null ? String(l.valor).replace(".", ",") : "", 'inputmode="decimal" placeholder="0,00" required'))}
     ${campo("Descrição", inp("descricao", l.descricao, 'placeholder="Ex.: PROJETO ARQUITETÔNICO - NOME DO CLIENTE"'), true)}
-    <label class="field" data-show-t="entrada saida"><span>${tipo === "saida" ? "Pago a" : "Recebido de"}</span><select class="input" name="clienteId" data-act="cliente-lanc">${opcoesPessoa(l.clienteId)}</select></label>
-    <label class="field" data-show-t="entrada saida"><span>Categoria</span><select class="input" name="categoriaId" id="sel-cat">${opcoesCategoria(tipo, l.categoriaId)}</select></label>
+    <label class="field" data-show-t="entrada saida"><span>${tipo === "saida" ? "Pago a" : "Recebido de"}</span><select class="input" name="clienteId" data-act="cliente-lanc" data-prev="${l.clienteId || ""}">${opcoesPessoa(l.clienteId)}</select></label>
+    <label class="field" data-show-t="entrada saida"><span>Categoria</span><select class="input" name="categoriaId" id="sel-cat" data-act="cat-lanc" data-prev="${l.categoriaId || ""}">${opcoesCategoria(tipo, l.categoriaId)}</select></label>
     ${campo(tipo === "transf" ? "Conta de origem" : "Conta bancária", `<select class="input" name="contaId">${opts(contas, l.contaId || (fConta !== "todas" ? fConta : db.contas[0]?.id))}</select>`)}
     <label class="field" data-show-t="transf"><span>Conta de destino</span><select class="input" name="contaDestinoId">${opts(contas, l.contaDestinoId, "Selecione...")}</select></label>
     <div class="field"><span>Pago?</span><label style="display:flex;gap:8px;align-items:center;padding:8px 0"><input type="checkbox" name="pago" ${l.pago ? "checked" : ""}> Já ${tipo === "entrada" ? "recebido" : "pago"}, em</label>${inp("pagoEm", l.pagoEm || HOJE, 'type="date" aria-label="Data do pagamento"')}</div>
@@ -1550,7 +1595,7 @@ function exportarFin(tipo) {
 document.addEventListener("click", (e) => {
   const el = e.target.closest("[data-act]"); if (!el) return;
   const { act, id, v } = el.dataset;
-  if (el.tagName === "INPUT" || el.tagName === "SELECT") { if (act === "tipo-lanc") { $("#sel-cat", dlg).innerHTML = opcoesCategoria(el.value, null); mostrarPorTipo(); } return; }
+  if (el.tagName === "INPUT" || el.tagName === "SELECT") { if (act === "tipo-lanc") { $("#sel-cat", dlg).innerHTML = opcoesCategoria(el.value, null); $("#sel-cat", dlg).dataset.prev = ""; mostrarPorTipo(); } return; }
   const A = {
     bloquear: () => { finAte = 0; guardarSessao(); ir("#/painel"); },
     "novo-lanc": () => formLanc({ tipo: el.dataset.tipo || "entrada", clienteId: el.dataset.cliente || null, prospeccaoId: el.dataset.prosp || null }),
@@ -1596,7 +1641,8 @@ document.addEventListener("change", (e) => {
     "f-imp-csv": () => importarArquivo(el, "csv"),
     "f-imp-ofx": () => importarArquivo(el, "ofx"),
     "f-imp-ct": () => importarArquivo(el, "ct"),
-    "cliente-lanc": () => { dlg.querySelector('[name="prospeccaoId"]').innerHTML = opcoesProjeto(el.value, null); },
+    "cliente-lanc": () => { if (!menuNovo(el, "pessoa")) dlg.querySelector('[name="prospeccaoId"]').innerHTML = opcoesProjeto(el.value, null); },
+    "cat-lanc": () => menuNovo(el, "cat"),
     "f-sel": () => { if (el.checked) selLanc.add(el.dataset.id); else selLanc.delete(el.dataset.id); render(); },
     "f-sel-todos": () => { lancVisiveis.forEach((x) => (el.checked ? selLanc.add(x) : selLanc.delete(x))); render(); },
     "f-ed": () => editarNaLinha(el),
