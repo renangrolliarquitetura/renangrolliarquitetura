@@ -837,7 +837,7 @@ function formCliente(c = {}) {
     ${campo("Nome *", inp("nome", c.nome, 'required data-mask="maiusc" style="text-transform:uppercase"'), true)}
     ${campo("CPF / CNPJ", inp("documento", c.documento, 'data-mask="doc" inputmode="numeric" placeholder="000.000.000-00"'))}
     ${campo("Origem do cliente", `<select class="input" name="origem">${opts(ORIGENS, c.origem, "Selecione...")}</select>`)}
-    ${campo("Telefone / WhatsApp", inp("telefone", c.telefone))}
+    ${campo("Telefone / WhatsApp", inp("telefone", c.telefone, 'data-mask="tel" inputmode="tel" placeholder="(00) 00000-0000"'))}
     ${campo("E-mail", inp("email", c.email, 'type="email"'))}
     ${campo("CEP", inp("cep", c.cep, 'data-mask="cep" inputmode="numeric" placeholder="00000-000"') + `<small class="small muted" id="cep-info">Digite o CEP para preencher o endereço.</small>`)}
     ${campo("Endereço", inp("endereco", c.endereco))}
@@ -1445,6 +1445,13 @@ function formatarDoc(t) {
   if (d.length <= 11) return d.replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})$/, "$1-$2");
   return d.replace(/^(\d{2})(\d)/, "$1.$2").replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3").replace(/\.(\d{3})(\d)/, ".$1/$2").replace(/(\d{4})(\d)/, "$1-$2");
 }
+// Celular (00) 00000-0000; fixo com 10 dígitos fica (00) 0000-0000
+function formatarTel(t) {
+  const d = soDigitos(t).slice(0, 11);
+  if (d.length <= 2) return d ? "(" + d : "";
+  const meio = d.length === 11 ? 5 : 4;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 2 + meio)}${d.length > 2 + meio ? "-" + d.slice(2 + meio) : ""}`;
+}
 const formatarCep = (t) => soDigitos(t).slice(0, 8).replace(/^(\d{5})(\d)/, "$1-$2");
 let cepBuscado = "";
 async function buscarCep(form, cep) {
@@ -1465,7 +1472,7 @@ document.addEventListener("input", (e) => {
   const el = e.target, mask = el.dataset?.mask; if (!mask) return;
   const pos = el.selectionStart, antes = el.value.length;
   if (mask === "maiusc") { el.value = el.value.toUpperCase(); el.setSelectionRange(pos, pos); return; }
-  el.value = mask === "doc" ? formatarDoc(el.value) : formatarCep(el.value);
+  el.value = { doc: formatarDoc, tel: formatarTel, cep: formatarCep }[mask](el.value);
   const p = pos + el.value.length - antes; el.setSelectionRange(p, p);
   if (mask === "cep" && soDigitos(el.value).length === 8) buscarCep(el.form, soDigitos(el.value));
 });
