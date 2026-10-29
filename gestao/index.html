@@ -299,6 +299,20 @@ table.trans td { vertical-align: middle; }
 tr.clic { cursor: pointer; } tr.clic:hover td { background: var(--surface-2); }
 .alerta { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: var(--critical); color: #fff; font-size: 11px; font-weight: 700; }
 .tagp { font-size: 11px; background: var(--surface-2); color: var(--ink-2); border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
+button.tagp { border: 0; font: inherit; font-size: 11px; cursor: pointer; } button.tagp:hover { color: var(--ink); }
+/* transações: edição direto na linha e seleção em massa */
+.trans-wrap { overflow-x: auto; }
+table.trans td { padding: 6px 4px; } table.trans th { padding: 10px 6px; }
+table.trans .ck { width: 34px; text-align: center; } table.trans .ck input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--ink); }
+table.trans tr.sel td { background: color-mix(in srgb, var(--accent) 9%, transparent); }
+.ie { width: 100%; min-width: 0; border: 1px solid transparent; background: transparent; color: inherit; font: inherit; padding: 5px 6px; border-radius: 4px; }
+.ie:hover { border-color: var(--line); } .ie:focus { outline: 0; border-color: var(--accent); background: var(--surface); }
+select.ie { cursor: pointer; } input.ie.num { text-align: right; font-weight: 600; } input.ie.pos { color: var(--good-text); } input.ie.neg { color: var(--critical); }
+.ie-data { width: 128px; } .ie-desc { min-width: 160px; } .ie-pessoa { min-width: 120px; } .ie-valor { width: 112px; } .ie-cat { min-width: 120px; } .ie-pag { min-width: 112px; }
+.dcell { display: flex; align-items: center; gap: 6px; }
+.selbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--surface-2); font-size: 13px; }
+.selbar b { margin-right: 6px; }
+table.parc td { padding: 4px 6px; } table.parc .input { padding: 6px 8px; }
 .totais { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 18px; padding: 12px 18px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-2); }
 .totais b { color: var(--ink); margin-left: 4px; }
 .rel { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 14px; align-items: start; }
@@ -992,6 +1006,7 @@ function resumoMes(ym) {
 }
 
 /* ---------- estado da tela ---------- */
+let selLanc = new Set(), lancVisiveis = [];
 let fMes = HOJE.slice(0, 7), fConta = "todas", fDia = HOJE, fAba = "entrada", fStatus = "todos", fBusca = "", fCentro = "";
 let fRel = "desp-categoria", fRelDe = HOJE.slice(0, 8) + "01", fRelAte = addDias(addMeses(HOJE.slice(0, 8) + "01", 1), -1), fRelPagos = true, fRelPend = true;
 let fCfg = "contas", fCfgGrupo = "receita", fCtAba = "Todos", fCtBusca = "", fCtSel = null;
@@ -1132,6 +1147,7 @@ function finTransacoes() {
   ls.sort((a, b) => b.data.localeCompare(a.data));
   const rotulo = { entrada: ["Recebido de", "recebimento", "Recebido", "A receber"], saida: ["Pago a", "despesa", "Pago", "A pagar"], transf: ["Destino", "transferência", "Realizado", "Pendente"] }[fAba];
   const resPrev = atual.rPrev - atual.dPrev;
+  const selVis = ls.filter((l) => selLanc.has(l.id)); lancVisiveis = ls.map((l) => l.id);
   return `<div class="card topo mb">
       <div><div class="lbl2">RESULTADO PREVISTO PARA O MÊS</div><div class="big ${resPrev < 0 ? "neg" : ""}">${R$(resPrev)}</div>
         <div class="grid g2" style="margin-top:10px">
@@ -1149,15 +1165,21 @@ function finTransacoes() {
       <select class="input" data-act="f-centro" aria-label="Tags / Centro de custo"><option value="">Tags / Centro de custo</option>${db.centros.map((c) => `<option value="${c.id}" ${fCentro === c.id ? "selected" : ""}>Centro: ${esc(c.nome)}</option>`).join("")}${db.tags.map((t) => `<option value="${t.id}" ${fCentro === t.id ? "selected" : ""}>Tag: ${esc(t.nome)}</option>`).join("")}</select>
     </div>
     <div class="card flush">
-      <table class="trans"><thead><tr><th>Data</th><th>Descrição</th><th>${rotulo[0]}</th><th class="num">Valor</th><th>Categoria</th><th>Pagamento</th><th>Pago?</th></tr></thead><tbody>
-        <tr><td colspan="7"><button class="addrow" data-act="novo-lanc" data-tipo="${fAba}">+ Adicionar ${rotulo[1]}</button></td></tr>
-        ${ls.map((l) => `<tr class="clic" data-act="editar-lanc" data-id="${l.id}"><td><b>${dataBR(l.data).slice(0, 5)}</b></td>
-          <td>${atrasado(l) ? `<span class="alerta" title="Em atraso">!</span> ` : ""}${esc(l.descricao || catNome(l))} ${l.parcela ? `<span class="tagp">${l.parcela} mensal</span>` : ""}</td>
-          <td class="ink2">${l.tipo === "transf" ? `${esc(conta(l.contaId)?.nome)} → ${esc(conta(l.contaDestinoId)?.nome)}` : esc(pessoaNome(l.clienteId)).toUpperCase()}</td>
-          <td class="num ${l.tipo === "entrada" ? "pos" : l.tipo === "saida" ? "neg" : ""}"><b>${R$(l.valor)}</b></td>
-          <td class="small">${esc(catNome(l))}</td><td class="small">${l.parcela ? "Parcelado" : "À vista"}</td><td>${toggle(l)}</td></tr>`).join("")}
-        ${ls.length ? "" : `<tr><td colspan="7" class="empty">Nenhuma movimentação neste mês.</td></tr>`}
-      </tbody></table>
+      ${selVis.length ? `<div class="selbar"><b>${selVis.length} selecionado(s) · ${R$(soma(selVis))}</b><button class="btn sm" data-act="f-sel-pago" data-v="1">Marcar como ${fAba === "entrada" ? "recebido" : "pago"}</button><button class="btn sm" data-act="f-sel-pago" data-v="0">Marcar como não ${fAba === "entrada" ? "recebido" : "pago"}</button><button class="btn sm danger" data-act="f-sel-del">Excluir</button><button class="btn sm" data-act="f-sel-limpar">Limpar seleção</button></div>` : ""}
+      <div class="trans-wrap"><table class="trans"><thead><tr><th class="ck"><input type="checkbox" data-act="f-sel-todos" aria-label="Selecionar todos" ${ls.length && selVis.length === ls.length ? "checked" : ""}></th><th>Data</th><th>Descrição</th><th>${rotulo[0]}</th><th class="num">Valor</th><th>Categoria</th><th>Pagamento</th><th>Pago?</th><th></th></tr></thead><tbody>
+        <tr><td colspan="9"><button class="addrow" data-act="novo-lanc" data-tipo="${fAba}">+ Adicionar ${rotulo[1]}</button></td></tr>
+        ${ls.map((l) => { const tr = l.tipo === "transf", pg = pagamentoDe(l); return `<tr class="${selLanc.has(l.id) ? "sel" : ""}">
+          <td class="ck"><input type="checkbox" data-act="f-sel" data-id="${l.id}" aria-label="Selecionar" ${selLanc.has(l.id) ? "checked" : ""}></td>
+          <td><input class="ie ie-data" type="date" data-act="f-ed" data-k="data" data-id="${l.id}" value="${l.data}" aria-label="Data"></td>
+          <td><div class="dcell">${atrasado(l) ? `<span class="alerta" title="Em atraso">!</span>` : ""}<input class="ie ie-desc" data-act="f-ed" data-k="descricao" data-id="${l.id}" value="${esc(l.descricao)}" placeholder="${esc(catNome(l))}" aria-label="Descrição">${l.parcela ? `<button class="tagp" data-act="f-serie" data-id="${l.id}" title="Editar ${pg === "repetir" ? "repetições" : "parcelas"}">${l.parcela} ${freqNome(l.freq).toLowerCase()}</button>` : ""}</div></td>
+          <td class="ink2">${tr ? `${esc(conta(l.contaId)?.nome)} → ${esc(conta(l.contaDestinoId)?.nome)}` : `<select class="ie ie-pessoa" data-act="f-ed" data-k="clienteId" data-id="${l.id}" aria-label="${rotulo[0]}">${opcoesPessoa(l.clienteId)}</select>`}</td>
+          <td class="num"><input class="ie ie-valor num ${l.tipo === "entrada" ? "pos" : l.tipo === "saida" ? "neg" : ""}" data-act="f-ed" data-k="valor" data-id="${l.id}" value="${R$(l.valor)}" inputmode="decimal" aria-label="Valor"></td>
+          <td class="small">${tr ? "Transferência" : `<select class="ie ie-cat" data-act="f-ed" data-k="categoriaId" data-id="${l.id}" aria-label="Categoria">${opcoesCategoria(l.tipo, l.categoriaId)}</select>`}</td>
+          <td class="small">${tr ? "—" : `<select class="ie ie-pag" data-act="f-pagto" data-id="${l.id}" aria-label="Pagamento">${opts([["avista", "À vista"], ["parcelado", pg === "parcelado" ? "Parcelado" : "Criar parcelas"], ["repetir", pg === "repetir" ? "Repetindo" : "Repetir transação"]], pg)}</select>`}</td>
+          <td>${toggle(l)}</td>
+          <td><button class="btn sm" data-act="editar-lanc" data-id="${l.id}" title="Abrir todos os detalhes" aria-label="Abrir detalhes">⋯</button></td></tr>`; }).join("")}
+        ${ls.length ? "" : `<tr><td colspan="9" class="empty">Nenhuma movimentação neste mês.</td></tr>`}
+      </tbody></table></div>
       <div class="totais"><span>Total <b>${R$(soma(total))}</b></span><span>${rotulo[2]} <b>${R$(soma(total.filter((l) => l.pago)))}</b></span><span>${rotulo[3]} <b>${R$(soma(total.filter((l) => !l.pago)))}</b></span></div>
     </div>`;
 }
@@ -1324,6 +1346,74 @@ function acharContato(nome, tipo) {
   if (tipo === "entrada") { const cl = { id: uid(), nome: nome.trim(), origem: "", telefone: "", cidade: "", email: "", documento: "", endereco: "", observacoes: "", criado: HOJE }; db.clientes.push(cl); return cl.id; }
   db.fornecedores.push(novo); return novo.id;
 }
+// Parcelas e repetições: frequência, datas e divisão do valor
+const FREQS = [["semanal", "Semanal"], ["quinzenal", "Quinzenal"], ["mensal", "Mensal"], ["bimestral", "Bimestral"], ["trimestral", "Trimestral"], ["semestral", "Semestral"], ["anual", "Anual"]];
+const freqNome = (k) => (FREQS.find(([v]) => v === k) || FREQS[2])[1];
+const passoData = (s, freq, i) => (freq === "semanal" ? addDias(s, 7 * i) : freq === "quinzenal" ? addDias(s, 15 * i) : addMeses(s, i * ({ bimestral: 2, trimestral: 3, semestral: 6, anual: 12 }[freq] || 1)));
+const dividir = (total, n) => { const parte = Math.floor((total / n) * 100) / 100; return Array.from({ length: n }, (_, i) => (i === n - 1 ? Math.round((total - parte * (n - 1)) * 100) / 100 : parte)); };
+const pagamentoDe = (l) => l.modo || (l.parcela ? "parcelado" : "avista");
+const membrosSerie = (l) => (l.grupo ? db.lancamentos.filter((x) => x.grupo === l.grupo).sort((a, b) => a.data.localeCompare(b.data)) : [l]);
+const gerarLinhas = (data0, n, freq, modo, valor) => (modo === "parcelado" ? dividir(valor, n) : Array(n).fill(valor)).map((v, i) => ({ data: passoData(data0, freq, i), valor: v }));
+// Transforma o lançamento (e os irmãos da série) nas linhas informadas; sobras não pagas são excluídas
+function aplicarSerie(l, modo, freq, linhas) {
+  const membros = membrosSerie(l), grupo = l.grupo || uid(), n = linhas.length;
+  linhas.forEach((r, i) => {
+    let x = membros[i];
+    if (!x) { x = { ...l, id: uid(), tags: [...(l.tags || [])], pago: false, pagoEm: null }; db.lancamentos.push(x); }
+    Object.assign(x, { data: r.data, valor: r.valor, competencia: r.data.slice(0, 7), parcela: `${i + 1}/${n}`, grupo, modo, freq });
+  });
+  membros.slice(n).forEach((x) => { if (x.pago) Object.assign(x, { grupo: null, modo: null, freq: null, parcela: null }); else db.lancamentos = db.lancamentos.filter((y) => y !== x); });
+}
+// Voltar para à vista: parcelas viram um lançamento só; repetição para aqui (as próximas não pagas saem)
+function tornarAVista(l) {
+  const outros = membrosSerie(l).filter((x) => x !== l);
+  if (l.modo === "repetir") {
+    const futuros = outros.filter((x) => !x.pago && x.data > l.data);
+    perguntar(`Parar a repetição? ${futuros.length ? `As ${futuros.length} repetição(ões) seguintes não pagas serão excluídas.` : ""}`, "Parar repetição", () => {
+      db.lancamentos = db.lancamentos.filter((x) => !futuros.includes(x));
+      [l, ...outros].forEach((x) => Object.assign(x, { grupo: null, modo: null, freq: null, parcela: null }));
+      salvar(); render(); toast("Agora é à vista");
+    });
+  } else {
+    const juntar = outros.filter((x) => !x.pago), total = Math.round((l.valor + soma(juntar)) * 100) / 100;
+    perguntar(outros.length ? `Juntar as parcelas não pagas neste lançamento, à vista, no valor de ${R$(total)}?` : "Marcar este lançamento como à vista?", "Confirmar", () => {
+      db.lancamentos = db.lancamentos.filter((x) => !juntar.includes(x));
+      [l, ...outros].forEach((x) => Object.assign(x, { grupo: null, modo: null, freq: null, parcela: null }));
+      l.valor = total; salvar(); render(); toast("Agora é à vista");
+    });
+  }
+}
+const fmtValor = (v) => Number(v || 0).toFixed(2).replace(".", ",");
+function linhasSerie(linhas, pagos = []) {
+  return linhas.map((r, i) => `<tr><td class="small">${i + 1}/${linhas.length}${pagos[i] ? ` <span class="badge b-good">pago</span>` : ""}</td><td><input class="input" type="date" name="pd" value="${r.data}" required></td><td><input class="input" name="pv" inputmode="decimal" value="${fmtValor(r.valor)}" data-act="serie-soma" required style="text-align:right"></td></tr>`).join("");
+}
+function formSerie(l, modo) {
+  const membros = membrosSerie(l), mesmo = pagamentoDe(l) === modo && membros.length > 1;
+  const n = mesmo ? membros.length : modo === "parcelado" ? 2 : 12, freq = l.freq || "mensal";
+  const valor = mesmo && modo === "parcelado" ? soma(membros) : l.valor;
+  const linhas = mesmo ? membros.map((x) => ({ data: x.data, valor: x.valor })) : gerarLinhas(membros[0].data, n, freq, modo, valor);
+  abrir(modo === "parcelado" ? "Criar parcelas" : "Repetir transação", `<div class="form">
+    <p class="small muted full" style="margin:0">${esc(l.descricao || catNome(l))}</p>
+    ${campo(modo === "parcelado" ? "Número de parcelas" : "Quantas vezes (contando esta)", `<input class="input" type="number" name="n" min="2" max="120" value="${n}" data-act="serie-gerar">`)}
+    ${campo("Frequência", `<select class="input" name="freq" data-act="serie-gerar">${opts(FREQS, freq)}</select>`)}
+    ${campo(modo === "parcelado" ? "Valor total" : "Valor de cada vez", inp("total", fmtValor(valor), 'inputmode="decimal" data-act="serie-gerar"'))}
+    <div class="field full"><span>${modo === "parcelado" ? "Parcelas (dá para ajustar data e valor de cada uma)" : "Repetições (dá para ajustar data e valor de cada uma)"}</span>
+      <table class="parc"><thead><tr><th>Nº</th><th>Vencimento</th><th class="num">Valor</th></tr></thead><tbody id="serie-linhas">${linhasSerie(linhas, mesmo ? membros.map((x) => x.pago) : [])}</tbody></table>
+      <p class="small muted" id="serie-soma" style="margin:6px 0 0"></p></div>
+  </div>`, "f-serie", `data-id="${l.id}" data-modo="${modo}"`);
+  somaSerie();
+}
+function gerarSerieDlg() {
+  const f = dlg.querySelector("form"), n = Math.min(Math.max(Number(f.n.value) || 2, 2), 120);
+  const data0 = f.querySelector('[name="pd"]')?.value || HOJE;
+  const linhas = gerarLinhas(data0, n, f.freq.value, f.dataset.modo, parseValor(f.total.value) || 0);
+  $("#serie-linhas", dlg).innerHTML = linhasSerie(linhas); somaSerie();
+}
+function somaSerie() {
+  const f = dlg.querySelector("form"), vals = [...f.querySelectorAll('[name="pv"]')].map((i) => parseValor(i.value) || 0), tot = Math.round(vals.reduce((a, b) => a + b, 0) * 100) / 100;
+  const alvo = parseValor(f.total.value) || 0, difere = f.dataset.modo === "parcelado" && Math.abs(tot - alvo) > 0.009;
+  $("#serie-soma", dlg).innerHTML = `Soma: <b>${R$(tot)}</b>${difere ? ` <span style="color:var(--critical)">(o valor total informado é ${R$(alvo)})</span>` : ""}`;
+}
 const novoLanc = (o) => ({ id: uid(), categoriaId: null, contaId: fConta === "todas" ? db.contas[0].id : fConta, contaDestinoId: null, competencia: o.data.slice(0, 7), forma: "", documento: "", centroId: null, tags: [], obs: "", descricao: "", clienteId: null, prospeccaoId: null, parcela: null, pagoEm: o.pago ? o.data : null, ...o });
 function importarArquivo(input, tipo) {
   const arq = input.files[0]; if (!arq) return;
@@ -1394,6 +1484,19 @@ function opcoesPessoa(atual) {
   return `<option value="">Selecione...</option>${g("Clientes", db.clientes)}${g("Fornecedores", db.fornecedores.filter((f) => f.tipo === "Fornecedor"))}${g("Funcionários", db.fornecedores.filter((f) => f.tipo === "Funcionário"))}`;
 }
 const opcoesProjeto = (clienteId, atual) => (cliente(clienteId) ? opts(db.prospeccoes.filter((p) => p.clienteId === clienteId).map((p) => [p.id, p.titulo]), atual, "Nenhum") : `<option value="">Só para clientes</option>`);
+// Edição direto na tabela de transações: salva na hora; a tela se atualiza quando o cursor sai dos campos
+function editarNaLinha(el) {
+  const l = db.lancamentos.find((z) => z.id === el.dataset.id); if (!l) return;
+  const k = el.dataset.k, val = el.value.trim();
+  if (k === "descricao") l.descricao = val.toUpperCase();
+  else if (k === "valor") { const n = parseValor(val); if (!n || isNaN(n) || n <= 0) { toast("Informe um valor maior que zero."); return render(); } l.valor = Math.round(n * 100) / 100; }
+  else if (k === "data") { if (!val) return render(); if (l.competencia === l.data.slice(0, 7)) l.competencia = val.slice(0, 7); l.data = val; }
+  else if (k === "clienteId") { l.clienteId = val || null; if (l.prospeccaoId && prosp(l.prospeccaoId)?.clienteId !== l.clienteId) l.prospeccaoId = null; }
+  else if (k === "categoriaId") l.categoriaId = val || null;
+  if (k === "descricao") el.value = l.descricao;
+  if (k === "valor") el.value = R$(l.valor);
+  salvar(); renderPendente = true; setTimeout(atualizarTela, 0);
+}
 function formLanc(l = {}) {
   const tipo = l.tipo || "entrada", novo = !l.id;
   const contas = db.contas.filter((c) => !c.arquivada || c.id === l.contaId).map((c) => [c.id, c.nome]);
@@ -1413,7 +1516,7 @@ function formLanc(l = {}) {
     ${campo("Centro de custo", `<select class="input" name="centroId">${opts(db.centros.map((c) => [c.id, c.nome]), l.centroId, "Selecione...")}</select>`)}
     <label class="field" data-show-t="entrada saida"><span>Projeto (opcional)</span><select class="input" name="prospeccaoId">${opcoesProjeto(l.clienteId, l.prospeccaoId)}</select></label>
     <div class="field full"><span>Tags</span><div class="chips">${db.tags.length ? db.tags.map((t) => `<label class="chip"><input type="checkbox" name="tags" value="${t.id}" ${(l.tags || []).includes(t.id) ? "checked" : ""}>${esc(t.nome)}</label>`).join("") : `<span class="small muted">Cadastre tags em Configurações.</span>`}</div></div>
-    ${novo ? `<div class="field full" data-show-t="entrada saida"><span>Repetição</span><div class="actions"><select class="input" name="repeticao"><option value="">Não repetir (à vista)</option><option value="parcelado">Parcelado: dividir o valor em</option><option value="mensal">Fixo mensal: repetir o valor por</option></select><input class="input" type="number" name="vezes" min="2" max="120" value="2" style="width:80px"><span class="small muted">vezes / meses</span></div></div>` : l.parcela ? `<p class="small muted full">Parcela ${l.parcela}.</p>` : ""}
+    ${novo ? `<div class="field full" data-show-t="entrada saida"><span>Repetição</span><div class="actions"><select class="input" name="repeticao"><option value="">À vista</option><option value="parcelado">Criar parcelas: dividir o valor em</option><option value="repetir">Repetir transação: repetir o valor</option></select><input class="input" type="number" name="vezes" min="2" max="120" value="2" style="width:80px" aria-label="Quantidade"><span class="small muted">vezes,</span><select class="input" name="freq" aria-label="Frequência">${opts(FREQS, "mensal")}</select></div></div>` : l.parcela ? `<p class="small muted full">Parcela ${l.parcela}.</p>` : ""}
     ${campo("Observações", `<textarea class="input" name="obs" rows="2">${esc(l.obs)}</textarea>`, true)}
   </div>`, "lanc", `data-id="${l.id || ""}"`);
   if (l.id) dlg.querySelector(".df").insertAdjacentHTML("afterbegin", `<button type="button" class="btn danger" style="margin-right:auto" data-act="del-lanc" data-id="${l.id}">Excluir</button>`);
@@ -1454,9 +1557,13 @@ document.addEventListener("click", (e) => {
     "editar-lanc": () => { if (finLiberado()) formLanc(db.lancamentos.find((l) => l.id === id)); },
     "del-lanc": () => perguntar("Excluir este lançamento?", "Excluir", () => { db.lancamentos = db.lancamentos.filter((l) => l.id !== id); salvar(); render(); }),
     "f-pago": () => { const l = db.lancamentos.find((z) => z.id === id); l.pago = !l.pago; l.pagoEm = l.pago ? HOJE : null; salvar(); render(); toast(l.pago ? (l.tipo === "entrada" ? "Marcado como recebido" : "Marcado como pago") : "Marcado como não pago"); },
-    "f-mes": () => { fMes = ymAdd(fMes, Number(v)); fDia = fMes === HOJE.slice(0, 7) ? HOJE : fMes + "-01"; render(); },
+    "f-serie": () => { const l = db.lancamentos.find((z) => z.id === id); if (l) formSerie(l, pagamentoDe(l)); },
+    "f-sel-limpar": () => { selLanc.clear(); render(); },
+    "f-sel-pago": () => { const ls = db.lancamentos.filter((l) => selLanc.has(l.id) && lancVisiveis.includes(l.id)); ls.forEach((l) => { l.pago = v === "1"; l.pagoEm = l.pago ? l.pagoEm || HOJE : null; }); salvar(); render(); toast(`${ls.length} lançamento(s) atualizados`); },
+    "f-sel-del": () => { const ids = [...selLanc].filter((x) => lancVisiveis.includes(x)); perguntar(`Excluir ${ids.length} lançamento(s)? Não dá para desfazer.`, "Excluir", () => { db.lancamentos = db.lancamentos.filter((l) => !ids.includes(l.id)); selLanc.clear(); salvar(); render(); toast(`${ids.length} lançamento(s) excluídos`); }); },
+    "f-mes": () => { selLanc.clear(); fMes = ymAdd(fMes, Number(v)); fDia = fMes === HOJE.slice(0, 7) ? HOJE : fMes + "-01"; render(); },
     "f-dia": () => { fDia = v; render(); },
-    "f-aba": () => { fAba = v; render(); },
+    "f-aba": () => { selLanc.clear(); fAba = v; render(); },
     "f-rel": () => { fRel = v; render(); },
     "f-rel-per": () => { if (v === "mes") { fRelDe = fMes + "-01"; fRelAte = addDias(addMeses(fRelDe, 1), -1); } else if (v === "ano") { fRelDe = fMes.slice(0, 4) + "-01-01"; fRelAte = fMes.slice(0, 4) + "-12-31"; } else { fRelAte = addDias(addMeses(HOJE.slice(0, 8) + "01", 1), -1); fRelDe = addMeses(HOJE.slice(0, 8) + "01", -11); } render(); },
     "f-ct-aba": () => { fCtAba = v; render(); },
@@ -1490,6 +1597,12 @@ document.addEventListener("change", (e) => {
     "f-imp-ofx": () => importarArquivo(el, "ofx"),
     "f-imp-ct": () => importarArquivo(el, "ct"),
     "cliente-lanc": () => { dlg.querySelector('[name="prospeccaoId"]').innerHTML = opcoesProjeto(el.value, null); },
+    "f-sel": () => { if (el.checked) selLanc.add(el.dataset.id); else selLanc.delete(el.dataset.id); render(); },
+    "f-sel-todos": () => { lancVisiveis.forEach((x) => (el.checked ? selLanc.add(x) : selLanc.delete(x))); render(); },
+    "f-ed": () => editarNaLinha(el),
+    "f-pagto": () => { const l = db.lancamentos.find((z) => z.id === el.dataset.id), m = el.value; render(); if (!l || m === pagamentoDe(l)) return; if (m === "avista") tornarAVista(l); else formSerie(l, m); },
+    "serie-gerar": () => gerarSerieDlg(),
+    "serie-soma": () => somaSerie(),
   };
   if (A[act]) A[act]();
 });
@@ -1553,14 +1666,19 @@ document.addEventListener("submit", (e) => {
     if (f.dataset.id) Object.assign(db.lancamentos.find((l) => l.id === f.dataset.id), base);
     else {
       const rep = v("repeticao"), n = rep ? Math.min(Math.max(Number(v("vezes")) || 2, 2), 120) : 1;
-      const parte = rep === "parcelado" ? Math.floor((valor / n) * 100) / 100 : valor;
-      for (let i = 0; i < n; i++) {
-        const d = addMeses(base.data, i);
-        db.lancamentos.push({ ...base, id: uid(), data: d, competencia: addMeses(base.competencia + "-01", i).slice(0, 7), valor: rep === "parcelado" && i === n - 1 ? Math.round((valor - parte * (n - 1)) * 100) / 100 : parte, parcela: n > 1 ? `${i + 1}/${n}` : null, pago: i === 0 && pago, pagoEm: i === 0 ? base.pagoEm : null });
-      }
+      const l = { ...base, id: uid(), parcela: null }; db.lancamentos.push(l);
+      if (rep) aplicarSerie(l, rep, v("freq") || "mensal", gerarLinhas(l.data, n, v("freq") || "mensal", rep, valor));
       toast(n > 1 ? `${n} lançamentos criados` : "Lançamento salvo");
     }
     salvar(); dlg.close(); return render();
+  }
+  if (nome === "f-serie") {
+    const l = db.lancamentos.find((x) => x.id === f.dataset.id); if (!l) return dlg.close();
+    const datas = fd.getAll("pd").map(String), vals = fd.getAll("pv").map((x) => parseValor(x));
+    if (datas.length !== Math.min(Math.max(Number(v("n")) || 2, 2), 120)) return gerarSerieDlg();
+    if (datas.some((d) => !d) || vals.some((x) => !x || isNaN(x) || x <= 0)) return erro("Preencha data e valor (maior que zero) em todas as linhas.");
+    aplicarSerie(l, f.dataset.modo, v("freq"), datas.map((d, i) => ({ data: d, valor: Math.round(vals[i] * 100) / 100 })));
+    salvar(); dlg.close(); toast(f.dataset.modo === "parcelado" ? `${datas.length} parcelas salvas` : `${datas.length} repetições salvas`); return render();
   }
   if (nome === "f-contato") {
     const dados = { nome: v("nome"), tipo: v("tipo"), documento: v("documento"), email: v("email"), telefone: v("telefone"), cidade: v("cidade") };
