@@ -722,13 +722,14 @@ function pgCliente(id) {
 }
 
 /* ---------- Prospecções ---------- */
-let fpStatus = "", fpTipo = "", fpAno = "todos";
+let fpStatus = "aberto", fpTipo = "", fpAno = "todos";
 function pgProspeccoes() {
   const doPeriodo = db.prospeccoes.filter((p) => (fpAno === "todos" || p.contato.startsWith(fpAno)) && (!fpTipo || p.tipos.includes(Number(fpTipo))));
-  const lista = doPeriodo.filter((p) => !fpStatus || p.status === fpStatus).sort((a, b) => b.contato.localeCompare(a.contato));
-  const abas = [["", "Todas"], ...Object.keys(STATUS).map((s) => [s, STATUS[s].label])];
+  const lista = doPeriodo.filter((p) => p.status === fpStatus).sort((a, b) => b.contato.localeCompare(a.contato));
+  // Projetos fechados ficam na Esteira; aqui só o que ainda está em negociação
+  const abas = [["aberto", "Em aberto"], ["cancelado", "Cancelados"]];
   return cabecalho("Prospecções", `${lista.length} projeto(s)${verValores() ? " · " + R$(soma(lista)) : ""}`, botoesExportar("prospeccoes") + `<button class="btn pri" data-act="nova-prosp">Nova prospecção</button>`) +
-    `<div class="bar mb"><div class="actions">${abas.map(([s, l]) => `<button class="btn sm ${fpStatus === s ? "on" : ""}" data-act="fp-status" data-v="${s}">${l} <span class="muted">${s ? doPeriodo.filter((p) => p.status === s).length : doPeriodo.length}</span></button>`).join("")}</div>
+    `<div class="bar mb"><div class="actions">${abas.map(([s, l]) => `<button class="btn sm ${fpStatus === s ? "on" : ""}" data-act="fp-status" data-v="${s}">${l} <span class="muted">${doPeriodo.filter((p) => p.status === s).length}</span></button>`).join("")}</div>
       <div class="actions"><select class="input" data-act="fp-tipo" aria-label="Tipo de projeto"><option value="">Todos os tipos</option>${db.tipos.map((t) => `<option value="${t.id}" ${String(t.id) === fpTipo ? "selected" : ""}>${esc(t.nome)}</option>`).join("")}</select>${selAno(anosDe(db.prospeccoes.map((p) => p.contato)), fpAno).replace('data-act="ano"', 'data-act="fp-ano"')}</div></div>
     <div class="card flush">${lista.length ? `<table><thead><tr><th>Projeto</th><th>Cliente</th><th>Tipos</th><th>Situação</th><th>Etapa</th><th>Contato</th>${verValores() ? `<th class="num">Valor</th>` : ""}<th></th></tr></thead><tbody>${lista.map((p) => `<tr>
       <td><a href="#/prospeccao/${p.id}"><b>${esc(p.titulo)}</b></a></td><td><a href="#/cliente/${p.clienteId}">${esc(cliente(p.clienteId)?.nome)}</a></td><td class="ink2">${esc(tiposDe(p))}</td><td>${badge(p.status)}</td><td class="ink2">${p.status === "cancelado" ? "—" : esc(etapaDe(p))}</td><td>${dataBR(p.contato)}</td>${verValores() ? `<td class="num">${R$(p.valor)}</td>` : ""}
@@ -1589,7 +1590,9 @@ function render() {
   const [, rota = "painel", id] = ROTA.split("/");
   const paginas = { painel: pgPainel, clientes: pgClientes, cliente: () => pgCliente(id), prospeccoes: pgProspeccoes, prospeccao: () => pgProspeccao(id), financeiro: () => pgFinanceiro(id), equipe: pgEquipe, esteira: pgEsteira, tarefas: pgTarefas };
   const nav = MENUS.filter(([r]) => pode(r));
-  let ativo = { cliente: "clientes", prospeccao: "prospeccoes" }[rota] || (paginas[rota] ? rota : "painel");
+  let ativo = { cliente: "clientes", prospeccao: prosp(id)?.status === "fechado" ? "esteira" : "prospeccoes" }[rota] || (paginas[rota] ? rota : "painel");
+  // Quem não tem o menu da página do projeto ainda pode abri-lo pelo outro (Esteira ou Prospecções)
+  if (rota === "prospeccao" && !pode(ativo)) ativo = ["esteira", "prospeccoes"].find(pode) || ativo;
   // Página fora dos menus liberados: abre o primeiro menu que a pessoa pode ver
   if (!pode(ativo) && nav.length) { ROTA = "#/" + nav[0][0]; return render(); }
   const conteudo = nav.length ? (paginas[rota] || pgPainel)() : `<p class="empty">Nenhum menu liberado para você ainda. Fale com o administrador.</p>`;
@@ -1634,7 +1637,7 @@ document.addEventListener("click", (e) => {
     "nova-prosp": () => formProsp({ clienteId: el.dataset.cliente }),
     "editar-prosp": () => formProsp(prosp(id), !!el.dataset.cancelar),
     "del-prosp": () => perguntar("Excluir esta prospecção?", "Excluir", () => { const p = prosp(id); db.prospeccoes = db.prospeccoes.filter((x) => x.id !== id); db.etapas = db.etapas.filter((x) => x.prospeccaoId !== id); db.tarefas.forEach((t) => { if (t.prospeccaoId === id) t.prospeccaoId = null; }); db.lancamentos.forEach((l) => { if (l.prospeccaoId === id) l.prospeccaoId = null; }); salvar(); ir("#/cliente/" + p.clienteId); }),
-    fechou: () => { const p = prosp(id); p.status = "fechado"; p.fechamento = HOJE; salvar(); render(); toast("Marcado como fechado 🎉"); },
+    fechou: () => { const p = prosp(id); p.status = "fechado"; p.fechamento = HOJE; salvar(); render(); toast("Marcado como fechado 🎉 Agora ele aparece na Esteira."); },
     "fp-status": () => { fpStatus = el.dataset.v; render(); },
     "etapa-ok": () => { const x = db.etapas.find((z) => z.id === id); x.concluida = !x.concluida; x.concluidaEm = x.concluida ? HOJE : null; salvar(); render(); },
     "del-etapa": () => { db.etapas = db.etapas.filter((z) => z.id !== id); salvar(); render(); },
