@@ -215,7 +215,22 @@ dialog .df { padding: 14px 20px; border-top: 1px solid var(--line); display: fle
 .kcol > header .btn { padding: 2px 8px; }
 .kcards { padding: 10px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; min-height: 70px; }
 .kcol.over { outline: 2px dashed var(--accent); outline-offset: -2px; }
-.kcard { background: var(--surface); border: 1px solid var(--line); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; cursor: grab; }
+.kcard { background: var(--surface); border: 1px solid var(--line); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; cursor: grab; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.checklist details { border-top: 1px solid var(--line); }
+.checklist summary { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 2px; cursor: pointer; font-size: 12px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; list-style: none; }
+.checklist summary::-webkit-details-marker { display: none; }
+.checklist summary::before { content: "›"; display: inline-block; width: 12px; transition: transform .15s; }
+.checklist details[open] summary::before { transform: rotate(90deg); }
+.checklist summary > span:first-child { flex: 1; }
+.checklist ul { list-style: none; margin: 0 0 12px; padding: 0; columns: 2 320px; column-gap: 28px; }
+.checklist li { break-inside: avoid; padding: 4px 0; }
+.checklist label { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; font-size: 13px; line-height: 1.4; }
+.checklist input { margin-top: 2px; accent-color: var(--ink); width: 16px; height: 16px; flex: none; }
+.checklist input:checked + span { color: var(--muted); text-decoration: line-through; }
+.kcard.origem { opacity: .35; }
+.kcard.fantasma { position: fixed; z-index: 70; pointer-events: none; margin: 0; transform: rotate(3deg); box-shadow: 0 12px 28px rgba(0,0,0,.18); cursor: grabbing; }
+body.arrastando, body.arrastando * { cursor: grabbing !important; }
+body.arrastando .kanban { scroll-snap-type: none; }
 .kcard.feita .tit { color: var(--muted); text-decoration: line-through; }
 .kcard .tit { font-weight: 500; color: var(--ink); text-decoration: none; }
 .kcard .tit:hover { text-decoration: underline; }
@@ -373,6 +388,18 @@ const CAT_SAI = ["Aluguel", "Salários / Pró-labore", "Impostos", "Software / L
 const FORMAS = ["Pix", "Transferência", "Boleto", "Cartão de crédito", "Cartão de débito", "Dinheiro", "Cheque"];
 const TIPOS_CONTATO = ["Ligação", "WhatsApp", "Reunião", "E-mail", "Visita à obra", "Proposta enviada", "Outro"];
 const ETAPAS_PADRAO = ["Levantamento / briefing", "Estudo preliminar", "Anteprojeto", "Projeto executivo", "Aprovação (Prefeitura / Vigilância Sanitária)", "Entrega final"];
+// Check list de conferência do projeto legal (planilha padrão do escritório). Cada item marcado fica em p.checklist["seção-item"].
+const CHECKLIST = [
+  ["Situação", ["Quadra, lote e nome das ruas", "Posição do norte", "Tamanho da fonte (deixar nome das ruas e número do lote no mesmo tamanho)", "Tamanho da fonte (deixar número da quadra com o dobro do número do lote)", "Hachurar lote da edificação"]],
+  ["Implantação", ["Cotas gerais", "Conferir layer da linha de cota (layer COTAS)", "Conferir recuos - Frontal , lateral e fundos", "Conferir se a projeção da edificação é igual a planta baixa", "Hachurar projeção da Edificação", "Descrição de tipo de edificação, area, quadra e lote no centro da edificação", "Linha tracejada de limite do terreno", "Linha tracejada de limite de afastamento frontal", "Linha tracejada em todas as confrontações", "Lotes confrontantes; sempre para fora das cotas", "Indicar altura do muro", "Nome da rua", "Indicar fossa e sumidouro (devem estar a 2,50m da divisa com lotes vizinhos", "Indicar rebaixo do meio fio até 4,00x0,50m", "Cotar rebaixo do meio fio", "Indicar passeio público", "Hachurar passeio público", "Piso tatil na calçada", "Indicar hidrômetro", "Indicar padrão de energia", "Indicar lixeira", "Indicar posição da árvore na calçada", "Indicar acesso de veículos", "Indicar acesso de pedestres", "Indicar posição e tamanho da casa de máquinas piscina", "Indicar posição da casa de máquinas ar condicionado", "Indicar casa de gás", "Indicar e cotar triângulo (se for esquina)", "Indicar vagas de estacionamento com linha tracejada", "Indicar e hachurar pisantes", "Projeção da cobertura", "Indicar e cotar muro frontal", "Cotar passeio público", "Tirar árvores e plantas indicados no layout", "Indicar legenda de ampliação, demolir... Quando for reforma", "Alterar escala das cotas conforme descrito na planta"]],
+  ["Planta baixa", ["Conferir nome e layer de todos os ambientes", "Conferir área de todos os ambientes", "Confirmar se piscina, deck, pergolado irão para aprovação na prefeitura", "Conferir área dos pergolados, deck, piscina", "Conferir níveis dos ambientes", "Conferir níveis dos pisantes, calçadas", "Conferir hachuras da alvenaria", "Conferir hachuras das áreas molhadas", "Conferir tamanho e nomenclatura das portas", "Conferir tamanho e nomenclatura das janelas", "Conferir se portas e janelas estão iguais as tabelas de esquadrias", "Tudo o que não pertencer a planta baixa (calçada, muro) deve estar com a layer GM BLOCOS", "Conferir se janelas estão centralizadas, caso não, cotar distancias", "Conferir bonecas das portas (0,05cm)", "Indicativos dos cortes", "Altura de bancada no gourmet, cozinha", "Indicar projeção da cobertura com linha tracejada e nome", "Indicar posição e tamanho da casa de máquinas piscina", "Indicar posição da casa de máquinas ar condicionado", "Indicar casa de gás", "Indicar nichos nos banheiros (sempre na largura da janela)", "Indicar ventilação artificial quando houver (Exaustor)", "Indicar janela alta (lavanderia e BWC) tracejada", "Indicar áreas embaixo da legenda", "Indicar onde ficarão os canos do pluvial", "Alterar escala das cotas conforme descrito na planta"]],
+  ["Tabela de esquadrias", ["Conferir todas nomenclaturas", "Conferir modelos", "Conferir tamanhos", "Conferir quantidade", "Conferir ambiente", "Conferir tipo de material"]],
+  ["Cobertura", ["Tudo que não pertencer a cobertura deve estar na layer GM BLOCOS", "Indicar hierarquia de layers das alturas dos telhados", "Indicar calha galvanizada", "Indicar material e inclinação das telhas", "Onde houver laje, conferir se há legenda (laje impermeabilizada i:2%)", "Conferir indicação de caimento das águas", "Conferir canos de água pluvial", "Indicativos dos cortes", "Indicar chaminé da churrasqueira", "Cotas internas", "Cotas paredes", "Cotar calha", "Cotar lajes, pergolados, marquises", "Indicar projeção da alvenaria, piso", "Cotar beirais", "Indicar alçapão de manutenção do telhado", "Indicar projeção da caixa d' água", "Indicar descida de pluvial em casas com platibanda", "Indicar desagua do cano na calha", "Alterar escala das cotas conforme descrito na planta"]],
+  ["Cortes", ["Conferir nome dos ambientes e níveis", "Conferir vigas nos cortes (30cm abaixo da laje)", "Conferir espessura da laje", "Conferir hachuras de laje, alvenaria; revestimentos", "Conferir gesso", "Conferir pé direito", "Conferir altura das platibandas", "Conferir beirais", "Conferir elementos em vista", "Indicativos dos cortes", "Indicação das sapatas", "Indicar tipos de solos (compactado e natural)", "Indicar linhas tracejadas com níveis da calçada, casa, laje", "Linhas de chamada para rufos, calhas, tipo de telhas, lajes impermeabilizadas, revestimentos, ressalto reboco, moldura eps, preenchimento de laje em eps e concreto magro", "Cotar chaminé da churrasqueira (sempre 50cm acima da platibanda)", "Conferir vergas e contra-vergas", "Indicar flecha de aberturas nas esquadrias ou maçaneta da porta", "Indicar caixa d'água", "Cotar altura do barrilete", "Cotas do peitoril das janelas (Somente em corte)", "Cotas da altura das portas (somente em corte)", "Cotas do pé direito total", "Cotas da altura total", "Conferir layer das cotas", "Hachurar áreas molhadas", "Indicar alçapão de manutenção do telhado", "Conferir paredes e esquadrias que aparecem em vista", "Tudo que não estiver cotando deixar na hierarquia das vistas", "Hachurar churrasqueira e bancada em vista", "Indicar louças no BWC e Lavanderia", "Alinhar indicativos de corte com os textos no topo do corte"]],
+  ["Fachada", ["Conferir Hierarquia de layers das paredes", "Indicar linhas tracejadas com níveis da calçada, casa, laje", "Indicar linhas de chamada (tipo de telha e inclinação, ressalto reboco, moldura EPS, vidro espelhado, revestimentos, tipo de tinta, arandelas, leds", "Indicar flecha de aberturas nas esquadrias ou maçaneta da porta", "Indicar título", "Indicar pisantes, calçadas, grama...", "Hachuras de acordo com a imagem renderizada (cor)"]],
+  ["Prancha", ["Conferir escalas dos projetos são iguais às que estão na prancha (100 , 75 ou 50)", "Indicar na prancha 01 a situação (logo acima do carimbo)", "Conferir tamanho da Prancha A1", "Conferir indicação de dobras e cortes da prancha"]],
+  ["Carimbo", ["Conferir título \"PROJETO ARQUITETÔNICO\"", "Conferir subtítulo \"EDIFICAÇÃO RESIDENCIAL EM ALVENARIA\"", "Conferir conteúdo da prancha", "Conferir endereço do projeto", "Conferir quadro de áreas", "Conferir nome e CPF dos proprietários", "Conferir nome e CAU do responsável técnico", "Conferir nome do autor do desenho técnico", "Conferir endereço e telefone do escritório", "Conferir data", "Conferir número e quantidade de pranchas"]]
+];
 // Mesmas colunas e etiquetas da "Esteira de projetos" e da "Agenda de tarefas" do Trello
 const ESTEIRA = ["Em prospecção", "Contrato", "Iniciar", "Estudo preliminar / Anteprojeto", "Projeto legal", "Detalhamentos", "Projetos complementares", "Aprovação na prefeitura", "Concluído", "Stand by"];
 const ANDAMENTOS = {
@@ -427,6 +454,7 @@ const ICONES = {
 };
 const icone = (m) => `<svg class="mi" viewBox="0 0 24 24" aria-hidden="true">${ICONES[m]}</svg>`;
 const MENUS_PADRAO = ["painel", "esteira", "tarefas", "clientes", "prospeccoes"];
+const verValores = () => pode("financeiro");
 const pode = (m) => !!sessao && (sessao.admin || sessao.menus.includes(m));
 const finLiberado = () => (pode("financeiro") || pode("equipe")) && finAte > Date.now();
 
@@ -484,7 +512,7 @@ function ouvirMudancas() {
 // Não redesenha enquanto alguém digita num formulário; atualiza quando a janela fechar
 function atualizarTela() {
   const ativo = document.activeElement;
-  if (dlg.open || (ativo && ativo.matches?.("input, textarea, select"))) { renderPendente = true; return; }
+  if (dlg.open || arraste || (ativo && ativo.matches?.("input, textarea, select"))) { renderPendente = true; return; }
   render();
 }
 async function carregarPessoas() {
@@ -623,8 +651,8 @@ function pgPainel() {
   return cabecalho(`Olá, ${esc(sessao.nome)}`, "Resumo das prospecções e projetos do escritório", selAno(anosDe(db.prospeccoes.map((p) => p.contato)), ano) + botoesExportar()) +
     `<div class="grid g4 mb">
       ${tile("Clientes cadastrados", db.clientes.length)}
-      ${tile("Projetos fechados", f.length, R$(soma(f)))}
-      ${tile("Em aberto", a.length, R$(soma(a)) + " em negociação")}
+      ${tile("Projetos fechados", f.length, verValores() ? R$(soma(f)) : "")}
+      ${tile("Em aberto", a.length, verValores() ? R$(soma(a)) + " em negociação" : "em negociação")}
       ${tile("Taxa de conversão", pct(f.length, f.length + c.length) + "%", `${f.length} fechados de ${f.length + c.length} decididos · ${c.length} cancelados`)}
     </div>` +
     (minhas.length ? `<div class="card mb"><div class="bar"><h2>Minhas tarefas</h2><a href="#/tarefas" class="small">Ver todas</a></div><ul class="steps">${minhas.slice(0, 8).map((t) => `<li><button class="btn sm" data-act="tarefa-ok" data-id="${t.id}">○</button><a href="#" class="nm" data-act="editar-tarefa" data-id="${t.id}">${esc(t.titulo)}</a>${t.urgente ? `<span class="urg">Urgente</span>` : ""}${andamentoTag(t.andamento)}${prosp(t.prospeccaoId) ? `<a href="#/prospeccao/${t.prospeccaoId}" class="small muted">${esc(prosp(t.prospeccaoId).titulo)}</a>` : ""}${t.prazo ? situacaoPrazo(t.prazo) : ""}</li>`).join("")}</ul></div>` : "") +
@@ -689,7 +717,7 @@ function pgCliente(id) {
   return cabecalho(esc(c.nome), `Cliente desde ${dataBR(c.criado)}`, `<button class="btn pri" data-act="nova-prosp" data-cliente="${id}">Nova prospecção</button><button class="btn" data-act="editar-cliente" data-id="${id}">Editar</button>${botoesExportar()}<button class="btn danger" data-act="del-cliente" data-id="${id}">Excluir</button>`) +
     `<div class="grid g3 mb">
       <div class="card"><h2>Dados</h2><dl>${info.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v) || "—"}</dd></div>`).join("")}</dl>${c.observacoes ? `<p class="ink2">${esc(c.observacoes)}</p>` : ""}</div>
-      <div class="card flush span2"><h2>Prospecções e projetos</h2>${ps.length ? `<table><thead><tr><th>Projeto</th><th>Tipos</th><th>Situação</th><th>Etapa</th><th>Contato</th><th class="num">Valor</th></tr></thead><tbody>${ps.map((p) => `<tr><td><a href="#/prospeccao/${p.id}">${esc(p.titulo)}</a></td><td class="ink2">${esc(tiposDe(p))}</td><td>${badge(p.status)}</td><td class="ink2">${p.status === "cancelado" ? "—" : esc(etapaDe(p))}</td><td>${dataBR(p.contato)}</td><td class="num">${R$(p.valor)}</td></tr>`).join("")}</tbody></table>` : `<p class="empty">Nenhuma prospecção para este cliente.</p>`}</div>
+      <div class="card flush span2"><h2>Prospecções e projetos</h2>${ps.length ? `<table><thead><tr><th>Projeto</th><th>Tipos</th><th>Situação</th><th>Etapa</th><th>Contato</th>${verValores() ? `<th class="num">Valor</th>` : ""}</tr></thead><tbody>${ps.map((p) => `<tr><td><a href="#/prospeccao/${p.id}">${esc(p.titulo)}</a></td><td class="ink2">${esc(tiposDe(p))}</td><td>${badge(p.status)}</td><td class="ink2">${p.status === "cancelado" ? "—" : esc(etapaDe(p))}</td><td>${dataBR(p.contato)}</td>${verValores() ? `<td class="num">${R$(p.valor)}</td>` : ""}</tr>`).join("")}</tbody></table>` : `<p class="empty">Nenhuma prospecção para este cliente.</p>`}</div>
     </div>` + blocoContatos(id) + blocoFinanceiroVinculado((l) => l.clienteId === id, "cliente", `data-cliente="${id}"`);
 }
 
@@ -699,11 +727,11 @@ function pgProspeccoes() {
   const doPeriodo = db.prospeccoes.filter((p) => (fpAno === "todos" || p.contato.startsWith(fpAno)) && (!fpTipo || p.tipos.includes(Number(fpTipo))));
   const lista = doPeriodo.filter((p) => !fpStatus || p.status === fpStatus).sort((a, b) => b.contato.localeCompare(a.contato));
   const abas = [["", "Todas"], ...Object.keys(STATUS).map((s) => [s, STATUS[s].label])];
-  return cabecalho("Prospecções", `${lista.length} projeto(s) · ${R$(soma(lista))}`, botoesExportar("prospeccoes") + `<button class="btn pri" data-act="nova-prosp">Nova prospecção</button>`) +
+  return cabecalho("Prospecções", `${lista.length} projeto(s)${verValores() ? " · " + R$(soma(lista)) : ""}`, botoesExportar("prospeccoes") + `<button class="btn pri" data-act="nova-prosp">Nova prospecção</button>`) +
     `<div class="bar mb"><div class="actions">${abas.map(([s, l]) => `<button class="btn sm ${fpStatus === s ? "on" : ""}" data-act="fp-status" data-v="${s}">${l} <span class="muted">${s ? doPeriodo.filter((p) => p.status === s).length : doPeriodo.length}</span></button>`).join("")}</div>
       <div class="actions"><select class="input" data-act="fp-tipo" aria-label="Tipo de projeto"><option value="">Todos os tipos</option>${db.tipos.map((t) => `<option value="${t.id}" ${String(t.id) === fpTipo ? "selected" : ""}>${esc(t.nome)}</option>`).join("")}</select>${selAno(anosDe(db.prospeccoes.map((p) => p.contato)), fpAno).replace('data-act="ano"', 'data-act="fp-ano"')}</div></div>
-    <div class="card flush">${lista.length ? `<table><thead><tr><th>Projeto</th><th>Cliente</th><th>Tipos</th><th>Situação</th><th>Etapa</th><th>Contato</th><th class="num">Valor</th><th></th></tr></thead><tbody>${lista.map((p) => `<tr>
-      <td><a href="#/prospeccao/${p.id}"><b>${esc(p.titulo)}</b></a></td><td><a href="#/cliente/${p.clienteId}">${esc(cliente(p.clienteId)?.nome)}</a></td><td class="ink2">${esc(tiposDe(p))}</td><td>${badge(p.status)}</td><td class="ink2">${p.status === "cancelado" ? "—" : esc(etapaDe(p))}</td><td>${dataBR(p.contato)}</td><td class="num">${R$(p.valor)}</td>
+    <div class="card flush">${lista.length ? `<table><thead><tr><th>Projeto</th><th>Cliente</th><th>Tipos</th><th>Situação</th><th>Etapa</th><th>Contato</th>${verValores() ? `<th class="num">Valor</th>` : ""}<th></th></tr></thead><tbody>${lista.map((p) => `<tr>
+      <td><a href="#/prospeccao/${p.id}"><b>${esc(p.titulo)}</b></a></td><td><a href="#/cliente/${p.clienteId}">${esc(cliente(p.clienteId)?.nome)}</a></td><td class="ink2">${esc(tiposDe(p))}</td><td>${badge(p.status)}</td><td class="ink2">${p.status === "cancelado" ? "—" : esc(etapaDe(p))}</td><td>${dataBR(p.contato)}</td>${verValores() ? `<td class="num">${R$(p.valor)}</td>` : ""}
       <td>${p.status === "aberto" ? `<span class="actions" style="flex-wrap:nowrap"><button class="btn sm" data-act="fechou" data-id="${p.id}">Fechou</button><button class="btn sm" data-act="editar-prosp" data-id="${p.id}" data-cancelar="1">Cancelar</button></span>` : ""}</td></tr>`).join("")}</tbody></table>` : `<p class="empty">Nenhuma prospecção encontrada.</p>`}</div>`;
 }
 function pgProspeccao(id) {
@@ -717,7 +745,7 @@ function pgProspeccao(id) {
       <div><dt>Etapa da esteira</dt><dd><select class="input" data-act="prosp-esteira" data-id="${id}" aria-label="Etapa da esteira">${opts(ESTEIRA, etapaDe(p))}</select></dd></div>
       <div><dt>Andamento</dt><dd><select class="input" data-act="prosp-andamento" data-id="${id}" aria-label="Andamento">${opts(Object.entries(ANDAMENTOS).map(([k, a]) => [k, a.label]), p.andamento, "—")}</select></dd></div>
       <div><dt>Responsável</dt><dd><select class="input" data-act="prosp-resp" data-id="${id}" aria-label="Responsável">${opcoesPessoas(p.responsavelId)}</select></dd></div>
-      <div><dt>Valor</dt><dd>${R$(p.valor)}</dd></div><div><dt>Contato · ${p.status === "cancelado" ? "cancelamento" : "fechamento"}</dt><dd>${dataBR(p.contato)} · ${dataBR(p.fechamento)}</dd></div>
+      ${verValores() ? `<div><dt>Valor</dt><dd>${R$(p.valor)}</dd></div>` : ""}<div><dt>Contato · ${p.status === "cancelado" ? "cancelamento" : "fechamento"}</dt><dd>${dataBR(p.contato)} · ${dataBR(p.fechamento)}</dd></div>
       ${p.motivo ? `<div class="span2"><dt>Motivo do cancelamento</dt><dd>${esc(p.motivo)}</dd></div>` : ""}${p.obs ? `<div class="span2"><dt>Observações</dt><dd>${esc(p.obs)}</dd></div>` : ""}
     </div></div>
     ${blocoTarefas(id)}
@@ -733,8 +761,23 @@ function pgProspeccao(id) {
         ${et.length ? "" : `<button class="btn sm" style="margin-top:10px" data-act="etapas-padrao" data-id="${id}">Usar etapas padrão de arquitetura</button><p class="small muted" style="margin:6px 0 0">Briefing, estudo preliminar, anteprojeto, executivo, aprovação e entrega.</p>`}
       </div>
       ${blocoContatos(c.id, id)}
-    </div>` + blocoFinanceiroVinculado((l) => l.prospeccaoId === id, "projeto", `data-cliente="${c.id}" data-prosp="${id}"`);
+    </div>
+    ${blocoChecklist(p)}` + blocoFinanceiroVinculado((l) => l.prospeccaoId === id, "projeto", `data-cliente="${c.id}" data-prosp="${id}"`);
 }
+
+const checkAbertos = new Set();
+function blocoChecklist(p) {
+  const feitos = p.checklist || {}, total = CHECKLIST.reduce((t, [, its]) => t + its.length, 0);
+  const marcados = Object.keys(feitos).filter((k) => feitos[k]).length;
+  return `<div class="card mb checklist"><div class="bar"><h2>Check list de conferência · Projeto legal</h2><span class="muted">${marcados} de ${total} conferidos</span></div>
+    <div class="progress"><div style="width:${pct(marcados, total)}%"></div></div>
+    ${CHECKLIST.map(([sec, its], s) => {
+      const ok = its.filter((_, i) => feitos[s + "-" + i]).length;
+      return `<details data-sec="${s}" ${checkAbertos.has(s) ? "open" : ""}><summary><span>${esc(sec)}</span><span class="small ${ok === its.length ? "pos" : "muted"}">${ok}/${its.length}</span></summary>
+        <ul>${its.map((it, i) => `<li><label><input type="checkbox" data-act="check-item" data-id="${p.id}" data-k="${s}-${i}" ${feitos[s + "-" + i] ? "checked" : ""}><span>${esc(it)}</span></label></li>`).join("")}</ul></details>`;
+    }).join("")}</div>`;
+}
+document.addEventListener("toggle", (e) => { const s = e.target.dataset?.sec; if (s == null) return; e.target.open ? checkAbertos.add(Number(s)) : checkAbertos.delete(Number(s)); }, true);
 
 /* ---------- Esteira de projetos ---------- */
 let feTipo = "", feResp = "", feBusca = "";
@@ -746,13 +789,13 @@ function resumoFin(p) {
   return `<span class="small muted" title="Recebido de ${R$(soma(ent))}">${R$c(soma(ent.filter((l) => l.pago)))} de ${R$c(soma(ent))}</span>`;
 }
 function cartaoProjeto(p) {
-  const i = ESTEIRA.indexOf(etapaDe(p)), c = cliente(p.clienteId);
-  return `<article class="kcard" draggable="true" data-drag="prosp" data-id="${p.id}">
+  const c = cliente(p.clienteId);
+  return `<article class="kcard" data-drag="prosp" data-id="${p.id}">
     <a class="tit" href="#/prospeccao/${p.id}">${esc(p.titulo)}</a>
     <div class="small"><a href="#/cliente/${p.clienteId}" class="muted">${esc(c?.nome || "—")}</a></div>
     ${p.tipos.length ? `<div class="chips">${p.tipos.map((t) => `<span class="tagp">${esc(tipoNome(t))}</span>`).join("")}</div>` : ""}
     ${p.andamento ? `<div>${andamentoTag(p.andamento)}</div>` : ""}
-    <div class="rod">${respTag(p.responsavelId)}${resumoFin(p)}<span class="kmove"><button type="button" data-act="mover" data-id="${p.id}" data-v="-1" ${i <= 0 ? "disabled" : ""} aria-label="Coluna anterior">‹</button><button type="button" data-act="mover" data-id="${p.id}" data-v="1" ${i >= ESTEIRA.length - 1 ? "disabled" : ""} aria-label="Próxima coluna">›</button></span></div>
+    <div class="rod">${respTag(p.responsavelId)}${resumoFin(p)}</div>
   </article>`;
 }
 function pgEsteira() {
@@ -781,7 +824,7 @@ function moverProjeto(p, i) {
 let ftOcultar = false;
 function cartaoTarefa(t) {
   const p = prosp(t.prospeccaoId), feita = t.andamento === "concluido";
-  return `<article class="kcard ${feita ? "feita" : ""}" draggable="true" data-drag="tarefa" data-id="${t.id}">
+  return `<article class="kcard ${feita ? "feita" : ""}" data-drag="tarefa" data-id="${t.id}">
     <a class="tit" href="#" data-act="editar-tarefa" data-id="${t.id}">${esc(t.titulo)}</a>
     ${p ? `<div class="small"><a href="#/prospeccao/${p.id}" class="muted">${esc(cliente(p.clienteId)?.nome || "")} · ${esc(p.titulo)}</a></div>` : ""}
     <div class="rod"><span class="actions">${t.urgente ? `<span class="urg">Urgente</span>` : ""}${andamentoTag(t.andamento)}${t.prazo && !feita ? `<span class="small muted">${dataBR(t.prazo)}</span>${situacaoPrazo(t.prazo)}` : ""}</span>
@@ -855,7 +898,7 @@ function formProsp(p = {}, cancelar = false) {
     <div class="field full"><span>Tipos de projeto (marque quantos quiser)</span><div class="chips">${db.tipos.map((t) => `<label class="chip"><input type="checkbox" name="tipos" value="${t.id}" ${(p.tipos || []).includes(t.id) ? "checked" : ""}>${esc(t.nome)}</label>`).join("")}</div>
       <input class="input" name="novoTipo" placeholder="Outro tipo (cria um novo)" style="max-width:280px;margin-top:6px"></div>
     ${campo("Situação", `<select class="input" name="status" data-act="status-form">${opts(Object.keys(STATUS).map((s) => [s, STATUS[s].label]), st)}</select>`)}
-    ${campo("Valor da proposta (R$)", inp("valor", p.valor != null ? String(p.valor).replace(".", ",") : "", 'inputmode="decimal" placeholder="0,00"'))}
+    ${verValores() ? campo("Valor da proposta (R$)", inp("valor", p.valor != null ? String(p.valor).replace(".", ",") : "", 'inputmode="decimal" placeholder="0,00"')) : ""}
     ${campo("Etapa da esteira", `<select class="input" name="esteira">${opts(ESTEIRA, p.id ? etapaDe(p) : ESTEIRA[0])}</select>`)}
     ${campo("Responsável", `<select class="input" name="responsavelId">${opcoesPessoas(p.responsavelId)}</select>`)}
     ${campo("Andamento", `<select class="input" name="andamento">${opts(Object.entries(ANDAMENTOS).map(([k, a]) => [k, a.label]), p.andamento, "—")}</select>`)}
@@ -887,7 +930,7 @@ function baixarCSV(nome, cab, linhas) {
 }
 function exportar(tipo) {
   if (tipo === "clientes") baixarCSV("clientes", ["Nome", "CPF/CNPJ", "Telefone", "E-mail", "CEP", "Endereço", "Nº", "Cidade", "Estado", "Origem", "Observações"], db.clientes.map((c) => [c.nome, c.documento, c.telefone, c.email, c.cep, c.endereco, c.numero, c.cidade, c.estado, c.origem, c.observacoes]));
-  if (tipo === "prospeccoes") baixarCSV("prospeccoes", ["Projeto", "Cliente", "Tipos", "Situação", "Valor (R$)", "Primeiro contato", "Fechamento/cancelamento", "Motivo do cancelamento"], db.prospeccoes.map((p) => [p.titulo, cliente(p.clienteId)?.nome, tiposDe(p), STATUS[p.status].label, p.valor, dataBR(p.contato), p.fechamento ? dataBR(p.fechamento) : "", p.motivo]));
+  if (tipo === "prospeccoes") { const vv = verValores(); baixarCSV("prospeccoes", ["Projeto", "Cliente", "Tipos", "Situação", ...(vv ? ["Valor (R$)"] : []), "Primeiro contato", "Fechamento/cancelamento", "Motivo do cancelamento"], db.prospeccoes.map((p) => [p.titulo, cliente(p.clienteId)?.nome, tiposDe(p), STATUS[p.status].label, ...(vv ? [p.valor] : []), dataBR(p.contato), p.fechamento ? dataBR(p.fechamento) : "", p.motivo])); }
 }
 
 /* ===================== FINANCEIRO (mesma estrutura do Zenply) ===================== */
@@ -1596,7 +1639,6 @@ document.addEventListener("click", (e) => {
     "etapa-ok": () => { const x = db.etapas.find((z) => z.id === id); x.concluida = !x.concluida; x.concluidaEm = x.concluida ? HOJE : null; salvar(); render(); },
     "del-etapa": () => { db.etapas = db.etapas.filter((z) => z.id !== id); salvar(); render(); },
     "etapas-padrao": () => { ETAPAS_PADRAO.forEach((nome, i) => db.etapas.push({ id: uid(), prospeccaoId: id, nome, ordem: i + 1, concluida: false, concluidaEm: null, prazo: null })); salvar(); render(); },
-    mover: () => { const p = prosp(id); moverProjeto(p, ESTEIRA.indexOf(etapaDe(p)) + Number(el.dataset.v)); },
     "nova-tarefa": () => formTarefa({ responsavelId: el.dataset.resp ?? sessao.id, prospeccaoId: el.dataset.prosp || null }),
     "editar-tarefa": () => formTarefa(db.tarefas.find((t) => t.id === id)),
     "del-tarefa": () => perguntar("Excluir esta tarefa?", "Excluir", () => { db.tarefas = db.tarefas.filter((t) => t.id !== id); salvar(); render(); }),
@@ -1617,6 +1659,7 @@ document.addEventListener("change", (e) => {
   if (act === "prosp-esteira") { const p = prosp(el.dataset.id); moverProjeto(p, ESTEIRA.indexOf(el.value)); }
   if (act === "prosp-andamento") { prosp(el.dataset.id).andamento = el.value || null; salvar(); render(); }
   if (act === "prosp-resp") { prosp(el.dataset.id).responsavelId = el.value || null; salvar(); render(); }
+  if (act === "check-item") { const p = prosp(el.dataset.id), ck = (p.checklist ||= {}); if (el.checked) ck[el.dataset.k] = HOJE; else delete ck[el.dataset.k]; salvar(); render(); }
   if (act === "etapa-prazo") { db.etapas.find((z) => z.id === el.dataset.id).prazo = el.value || null; salvar(); render(); }
 });
 document.addEventListener("submit", (e) => {
@@ -1669,7 +1712,8 @@ document.addEventListener("submit", (e) => {
     salvar(); dlg.close(); return ir("#/cliente/" + id);
   }
   if (nome === "prosp") {
-    const status = v("status"), valor = v("valor") ? parseValor(v("valor")) : null;
+    // Quem não vê o financeiro não tem o campo de valor: mantém o que já estava
+    const status = v("status"), valor = !verValores() ? prosp(f.dataset.id)?.valor ?? null : v("valor") ? parseValor(v("valor")) : null;
     if (valor != null && isNaN(valor)) return erro("Valor inválido.");
     const tipos = fd.getAll("tipos").map(Number);
     if (v("novoTipo")) {
@@ -1704,16 +1748,75 @@ dlg.addEventListener("close", () => { if (renderPendente) { renderPendente = fal
 document.addEventListener("focusout", () => setTimeout(() => { if (renderPendente && !dlg.open && !document.activeElement?.matches?.("input, textarea, select")) { renderPendente = false; render(); } }, 300));
 
 /* ===================== arrastar cartões entre colunas ===================== */
-let arrastando = null;
-document.addEventListener("dragstart", (e) => { const c = e.target.closest?.("[data-drag]"); if (!c) return; arrastando = { tipo: c.dataset.drag, id: c.dataset.id }; e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", c.dataset.id); });
-document.addEventListener("dragend", () => { arrastando = null; document.querySelectorAll(".kcol.over").forEach((x) => x.classList.remove("over")); });
-document.addEventListener("dragover", (e) => { const col = e.target.closest?.("[data-drop]"); if (!col || !arrastando || col.dataset.drop !== arrastando.tipo) return; e.preventDefault(); document.querySelectorAll(".kcol.over").forEach((x) => x !== col && x.classList.remove("over")); col.classList.add("over"); });
-document.addEventListener("drop", (e) => {
-  const col = e.target.closest?.("[data-drop]"); if (!col || !arrastando || col.dataset.drop !== arrastando.tipo) return;
-  e.preventDefault(); const { tipo, id } = arrastando; arrastando = null;
-  if (tipo === "prosp") moverProjeto(prosp(id), Number(col.dataset.v));
-  else { const t = db.tarefas.find((x) => x.id === id); if (t && (t.responsavelId || "") !== col.dataset.v) { t.responsavelId = col.dataset.v || null; salvar(); render(); } else render(); }
+// Arraste próprio (mouse e toque), no estilo do Trello: o cartão segue o ponteiro e cai na coluna de baixo.
+// No celular, segure o cartão por um instante para começar a arrastar; deslizar direto rola a tela.
+let arraste = null, soltouEm = 0;
+function colunaSob(x, y, tipo) {
+  const col = document.elementFromPoint(x, y)?.closest?.("[data-drop]");
+  return col && col.dataset.drop === tipo ? col : null;
+}
+function iniciarArraste() {
+  const a = arraste, r = a.card.getBoundingClientRect();
+  a.ativo = true; a.dx = a.x0 - r.left; a.dy = a.y0 - r.top;
+  a.fantasma = a.card.cloneNode(true); a.fantasma.classList.add("fantasma"); a.fantasma.style.width = r.width + "px";
+  document.body.append(a.fantasma); a.card.classList.add("origem"); document.body.classList.add("arrastando");
+  moverFantasma(a.x0, a.y0);
+  if (navigator.vibrate && a.toque) navigator.vibrate(15);
+}
+function moverFantasma(x, y) {
+  const a = arraste; a.x = x; a.y = y;
+  a.fantasma.style.left = x - a.dx + "px"; a.fantasma.style.top = y - a.dy + "px";
+  const col = colunaSob(x, y, a.tipo);
+  document.querySelectorAll(".kcol.over").forEach((c) => c !== col && c.classList.remove("over"));
+  if (col) col.classList.add("over");
+}
+// Rola o quadro sozinho quando o cartão chega perto das bordas
+function rolarNasBordas() {
+  const a = arraste; if (!a?.ativo) return;
+  const k = a.card.closest(".kanban"), r = k?.getBoundingClientRect(), m = 60;
+  if (k) { if (a.x > r.right - m) k.scrollLeft += 14; else if (a.x < r.left + m) k.scrollLeft -= 14; }
+  if (a.y > innerHeight - m) scrollBy(0, 12); else if (a.y < m) scrollBy(0, -12);
+  moverFantasma(a.x, a.y); requestAnimationFrame(rolarNasBordas);
+}
+function encerrarArraste(soltar) {
+  const a = arraste; if (!a) return;
+  clearTimeout(a.timer); arraste = null;
+  if (!a.ativo) return;
+  const col = soltar ? colunaSob(a.x, a.y, a.tipo) : null;
+  a.fantasma.remove(); a.card.classList.remove("origem"); document.body.classList.remove("arrastando");
+  document.querySelectorAll(".kcol.over").forEach((c) => c.classList.remove("over"));
+  soltouEm = Date.now();
+  if (col) {
+    if (a.tipo === "prosp") moverProjeto(prosp(a.id), Number(col.dataset.v));
+    else { const t = db.tarefas.find((x) => x.id === a.id); if (t && (t.responsavelId || "") !== col.dataset.v) { t.responsavelId = col.dataset.v || null; salvar(); } }
+  }
+  renderPendente = false; render();
+}
+document.addEventListener("pointerdown", (e) => {
+  const card = e.target.closest?.("[data-drag]");
+  if (!card || e.button > 0 || e.target.closest("button, input, select, textarea")) return;
+  const toque = e.pointerType !== "mouse";
+  arraste = { card, tipo: card.dataset.drag, id: card.dataset.id, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, toque, ativo: false };
+  if (toque) arraste.timer = setTimeout(() => { if (arraste && !arraste.ativo) { iniciarArraste(); rolarNasBordas(); } }, 350);
 });
+document.addEventListener("pointermove", (e) => {
+  const a = arraste; if (!a) return;
+  if (!a.ativo) {
+    const longe = Math.hypot(e.clientX - a.x0, e.clientY - a.y0) > 6;
+    if (a.toque) { if (longe) { clearTimeout(a.timer); arraste = null; } return; }
+    if (!longe) return;
+    iniciarArraste(); rolarNasBordas();
+  }
+  e.preventDefault(); moverFantasma(e.clientX, e.clientY);
+});
+// Durante o arraste por toque, a tela não rola
+document.addEventListener("touchmove", (e) => { if (arraste?.ativo) e.preventDefault(); }, { passive: false });
+document.addEventListener("pointerup", () => encerrarArraste(true));
+document.addEventListener("pointercancel", () => encerrarArraste(false));
+// O clique que vem logo depois de soltar não deve abrir o cartão
+addEventListener("click", (e) => { if (Date.now() - soltouEm < 100) { e.stopPropagation(); e.preventDefault(); } }, true);
+document.addEventListener("contextmenu", (e) => { if (arraste) e.preventDefault(); });
+document.addEventListener("dragstart", (e) => { if (e.target.closest?.("[data-drag]")) e.preventDefault(); });
 
 /* ===================== saída automática por inatividade ===================== */
 // Sem mexer no sistema por 30 minutos (em qualquer aba), a pessoa precisa entrar de novo
