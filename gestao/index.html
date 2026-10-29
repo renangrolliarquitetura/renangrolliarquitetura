@@ -366,6 +366,7 @@ const STATUS = {
   fechado: { label: "Fechado", cor: "var(--good)", cls: "b-good" },
   cancelado: { label: "Cancelado", cor: "var(--critical)", cls: "b-critical" },
 };
+const ESTADOS = [["AC", "Acre"], ["AL", "Alagoas"], ["AP", "Amapá"], ["AM", "Amazonas"], ["BA", "Bahia"], ["CE", "Ceará"], ["DF", "Distrito Federal"], ["ES", "Espírito Santo"], ["GO", "Goiás"], ["MA", "Maranhão"], ["MT", "Mato Grosso"], ["MS", "Mato Grosso do Sul"], ["MG", "Minas Gerais"], ["PA", "Pará"], ["PB", "Paraíba"], ["PR", "Paraná"], ["PE", "Pernambuco"], ["PI", "Piauí"], ["RJ", "Rio de Janeiro"], ["RN", "Rio Grande do Norte"], ["RS", "Rio Grande do Sul"], ["RO", "Rondônia"], ["RR", "Roraima"], ["SC", "Santa Catarina"], ["SP", "São Paulo"], ["SE", "Sergipe"], ["TO", "Tocantins"]];
 const ORIGENS = ["Indicação", "Instagram", "Site", "Google", "Ex-cliente", "Parceiro / Construtora", "Evento", "Outros"];
 const CAT_ENT = ["Honorários de projeto", "Acompanhamento de obra", "Consultoria", "RT / Comissão", "Outros"];
 const CAT_SAI = ["Aluguel", "Salários / Pró-labore", "Impostos", "Software / Licenças", "Terceirizados", "Marketing", "Material de escritório", "Contas (água, luz, internet)", "Transporte", "Outros"];
@@ -680,10 +681,11 @@ function blocoFinanceiroVinculado(filtro, rotulo, novoParams) {
     <div class="card" style="display:flex;align-items:center"><button class="btn" data-act="novo-lanc" ${novoParams}>Lançar recebimento</button></div></div>
     <div class="card flush">${tabelaLancamentos(ls)}</div>`;
 }
+const enderecoCompleto = (c) => [[c.endereco, c.numero].filter(Boolean).join(", "), [c.cidade, c.estado].filter(Boolean).join(" / "), c.cep && "CEP " + c.cep].filter(Boolean).join(" · ");
 function pgCliente(id) {
   const c = cliente(id); if (!c) return `<p class="empty">Cliente não encontrado.</p>`;
   const ps = db.prospeccoes.filter((p) => p.clienteId === id).sort((a, b) => b.contato.localeCompare(a.contato));
-  const info = [["Telefone / WhatsApp", c.telefone], ["E-mail", c.email], ["CPF / CNPJ", c.documento], ["Endereço", [c.endereco, c.cidade].filter(Boolean).join(" · ")], ["Origem", c.origem]];
+  const info = [["Telefone / WhatsApp", c.telefone], ["E-mail", c.email], ["CPF / CNPJ", c.documento], ["Endereço", enderecoCompleto(c)], ["Origem", c.origem]];
   return cabecalho(esc(c.nome), `Cliente desde ${dataBR(c.criado)}`, `<button class="btn pri" data-act="nova-prosp" data-cliente="${id}">Nova prospecção</button><button class="btn" data-act="editar-cliente" data-id="${id}">Editar</button>${botoesExportar()}<button class="btn danger" data-act="del-cliente" data-id="${id}">Excluir</button>`) +
     `<div class="grid g3 mb">
       <div class="card"><h2>Dados</h2><dl>${info.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v) || "—"}</dd></div>`).join("")}</dl>${c.observacoes ? `<p class="ink2">${esc(c.observacoes)}</p>` : ""}</div>
@@ -830,14 +832,18 @@ const inp = (name, val = "", attrs = "") => `<input class="input" name="${name}"
 const opts = (lista, atual, vazio) => (vazio != null ? `<option value="">${vazio}</option>` : "") + lista.map((o) => { const [v, l] = Array.isArray(o) ? o : [o, o]; return `<option value="${esc(v)}" ${String(v) === String(atual ?? "") ? "selected" : ""}>${esc(l)}</option>`; }).join("");
 
 function formCliente(c = {}) {
+  cepBuscado = soDigitos(c.cep);
   abrir(c.id ? "Editar cliente" : "Novo cliente", `<div class="form">
-    ${campo("Nome *", inp("nome", c.nome, "required"), true)}
-    ${campo("CPF / CNPJ", inp("documento", c.documento))}
+    ${campo("Nome *", inp("nome", c.nome, 'required data-mask="maiusc" style="text-transform:uppercase"'), true)}
+    ${campo("CPF / CNPJ", inp("documento", c.documento, 'data-mask="doc" inputmode="numeric" placeholder="000.000.000-00"'))}
     ${campo("Origem do cliente", `<select class="input" name="origem">${opts(ORIGENS, c.origem, "Selecione...")}</select>`)}
     ${campo("Telefone / WhatsApp", inp("telefone", c.telefone))}
     ${campo("E-mail", inp("email", c.email, 'type="email"'))}
+    ${campo("CEP", inp("cep", c.cep, 'data-mask="cep" inputmode="numeric" placeholder="00000-000"') + `<small class="small muted" id="cep-info">Digite o CEP para preencher o endereço.</small>`)}
     ${campo("Endereço", inp("endereco", c.endereco))}
+    ${campo("Nº", inp("numero", c.numero, 'placeholder="Ex.: 683"'))}
     ${campo("Cidade", inp("cidade", c.cidade))}
+    ${campo("Estado", `<select class="input" name="estado">${opts(ESTADOS.map(([uf, n]) => [uf, n + " (" + uf + ")"]), c.estado, "Selecione...")}</select>`)}
     ${campo("Observações", `<textarea class="input" name="observacoes" rows="3">${esc(c.observacoes)}</textarea>`, true)}
   </div>`, "cliente", `data-id="${c.id || ""}"`);
 }
@@ -880,7 +886,7 @@ function baixarCSV(nome, cab, linhas) {
   a.download = `${nome}-${HOJE}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 function exportar(tipo) {
-  if (tipo === "clientes") baixarCSV("clientes", ["Nome", "CPF/CNPJ", "Telefone", "E-mail", "Endereço", "Cidade", "Origem", "Observações"], db.clientes.map((c) => [c.nome, c.documento, c.telefone, c.email, c.endereco, c.cidade, c.origem, c.observacoes]));
+  if (tipo === "clientes") baixarCSV("clientes", ["Nome", "CPF/CNPJ", "Telefone", "E-mail", "CEP", "Endereço", "Nº", "Cidade", "Estado", "Origem", "Observações"], db.clientes.map((c) => [c.nome, c.documento, c.telefone, c.email, c.cep, c.endereco, c.numero, c.cidade, c.estado, c.origem, c.observacoes]));
   if (tipo === "prospeccoes") baixarCSV("prospeccoes", ["Projeto", "Cliente", "Tipos", "Situação", "Valor (R$)", "Primeiro contato", "Fechamento/cancelamento", "Motivo do cancelamento"], db.prospeccoes.map((p) => [p.titulo, cliente(p.clienteId)?.nome, tiposDe(p), STATUS[p.status].label, p.valor, dataBR(p.contato), p.fechamento ? dataBR(p.fechamento) : "", p.motivo]));
 }
 
@@ -1431,6 +1437,38 @@ document.addEventListener("change", (e) => {
   };
   if (A[act]) A[act]();
 });
+/* ---------- máscaras e busca de CEP ---------- */
+const soDigitos = (t) => String(t || "").replace(/\D/g, "");
+// CPF até 11 dígitos; a partir do 12º vira CNPJ
+function formatarDoc(t) {
+  const d = soDigitos(t).slice(0, 14);
+  if (d.length <= 11) return d.replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+  return d.replace(/^(\d{2})(\d)/, "$1.$2").replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3").replace(/\.(\d{3})(\d)/, ".$1/$2").replace(/(\d{4})(\d)/, "$1-$2");
+}
+const formatarCep = (t) => soDigitos(t).slice(0, 8).replace(/^(\d{5})(\d)/, "$1-$2");
+let cepBuscado = "";
+async function buscarCep(form, cep) {
+  const info = form.querySelector("#cep-info"), campo = (n) => form.querySelector(`[name=${n}]`);
+  if (cep === cepBuscado) return; cepBuscado = cep;
+  if (info) info.textContent = "Buscando endereço…";
+  try {
+    const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`).then((x) => x.json());
+    if (r.erro) throw new Error("não encontrado");
+    campo("endereco").value = [r.logradouro, r.bairro].filter(Boolean).join(" - ");
+    campo("cidade").value = r.localidade || "";
+    campo("estado").value = r.uf || "";
+    if (info) info.textContent = "Endereço preenchido. Confira e informe o número.";
+    campo("numero").focus();
+  } catch { if (info) info.textContent = "CEP não encontrado. Preencha o endereço à mão."; }
+}
+document.addEventListener("input", (e) => {
+  const el = e.target, mask = el.dataset?.mask; if (!mask) return;
+  const pos = el.selectionStart, antes = el.value.length;
+  if (mask === "maiusc") { el.value = el.value.toUpperCase(); el.setSelectionRange(pos, pos); return; }
+  el.value = mask === "doc" ? formatarDoc(el.value) : formatarCep(el.value);
+  const p = pos + el.value.length - antes; el.setSelectionRange(p, p);
+  if (mask === "cep" && soDigitos(el.value).length === 8) buscarCep(el.form, soDigitos(el.value));
+});
 document.addEventListener("input", (e) => {
   const id = e.target.id; if (id !== "f-busca" && id !== "f-ct-busca") return;
   if (id === "f-busca") fBusca = e.target.value; else fCtBusca = e.target.value;
@@ -1618,7 +1656,7 @@ document.addEventListener("submit", (e) => {
     return salvarMembro(f.dataset.id, v("nome"), v("email").toLowerCase(), v("senha"), adm, adm ? MENUS.map(([m]) => m) : marcados);
   }
   if (nome === "cliente") {
-    const dados = { nome: v("nome"), documento: v("documento"), origem: v("origem"), telefone: v("telefone"), email: v("email"), endereco: v("endereco"), cidade: v("cidade"), observacoes: v("observacoes") };
+    const dados = { nome: v("nome").toUpperCase(), documento: v("documento"), origem: v("origem"), telefone: v("telefone"), email: v("email"), cep: v("cep"), endereco: v("endereco"), numero: v("numero"), cidade: v("cidade"), estado: v("estado"), observacoes: v("observacoes") };
     let id = f.dataset.id;
     if (id) Object.assign(cliente(id), dados); else { id = uid(); db.clientes.push({ id, criado: HOJE, ...dados }); }
     salvar(); dlg.close(); return ir("#/cliente/" + id);
