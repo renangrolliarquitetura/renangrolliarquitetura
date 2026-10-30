@@ -318,7 +318,9 @@ select.ie { cursor: pointer; } input.ie.num { text-align: right; font-weight: 60
 .ie-data { width: 128px; } .ie-desc { min-width: 150px; } .ie-valor { width: 106px; }
 /* descrição fica com a sobra; os menus ocupam só o tamanho do texto escolhido */
 table.trans th.grow { width: 100%; }
-table.trans select.ie { width: auto; field-sizing: content; max-width: 240px; padding-right: 22px; }
+/* financeiro todo em maiúsculas (menos e-mail, datas e números) */
+:is(.fin-caps, #dlg form[data-form="lanc"], #dlg form[data-form^="f-"], #dlg2) :is(input:not([type=email]):not([type=date]):not([type=month]):not([type=checkbox]):not([type=radio]):not([type=number]), select, textarea, .chip) { text-transform: uppercase; }
+table.trans select.ie { width: auto; field-sizing: content; max-width: 240px; padding-right: 18px; }
 .dcell { display: flex; align-items: center; gap: 6px; }
 .selbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--surface-2); font-size: 13px; }
 .selbar b { margin-right: 6px; }
@@ -1141,7 +1143,7 @@ function itemAtraso(l) {
 }
 const SUBNAV = [["dashboard", "Dashboard"], ["transacoes", "Transações"], ["relatorios", "Relatórios"], ["contatos", "Contatos"], ["importar", "Importar / Exportar"], ["configuracoes", "Configurações"]];
 function moldura(sub, corpo) {
-  return `<div class="finnav no-print">${SUBNAV.map(([r, l]) => `<a href="#/financeiro/${r}" class="${sub === r ? "on" : ""}">${l}</a>`).join("")}<span style="flex:1"></span><button class="btn sm" data-act="bloquear" title="Fecha o financeiro até você digitar a senha de novo">🔒 Bloquear</button></div>${corpo}`;
+  return `<div class="finnav no-print">${SUBNAV.map(([r, l]) => `<a href="#/financeiro/${r}" class="${sub === r ? "on" : ""}">${l}</a>`).join("")}<span style="flex:1"></span><button class="btn sm" data-act="bloquear" title="Fecha o financeiro até você digitar a senha de novo">🔒 Bloquear</button></div><div class="fin-caps">${corpo}</div>`;
 }
 
 /* ---------- Dashboard ---------- */
@@ -1536,7 +1538,7 @@ function formConta(c = {}) {
 /* ---------- formulário de transação ---------- */
 function opcoesCategoria(tipo, atual) {
   const grupos = tipo === "entrada" ? ["receita"] : GRUPOS_DESP;
-  return `<option value="">Aplicar a categoria...</option>` + grupos.map((g) => `<optgroup label="${GRUPOS[g]}">${db.categorias.filter((c) => c.grupo === g).sort((a, b) => a.nome.localeCompare(b.nome)).map((c) => `<option value="${c.id}" ${c.id === atual ? "selected" : ""}>${esc(c.nome)}</option>`).join("")}</optgroup>`).join("")
+  return `<option value="">Selecione...</option>` + grupos.map((g) => `<optgroup label="${GRUPOS[g]}">${db.categorias.filter((c) => c.grupo === g).sort((a, b) => a.nome.localeCompare(b.nome)).map((c) => `<option value="${c.id}" ${c.id === atual ? "selected" : ""}>${esc(c.nome)}</option>`).join("")}</optgroup>`).join("")
     + `<option value="__novo">+ Nova categoria...</option>${fcat(atual) ? `<option value="__editar">✎ Editar "${esc(fcat(atual).nome)}"...</option>` : ""}`;
 }
 function opcoesPessoa(atual) {
@@ -1768,7 +1770,7 @@ document.addEventListener("submit", (e) => {
     const pago = fd.get("pago") === "on";
     const base = { tipo, valor, data: v("data"), descricao: v("descricao").toUpperCase(), pago, pagoEm: pago ? v("pagoEm") || v("data") : null, contaId: v("contaId"), contaDestinoId: tipo === "transf" ? v("contaDestinoId") : null,
       categoriaId: tipo === "transf" ? null : v("categoriaId") || null, clienteId: tipo === "transf" ? null : v("clienteId") || null, prospeccaoId: tipo === "transf" ? null : (f.dataset.id && db.lancamentos.find((x) => x.id === f.dataset.id)?.prospeccaoId) || fd.get("prospeccaoId") || null,
-      competencia: v("competencia") || v("data").slice(0, 7), forma: v("forma"), documento: (f.dataset.id && db.lancamentos.find((x) => x.id === f.dataset.id)?.documento) || "", centroId: v("centroId") || null, tags: fd.getAll("tags").map(String), obs: v("obs") };
+      competencia: v("competencia") || v("data").slice(0, 7), forma: v("forma"), documento: (f.dataset.id && db.lancamentos.find((x) => x.id === f.dataset.id)?.documento) || "", centroId: v("centroId") || null, tags: fd.getAll("tags").map(String), obs: v("obs").toUpperCase() };
     if (f.dataset.id) Object.assign(db.lancamentos.find((l) => l.id === f.dataset.id), base);
     else {
       const rep = v("repeticao"), n = rep ? Math.min(Math.max(Number(v("vezes")) || 2, 2), 120) : 1;
@@ -1787,7 +1789,7 @@ document.addEventListener("submit", (e) => {
     salvar(); dlg.close(); toast(f.dataset.modo === "parcelado" ? `${datas.length} parcelas salvas` : `${datas.length} repetições salvas`); return render();
   }
   if (nome === "f-contato") {
-    const dados = { nome: v("nome"), tipo: v("tipo"), documento: v("documento"), email: v("email"), telefone: v("telefone"), cidade: v("cidade") };
+    const dados = { nome: v("nome").toUpperCase(), tipo: v("tipo"), documento: v("documento").toUpperCase(), email: v("email"), telefone: v("telefone"), cidade: v("cidade").toUpperCase() };
     if (f.dataset.id) { const c = db.fornecedores.find((x) => x.id === f.dataset.id); if (dados.tipo === "Cliente") { db.fornecedores = db.fornecedores.filter((x) => x !== c); db.clientes.push({ ...c, ...dados, origem: "", endereco: "", observacoes: "", criado: HOJE }); } else Object.assign(c, dados); }
     else if (dados.tipo === "Cliente") db.clientes.push({ id: uid(), ...dados, origem: "", endereco: "", observacoes: "", criado: HOJE });
     else db.fornecedores.push({ id: uid(), ...dados });
@@ -1795,9 +1797,9 @@ document.addEventListener("submit", (e) => {
   }
   if (nome === "f-cat") { db.categorias.push({ id: uid(), nome: v("nome").toUpperCase(), grupo: fCfgGrupo }); salvar(); toast("Categoria cadastrada"); return render(); }
   if (nome === "f-cat-edit") { Object.assign(fcat(f.dataset.id), { nome: v("nome").toUpperCase(), grupo: v("grupo") }); salvar(); dlg.close(); return render(); }
-  if (nome === "f-centros" || nome === "f-tags") { db[nome.slice(2)].push({ id: uid(), nome: v("nome") }); salvar(); return render(); }
+  if (nome === "f-centros" || nome === "f-tags") { db[nome.slice(2)].push({ id: uid(), nome: v("nome").toUpperCase() }); salvar(); return render(); }
   if (nome === "f-conta") {
-    const dados = { nome: v("nome"), saldoInicial: parseValor(v("saldo")) || 0, tipo: v("tipo") };
+    const dados = { nome: v("nome").toUpperCase(), saldoInicial: parseValor(v("saldo")) || 0, tipo: v("tipo") };
     if (f.dataset.id) Object.assign(conta(f.dataset.id), dados); else db.contas.push({ id: uid(), arquivada: false, ...dados });
     salvar(); dlg.close(); return render();
   }
