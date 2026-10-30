@@ -1579,7 +1579,7 @@ function menuNovo(el, qual) {
   el.value = prev;
   cadastroRapido(qual, val === "__editar" ? prev : null, tipo, (id) => {
     el.innerHTML = qual === "cat" ? opcoesCategoria(tipo, id) : opcoesPessoa(id); el.dataset.prev = id;
-    if (qual === "pessoa") dlg.querySelector('[name="prospeccaoId"]').innerHTML = opcoesProjeto(id, null);
+    if (qual === "pessoa") { const sp = dlg.querySelector('select[name="prospeccaoId"]'); if (sp) sp.innerHTML = opcoesProjeto(id, null); }
   });
   return true;
 }
@@ -1614,10 +1614,9 @@ function formLanc(l = {}) {
     ${campo("Competência", inp("competencia", l.competencia || "", 'type="month"'))}
     ${campo("Forma de pagamento", `<select class="input" name="forma">${opts([...FORMAS, "Débito automático"], l.forma, "Selecione...")}</select>`)}
     ${campo("Centro de custo", `<select class="input" name="centroId">${opts(db.centros.map((c) => [c.id, c.nome]), l.centroId, "Selecione...")}</select>`)}
-    <label class="field" data-show-t="entrada saida"><span>Projeto (opcional)</span><select class="input" name="prospeccaoId">${opcoesProjeto(l.clienteId, l.prospeccaoId)}</select></label>
     <div class="field full"><span>Tags</span><div class="chips">${db.tags.length ? db.tags.map((t) => `<label class="chip"><input type="checkbox" name="tags" value="${t.id}" ${(l.tags || []).includes(t.id) ? "checked" : ""}>${esc(t.nome)}</label>`).join("") : `<span class="small muted">Cadastre tags em Configurações.</span>`}</div></div>
     ${novo ? `<div class="field full" data-show-t="entrada saida"><span>Repetição</span><div class="actions"><select class="input" name="repeticao"><option value="">À vista</option><option value="parcelado">Criar parcelas: dividir o valor em</option><option value="repetir">Repetir transação: repetir o valor</option></select><input class="input" type="number" name="vezes" min="2" max="120" value="2" style="width:80px" aria-label="Quantidade"><span class="small muted">vezes,</span><select class="input" name="freq" aria-label="Frequência">${opts(FREQS, "mensal")}</select></div></div>` : l.parcela ? `<p class="small muted full">Parcela ${l.parcela}.</p>` : ""}
-    ${campo("Observações", `<textarea class="input" name="obs" rows="2">${esc(l.obs)}</textarea>`, true)}
+    ${campo("Observações", `<textarea class="input" name="obs" rows="2">${esc(l.obs)}</textarea>`, true)}<input type="hidden" name="prospeccaoId" value="${esc(l.prospeccaoId || "")}">
   </div>`, "lanc", `data-id="${l.id || ""}"`);
   if (l.id) dlg.querySelector(".df").insertAdjacentHTML("afterbegin", `<button type="button" class="btn danger" style="margin-right:auto" data-act="del-lanc" data-id="${l.id}">Excluir</button>`);
   mostrarPorTipo();
@@ -1696,7 +1695,7 @@ document.addEventListener("change", (e) => {
     "f-imp-csv": () => importarArquivo(el, "csv"),
     "f-imp-ofx": () => importarArquivo(el, "ofx"),
     "f-imp-ct": () => importarArquivo(el, "ct"),
-    "cliente-lanc": () => { if (!menuNovo(el, "pessoa")) dlg.querySelector('[name="prospeccaoId"]').innerHTML = opcoesProjeto(el.value, null); },
+    "cliente-lanc": () => { if (!menuNovo(el, "pessoa")) { const sp = dlg.querySelector('select[name="prospeccaoId"]'); if (sp) sp.innerHTML = opcoesProjeto(el.value, null); } },
     "cat-lanc": () => menuNovo(el, "cat"),
     "f-sel": () => { if (el.checked) selLanc.add(el.dataset.id); else selLanc.delete(el.dataset.id); render(); },
     "f-sel-todos": () => { lancVisiveis.forEach((x) => (el.checked ? selLanc.add(x) : selLanc.delete(x))); render(); },
@@ -1765,7 +1764,7 @@ document.addEventListener("submit", (e) => {
     if (tipo === "transf" && (!v("contaDestinoId") || v("contaDestinoId") === v("contaId"))) return erro("Escolha uma conta de destino diferente da origem.");
     const pago = fd.get("pago") === "on";
     const base = { tipo, valor, data: v("data"), descricao: v("descricao").toUpperCase(), pago, pagoEm: pago ? v("pagoEm") || v("data") : null, contaId: v("contaId"), contaDestinoId: tipo === "transf" ? v("contaDestinoId") : null,
-      categoriaId: tipo === "transf" ? null : v("categoriaId") || null, clienteId: tipo === "transf" ? null : v("clienteId") || null, prospeccaoId: tipo === "transf" ? null : v("prospeccaoId") || null,
+      categoriaId: tipo === "transf" ? null : v("categoriaId") || null, clienteId: tipo === "transf" ? null : v("clienteId") || null, prospeccaoId: tipo === "transf" ? null : (f.dataset.id && db.lancamentos.find((x) => x.id === f.dataset.id)?.prospeccaoId) || fd.get("prospeccaoId") || null,
       competencia: v("competencia") || v("data").slice(0, 7), forma: v("forma"), documento: (f.dataset.id && db.lancamentos.find((x) => x.id === f.dataset.id)?.documento) || "", centroId: v("centroId") || null, tags: fd.getAll("tags").map(String), obs: v("obs") };
     if (f.dataset.id) Object.assign(db.lancamentos.find((l) => l.id === f.dataset.id), base);
     else {
