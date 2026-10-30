@@ -1613,7 +1613,6 @@ function formLanc(l = {}) {
     <div class="field"><span>Pago?</span><label style="display:flex;gap:8px;align-items:center;padding:8px 0"><input type="checkbox" name="pago" ${l.pago ? "checked" : ""}> Já ${tipo === "entrada" ? "recebido" : "pago"}, em</label>${inp("pagoEm", l.pagoEm || HOJE, 'type="date" aria-label="Data do pagamento"')}</div>
     ${campo("Competência", inp("competencia", l.competencia || "", 'type="month"'))}
     ${campo("Forma de pagamento", `<select class="input" name="forma">${opts([...FORMAS, "Débito automático"], l.forma, "Selecione...")}</select>`)}
-    ${campo("Número de documento / Nosso número", inp("documento", l.documento))}
     ${campo("Centro de custo", `<select class="input" name="centroId">${opts(db.centros.map((c) => [c.id, c.nome]), l.centroId, "Selecione...")}</select>`)}
     <label class="field" data-show-t="entrada saida"><span>Projeto (opcional)</span><select class="input" name="prospeccaoId">${opcoesProjeto(l.clienteId, l.prospeccaoId)}</select></label>
     <div class="field full"><span>Tags</span><div class="chips">${db.tags.length ? db.tags.map((t) => `<label class="chip"><input type="checkbox" name="tags" value="${t.id}" ${(l.tags || []).includes(t.id) ? "checked" : ""}>${esc(t.nome)}</label>`).join("") : `<span class="small muted">Cadastre tags em Configurações.</span>`}</div></div>
@@ -1767,7 +1766,7 @@ document.addEventListener("submit", (e) => {
     const pago = fd.get("pago") === "on";
     const base = { tipo, valor, data: v("data"), descricao: v("descricao").toUpperCase(), pago, pagoEm: pago ? v("pagoEm") || v("data") : null, contaId: v("contaId"), contaDestinoId: tipo === "transf" ? v("contaDestinoId") : null,
       categoriaId: tipo === "transf" ? null : v("categoriaId") || null, clienteId: tipo === "transf" ? null : v("clienteId") || null, prospeccaoId: tipo === "transf" ? null : v("prospeccaoId") || null,
-      competencia: v("competencia") || v("data").slice(0, 7), forma: v("forma"), documento: v("documento"), centroId: v("centroId") || null, tags: fd.getAll("tags").map(String), obs: v("obs") };
+      competencia: v("competencia") || v("data").slice(0, 7), forma: v("forma"), documento: (f.dataset.id && db.lancamentos.find((x) => x.id === f.dataset.id)?.documento) || "", centroId: v("centroId") || null, tags: fd.getAll("tags").map(String), obs: v("obs") };
     if (f.dataset.id) Object.assign(db.lancamentos.find((l) => l.id === f.dataset.id), base);
     else {
       const rep = v("repeticao"), n = rep ? Math.min(Math.max(Number(v("vezes")) || 2, 2), 120) : 1;
