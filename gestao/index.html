@@ -741,7 +741,7 @@ function blocoFinanceiroVinculado(filtro, rotulo, novoParams) {
     <div class="card" style="display:flex;align-items:center"><button class="btn" data-act="novo-lanc" ${novoParams}>Lançar recebimento</button></div></div>
     <div class="card flush">${tabelaLancamentos(ls)}</div>`;
 }
-const enderecoCompleto = (c) => [[c.endereco, c.numero].filter(Boolean).join(", "), [c.cidade, c.estado].filter(Boolean).join(" / "), c.cep && "CEP " + c.cep].filter(Boolean).join(" · ");
+const enderecoCompleto = (c) => [[c.endereco, c.numero].filter(Boolean).join(", "), c.bairro, [c.cidade, c.estado].filter(Boolean).join(" / "), c.cep && "CEP " + c.cep].filter(Boolean).join(" · ");
 function pgCliente(id) {
   const c = cliente(id); if (!c) return `<p class="empty">Cliente não encontrado.</p>`;
   const ps = db.prospeccoes.filter((p) => p.clienteId === id).sort((a, b) => b.contato.localeCompare(a.contato));
@@ -928,6 +928,7 @@ function formCliente(c = {}) {
     ${campo("CEP", inp("cep", c.cep, 'data-mask="cep" inputmode="numeric" placeholder="00000-000"') + `<small class="small muted" id="cep-info">Digite o CEP para preencher o endereço.</small>`)}
     ${campo("Endereço", inp("endereco", c.endereco))}
     ${campo("Nº", inp("numero", c.numero, 'placeholder="Ex.: 683"'))}
+    ${campo("Bairro", inp("bairro", c.bairro))}
     ${campo("Cidade", inp("cidade", c.cidade))}
     ${campo("Estado", `<select class="input" name="estado">${opts(ESTADOS.map(([uf, n]) => [uf, n + " (" + uf + ")"]), c.estado, "Selecione...")}</select>`)}
     ${campo("Observações", `<textarea class="input" name="observacoes" rows="3">${esc(c.observacoes)}</textarea>`, true)}
@@ -972,7 +973,7 @@ function baixarCSV(nome, cab, linhas) {
   a.download = `${nome}-${HOJE}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 function exportar(tipo) {
-  if (tipo === "clientes") baixarCSV("clientes", ["Nome", "CPF/CNPJ", "Telefone", "E-mail", "CEP", "Endereço", "Nº", "Cidade", "Estado", "Origem", "Observações"], db.clientes.map((c) => [c.nome, c.documento, c.telefone, c.email, c.cep, c.endereco, c.numero, c.cidade, c.estado, c.origem, c.observacoes]));
+  if (tipo === "clientes") baixarCSV("clientes", ["Nome", "CPF/CNPJ", "Telefone", "E-mail", "CEP", "Endereço", "Nº", "Bairro", "Cidade", "Estado", "Origem", "Observações"], db.clientes.map((c) => [c.nome, c.documento, c.telefone, c.email, c.cep, c.endereco, c.numero, c.bairro, c.cidade, c.estado, c.origem, c.observacoes]));
   if (tipo === "prospeccoes") { const vv = verValores(); baixarCSV("prospeccoes", ["Projeto", "Cliente", "Tipos", "Situação", ...(vv ? ["Valor (R$)"] : []), "Primeiro contato", "Fechamento/cancelamento", "Motivo do cancelamento"], db.prospeccoes.map((p) => [p.titulo, cliente(p.clienteId)?.nome, tiposDe(p), STATUS[p.status].label, ...(vv ? [p.valor] : []), dataBR(p.contato), p.fechamento ? dataBR(p.fechamento) : "", p.motivo])); }
 }
 
@@ -1691,7 +1692,7 @@ async function buscarCep(form, cep) {
   try {
     const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`).then((x) => x.json());
     if (r.erro) throw new Error("não encontrado");
-    campo("endereco").value = [r.logradouro, r.bairro].filter(Boolean).join(" - ");
+    campo("endereco").value = r.logradouro || ""; if (r.bairro) campo("bairro").value = r.bairro;
     campo("cidade").value = r.localidade || "";
     campo("estado").value = r.uf || "";
     if (info) info.textContent = "Endereço preenchido. Confira e informe o número.";
@@ -1902,7 +1903,7 @@ document.addEventListener("submit", (e) => {
     return salvarMembro(f.dataset.id, v("nome"), v("email").toLowerCase(), v("senha"), adm, adm ? MENUS.map(([m]) => m) : marcados);
   }
   if (nome === "cliente") {
-    const dados = { nome: v("nome").toUpperCase(), documento: v("documento"), origem: v("origem"), telefone: v("telefone"), email: v("email"), cep: v("cep"), endereco: v("endereco"), numero: v("numero"), cidade: v("cidade"), estado: v("estado"), observacoes: v("observacoes") };
+    const dados = { nome: v("nome").toUpperCase(), documento: v("documento"), origem: v("origem"), telefone: v("telefone"), email: v("email"), cep: v("cep"), endereco: v("endereco"), numero: v("numero"), bairro: v("bairro"), cidade: v("cidade"), estado: v("estado"), observacoes: v("observacoes") };
     let id = f.dataset.id;
     if (id) Object.assign(cliente(id), dados); else { id = uid(); db.clientes.push({ id, criado: HOJE, ...dados }); }
     salvar(); dlg.close(); return ir("#/cliente/" + id);
