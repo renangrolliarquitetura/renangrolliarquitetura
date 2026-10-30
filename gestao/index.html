@@ -2087,6 +2087,8 @@ function marcarAtividade() {
   if (agora - ultimaAtividade < 15000) return;
   ultimaAtividade = agora;
   try { localStorage.setItem(CHAVE_ATIVIDADE, String(agora)); } catch {}
+  // Financeiro/Equipe destravados: o prazo de 30 min conta a partir do último uso, não da senha
+  if (finAte > agora) { finAte = agora + INATIVO_MS; guardarSessao(); }
 }
 ["pointerdown", "keydown", "scroll", "touchstart", "mousemove"].forEach((ev) => addEventListener(ev, marcarAtividade, { passive: true, capture: true }));
 async function conferirInatividade() {
