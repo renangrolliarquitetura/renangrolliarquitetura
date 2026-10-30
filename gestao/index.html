@@ -1213,7 +1213,7 @@ function finTransacoes() {
         <div class="small muted">Previsão de fechamento do mês: ${R$(saldoTotal() + (atual.rPrev - atual.rReal) - (atual.dPrev - atual.dReal))}</div>
         <div class="actions" style="margin-top:10px"><a class="btn sm" href="#/financeiro/importar">Importar extrato OFX</a><a class="btn sm" href="#/financeiro/importar">Importar movimentações</a></div></div>
     </div>
-    <div class="bar mb">${seletorMes()}<div class="tabs">${[["entrada", "Recebimentos"], ["saida", "Despesas"], ["transf", "Transferências"]].map(([v, l]) => `<button class="${fAba === v ? "on" : ""}" data-act="f-aba" data-v="${v}">${l}</button>`).join("")}</div></div>
+    <div class="bar mb" style="justify-content:flex-start;gap:24px">${seletorMes()}<div class="tabs">${[["entrada", "Recebimentos"], ["saida", "Despesas"], ["transf", "Transferências"]].map(([v, l]) => `<button class="${fAba === v ? "on" : ""}" data-act="f-aba" data-v="${v}">${l}</button>`).join("")}</div></div>
     <div class="actions mb">
       <select class="input" data-act="f-status" aria-label="Status de pagamento">${[["todos", "Status: Todos"], ["pagos", "Status: Pagos"], ["pendentes", "Status: Não pagos"]].map(([v, l]) => `<option value="${v}" ${fStatus === v ? "selected" : ""}>${l}</option>`).join("")}</select>
       <input class="input" id="f-busca" style="flex:1;min-width:180px;width:auto" placeholder="Pesquisar na tabela" value="${esc(fBusca)}">
@@ -1228,7 +1228,7 @@ function finTransacoes() {
           <td><input class="ie ie-data" type="date" data-act="f-ed" data-k="data" data-id="${l.id}" value="${l.data}" aria-label="Data"></td>
           <td><div class="dcell">${atrasado(l) ? `<span class="alerta" title="Em atraso">!</span>` : ""}<input class="ie ie-desc" data-act="f-ed" data-k="descricao" data-id="${l.id}" value="${esc(l.descricao)}" placeholder="${esc(catNome(l))}" aria-label="Descrição">${l.parcela ? `<button class="tagp" data-act="f-serie" data-id="${l.id}" title="Editar ${pg === "repetir" ? "repetições" : "parcelas"}">${l.parcela} ${freqNome(l.freq).toLowerCase()}</button>` : ""}</div></td>
           <td class="ink2">${tr ? `${esc(conta(l.contaId)?.nome)} → ${esc(conta(l.contaDestinoId)?.nome)}` : `<select class="ie ie-pessoa" data-act="f-ed" data-k="clienteId" data-id="${l.id}" aria-label="${rotulo[0]}">${opcoesPessoa(l.clienteId)}</select>`}</td>
-          <td class="num"><input class="ie ie-valor num ${l.tipo === "entrada" ? "pos" : l.tipo === "saida" ? "neg" : ""}" data-act="f-ed" data-k="valor" data-id="${l.id}" value="${R$(l.valor)}" inputmode="decimal" aria-label="Valor"></td>
+          <td class="num"><input class="ie ie-valor num ${l.tipo === "entrada" ? "pos" : l.tipo === "saida" ? "neg" : ""}" data-act="f-ed" data-k="valor" data-id="${l.id}" value="${R$(l.valor)}" inputmode="numeric" data-mask="moeda" aria-label="Valor"></td>
           <td class="small">${tr ? "Transferência" : `<select class="ie ie-cat" data-act="f-ed" data-k="categoriaId" data-id="${l.id}" aria-label="Categoria">${opcoesCategoria(l.tipo, l.categoriaId)}</select>`}</td>
           <td class="small">${tr ? "—" : `<select class="ie ie-pag" data-act="f-pagto" data-id="${l.id}" aria-label="Pagamento">${opts([["avista", "À vista"], ["parcelado", pg === "parcelado" ? "Parcelado" : "Criar parcelas"], ["repetir", pg === "repetir" ? "Repetindo" : "Repetir transação"]], pg)}</select>`}</td>
           <td>${toggle(l)}</td>
@@ -1440,7 +1440,7 @@ function tornarAVista(l) {
 }
 const fmtValor = (v) => Number(v || 0).toFixed(2).replace(".", ",");
 function linhasSerie(linhas, pagos = []) {
-  return linhas.map((r, i) => `<tr><td class="small">${i + 1}/${linhas.length}${pagos[i] ? ` <span class="badge b-good">pago</span>` : ""}</td><td><input class="input" type="date" name="pd" value="${r.data}" required></td><td><input class="input" name="pv" inputmode="decimal" value="${fmtValor(r.valor)}" data-act="serie-soma" required style="text-align:right"></td></tr>`).join("");
+  return linhas.map((r, i) => `<tr><td class="small">${i + 1}/${linhas.length}${pagos[i] ? ` <span class="badge b-good">pago</span>` : ""}</td><td><input class="input" type="date" name="pd" value="${r.data}" required></td><td><input class="input" name="pv" inputmode="numeric" data-mask="moeda" value="${R$(r.valor)}" data-act="serie-soma" required style="text-align:right"></td></tr>`).join("");
 }
 function formSerie(l, modo) {
   const membros = membrosSerie(l), mesmo = pagamentoDe(l) === modo && membros.length > 1;
@@ -1451,7 +1451,7 @@ function formSerie(l, modo) {
     <p class="small muted full" style="margin:0">${esc(l.descricao || catNome(l))}</p>
     ${campo(modo === "parcelado" ? "Número de parcelas" : "Quantas vezes (contando esta)", `<input class="input" type="number" name="n" min="2" max="120" value="${n}" data-act="serie-gerar">`)}
     ${campo("Frequência", `<select class="input" name="freq" data-act="serie-gerar">${opts(FREQS, freq)}</select>`)}
-    ${campo(modo === "parcelado" ? "Valor total" : "Valor de cada vez", inp("total", fmtValor(valor), 'inputmode="decimal" data-act="serie-gerar"'))}
+    ${campo(modo === "parcelado" ? "Valor total" : "Valor de cada vez", inp("total", R$(valor), 'inputmode="numeric" data-mask="moeda" data-act="serie-gerar"'))}
     <div class="field full"><span>${modo === "parcelado" ? "Parcelas (dá para ajustar data e valor de cada uma)" : "Repetições (dá para ajustar data e valor de cada uma)"}</span>
       <table class="parc"><thead><tr><th>Nº</th><th>Vencimento</th><th class="num">Valor</th></tr></thead><tbody id="serie-linhas">${linhasSerie(linhas, mesmo ? membros.map((x) => x.pago) : [])}</tbody></table>
       <p class="small muted" id="serie-soma" style="margin:6px 0 0"></p></div>
@@ -1602,7 +1602,7 @@ function formLanc(l = {}) {
   abrir(novo ? { entrada: "Novo recebimento", saida: "Nova despesa", transf: "Nova transferência" }[tipo] : "Detalhes da transação", `<div class="form">
     <div class="field full"><span>Tipo</span><div class="chips">${[["entrada", "Recebimento"], ["saida", "Despesa"], ["transf", "Transferência"]].map(([v, r]) => `<label class="chip"><input type="radio" name="tipo" value="${v}" ${tipo === v ? "checked" : ""} data-act="tipo-lanc">${r}</label>`).join("")}</div></div>
     ${campo("Data / vencimento *", inp("data", l.data || (fMes === HOJE.slice(0, 7) ? HOJE : fMes + "-01"), 'type="date" required'))}
-    ${campo("Valor *", inp("valor", l.valor != null ? String(l.valor).replace(".", ",") : "", 'inputmode="decimal" placeholder="0,00" required'))}
+    ${campo("Valor *", inp("valor", l.valor != null ? R$(l.valor) : "", 'inputmode="numeric" placeholder="R$ 0,00" data-mask="moeda" required'))}
     ${campo("Descrição", inp("descricao", l.descricao, 'placeholder="Ex.: PROJETO ARQUITETÔNICO - NOME DO CLIENTE"'), true)}
     <label class="field" data-show-t="entrada saida"><span>${tipo === "saida" ? "Pago a" : "Recebido de"}</span><select class="input" name="clienteId" data-act="cliente-lanc" data-prev="${l.clienteId || ""}">${opcoesPessoa(l.clienteId)}</select></label>
     <label class="field" data-show-t="entrada saida"><span>Categoria</span><select class="input" name="categoriaId" id="sel-cat" data-act="cat-lanc" data-prev="${l.categoriaId || ""}">${opcoesCategoria(tipo, l.categoriaId)}</select></label>
@@ -1708,6 +1708,8 @@ document.addEventListener("change", (e) => {
 });
 /* ---------- máscaras e busca de CEP ---------- */
 const soDigitos = (t) => String(t || "").replace(/\D/g, "");
+// Valor em reais enquanto digita: os números entram pelos centavos (1 → R$ 0,01; 12345 → R$ 123,45)
+const formatarMoeda = (t) => { const d = soDigitos(t).replace(/^0+/, ""); return d ? brl.format(Number(d) / 100) : ""; };
 // CPF até 11 dígitos; a partir do 12º vira CNPJ
 function formatarDoc(t) {
   const d = soDigitos(t).slice(0, 14);
@@ -1741,6 +1743,7 @@ document.addEventListener("input", (e) => {
   const el = e.target, mask = el.dataset?.mask; if (!mask) return;
   const pos = el.selectionStart, antes = el.value.length;
   if (mask === "maiusc") { el.value = el.value.toUpperCase(); el.setSelectionRange(pos, pos); return; }
+  if (mask === "moeda") { el.value = formatarMoeda(el.value); el.setSelectionRange(el.value.length, el.value.length); return; }
   el.value = { doc: formatarDoc, tel: formatarTel, cep: formatarCep }[mask](el.value);
   const p = pos + el.value.length - antes; el.setSelectionRange(p, p);
   if (mask === "cep" && soDigitos(el.value).length === 8) buscarCep(el.form, soDigitos(el.value));
