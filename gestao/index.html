@@ -315,7 +315,7 @@ table.trans tr.sel td { background: color-mix(in srgb, var(--accent) 9%, transpa
 .ie { width: 100%; min-width: 0; border: 1px solid transparent; background: transparent; color: inherit; font: inherit; padding: 5px 6px; border-radius: 4px; }
 .ie:hover { border-color: var(--line); } .ie:focus { outline: 0; border-color: var(--accent); background: var(--surface); }
 select.ie { cursor: pointer; } input.ie.num { text-align: right; font-weight: 600; } input.ie.pos { color: var(--good-text); } input.ie.neg { color: var(--critical); }
-.ie-data { width: 128px; } .ie-desc { min-width: 160px; } .ie-pessoa { min-width: 120px; } .ie-valor { width: 112px; } .ie-cat { min-width: 120px; } .ie-pag { min-width: 112px; }
+.ie-data { width: 128px; } .ie-desc { min-width: 140px; } .ie-pessoa { min-width: 110px; } .ie-valor { width: 106px; } .ie-cat { min-width: 110px; } .ie-pag { min-width: 100px; } .ie-forma { min-width: 96px; }
 .dcell { display: flex; align-items: center; gap: 6px; }
 .selbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--surface-2); font-size: 13px; }
 .selbar b { margin-right: 6px; }
@@ -1221,19 +1221,20 @@ function finTransacoes() {
     </div>
     <div class="card flush">
       ${selVis.length ? `<div class="selbar"><b>${selVis.length} selecionado(s) · ${R$(soma(selVis))}</b><button class="btn sm" data-act="f-sel-pago" data-v="1">Marcar como ${fAba === "entrada" ? "recebido" : "pago"}</button><button class="btn sm" data-act="f-sel-pago" data-v="0">Marcar como não ${fAba === "entrada" ? "recebido" : "pago"}</button><button class="btn sm danger" data-act="f-sel-del">Excluir</button><button class="btn sm" data-act="f-sel-limpar">Limpar seleção</button></div>` : ""}
-      <div class="trans-wrap"><table class="trans"><thead><tr><th class="ck"><input type="checkbox" data-act="f-sel-todos" aria-label="Selecionar todos" ${ls.length && selVis.length === ls.length ? "checked" : ""}></th><th>Data</th><th>Descrição</th><th>${rotulo[0]}</th><th class="num">Valor</th><th>Categoria</th><th>Pagamento</th><th>Pago?</th><th></th></tr></thead><tbody>
-        <tr><td colspan="9"><button class="addrow" data-act="novo-lanc" data-tipo="${fAba}">+ Adicionar ${rotulo[1]}</button></td></tr>
+      <div class="trans-wrap"><table class="trans"><thead><tr><th class="ck"><input type="checkbox" data-act="f-sel-todos" aria-label="Selecionar todos" ${ls.length && selVis.length === ls.length ? "checked" : ""}></th><th>Data</th><th>Descrição</th><th>${rotulo[0]}</th><th class="num">Valor</th><th style="white-space:normal">Forma de pagamento</th><th>Categoria</th><th>Pagamento</th><th>Pago?</th><th></th></tr></thead><tbody>
+        <tr><td colspan="10"><button class="addrow" data-act="novo-lanc" data-tipo="${fAba}">+ Adicionar ${rotulo[1]}</button></td></tr>
         ${ls.map((l) => { const tr = l.tipo === "transf", pg = pagamentoDe(l); return `<tr class="${selLanc.has(l.id) ? "sel" : ""}">
           <td class="ck"><input type="checkbox" data-act="f-sel" data-id="${l.id}" aria-label="Selecionar" ${selLanc.has(l.id) ? "checked" : ""}></td>
           <td><input class="ie ie-data" type="date" data-act="f-ed" data-k="data" data-id="${l.id}" value="${l.data}" aria-label="Data"></td>
           <td><div class="dcell">${atrasado(l) ? `<span class="alerta" title="Em atraso">!</span>` : ""}<input class="ie ie-desc" data-act="f-ed" data-k="descricao" data-id="${l.id}" value="${esc(l.descricao)}" placeholder="${esc(catNome(l))}" aria-label="Descrição">${l.parcela ? `<button class="tagp" data-act="f-serie" data-id="${l.id}" title="Editar ${pg === "repetir" ? "repetições" : "parcelas"}">${l.parcela} ${freqNome(l.freq).toLowerCase()}</button>` : ""}</div></td>
           <td class="ink2">${tr ? `${esc(conta(l.contaId)?.nome)} → ${esc(conta(l.contaDestinoId)?.nome)}` : `<select class="ie ie-pessoa" data-act="f-ed" data-k="clienteId" data-id="${l.id}" aria-label="${rotulo[0]}">${opcoesPessoa(l.clienteId)}</select>`}</td>
           <td class="num"><input class="ie ie-valor num ${l.tipo === "entrada" ? "pos" : l.tipo === "saida" ? "neg" : ""}" data-act="f-ed" data-k="valor" data-id="${l.id}" value="${R$(l.valor)}" inputmode="numeric" data-mask="moeda" aria-label="Valor"></td>
+          <td class="small"><select class="ie ie-forma" data-act="f-ed" data-k="forma" data-id="${l.id}" aria-label="Forma de pagamento">${opts([...new Set([...FORMAS, "Débito automático", ...(l.forma ? [l.forma] : [])])], l.forma, "—")}</select></td>
           <td class="small">${tr ? "Transferência" : `<select class="ie ie-cat" data-act="f-ed" data-k="categoriaId" data-id="${l.id}" aria-label="Categoria">${opcoesCategoria(l.tipo, l.categoriaId)}</select>`}</td>
           <td class="small">${tr ? "—" : `<select class="ie ie-pag" data-act="f-pagto" data-id="${l.id}" aria-label="Pagamento">${opts([["avista", "À vista"], ["parcelado", pg === "parcelado" ? "Parcelado" : "Criar parcelas"], ["repetir", pg === "repetir" ? "Repetindo" : "Repetir transação"]], pg)}</select>`}</td>
           <td>${toggle(l)}</td>
           <td><button class="btn sm" data-act="editar-lanc" data-id="${l.id}" title="Abrir todos os detalhes" aria-label="Abrir detalhes">⋯</button></td></tr>`; }).join("")}
-        ${ls.length ? "" : `<tr><td colspan="9" class="empty">Nenhuma movimentação neste mês.</td></tr>`}
+        ${ls.length ? "" : `<tr><td colspan="10" class="empty">Nenhuma movimentação neste mês.</td></tr>`}
       </tbody></table></div>
       <div class="totais"><span>Total <b>${R$(soma(total))}</b></span><span>${rotulo[2]} <b>${R$(soma(total.filter((l) => l.pago)))}</b></span><span>${rotulo[3]} <b>${R$(soma(total.filter((l) => !l.pago)))}</b></span></div>
     </div>`;
@@ -1592,6 +1593,7 @@ function editarNaLinha(el) {
   else if (k === "data") { if (!val) return render(); if (l.competencia === l.data.slice(0, 7)) l.competencia = val.slice(0, 7); l.data = val; }
   else if (k === "clienteId") { l.clienteId = val || null; if (l.prospeccaoId && prosp(l.prospeccaoId)?.clienteId !== l.clienteId) l.prospeccaoId = null; }
   else if (k === "categoriaId") l.categoriaId = val || null;
+  else if (k === "forma") l.forma = val;
   if (k === "descricao") el.value = l.descricao;
   if (k === "valor") el.value = R$(l.valor);
   salvar(); renderPendente = true; setTimeout(atualizarTela, 0);
