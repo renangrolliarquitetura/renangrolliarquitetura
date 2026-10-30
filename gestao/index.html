@@ -204,6 +204,9 @@ dialog .df { padding: 14px 20px; border-top: 1px solid var(--line); display: fle
 .chart .lab { fill: var(--ink-2); }
 .chart .grid line { stroke: var(--line); }
 .chart .axis { stroke: var(--axis); }
+.chart a .mark, .chart a { cursor: pointer; } .chart a:hover .m { opacity: .8; }
+a.tile { display: block; color: inherit; text-decoration: none; transition: border-color .15s; } a.tile:hover { border-color: var(--ink-2); }
+tr.link { cursor: pointer; } tr.link:hover td { background: var(--surface-2); }
 .chart rect.hit { fill: transparent; }
 .chart g.mark:hover rect.m { opacity: .85; }
 .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 8px; font-size: 13px; color: var(--ink-2); }
@@ -607,10 +610,10 @@ function barrasH(dados, { moeda = false, cor = "var(--series-1)" } = {}) {
   dados.forEach((d, i) => {
     const y = i * linha + 7, w = Math.max(0, x(d.valor) - rot), c = d.cor || cor;
     const t = `<b>${esc(d.nome)}</b>${moeda ? R$(d.valor) : d.valor + (d.valor === 1 ? " item" : " itens")}`;
-    s += `<g class="mark" data-tip="${esc(t)}"><rect class="hit" x="0" y="${y - 5}" width="${W}" height="${linha}"/>
+    s += `${d.href ? `<a href="${d.href}">` : ""}<g class="mark" data-tip="${esc(t)}"><rect class="hit" x="0" y="${y - 5}" width="${W}" height="${linha}"/>
       <text class="lab" x="${rot - 8}" y="${y + 14}" text-anchor="end">${esc(d.nome.length > (rot < 150 ? 15 : 22) ? d.nome.slice(0, rot < 150 ? 14 : 21) + "…" : d.nome)}</text>
       <path class="m" fill="${c}" d="M${rot},${y} h${Math.max(w - 4, 0)} a4,4 0 0 1 4,4 v12 a4,4 0 0 1 -4,4 h-${Math.max(w - 4, 0)} z"/>
-      <text class="lab" x="${rot + w + 6}" y="${y + 14}">${fmt(d.valor)}</text></g>`;
+      <text class="lab" x="${rot + w + 6}" y="${y + 14}">${fmt(d.valor)}</text></g>${d.href ? "</a>" : ""}`;
   });
   return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img">${s}</svg></div>`;
 }
@@ -626,7 +629,7 @@ function barrasMes(dados, series, { empilhado = false, moeda = false } = {}) {
   dados.forEach((d, i) => {
     const cx = esq + col * i + col / 2;
     const t = `<b>${esc(d.mes)}</b>` + series.map((se) => `${esc(se.label)}: ${moeda ? R$(d[se.k]) : d[se.k]}`).join("<br>");
-    s += `<g class="mark" data-tip="${esc(t)}"><rect class="hit" x="${esq + col * i}" y="0" width="${col}" height="${base}"/>`;
+    s += `${d.href ? `<a href="${d.href}">` : ""}<g class="mark" data-tip="${esc(t)}"><rect class="hit" x="${esq + col * i}" y="0" width="${col}" height="${base}"/>`;
     if (empilhado) {
       const bw = Math.min(30, col * 0.6); let acc = 0;
       const vis = series.filter((se) => d[se.k] > 0);
@@ -644,14 +647,14 @@ function barrasMes(dados, series, { empilhado = false, moeda = false } = {}) {
         s += `<path class="m" fill="${se.cor}" d="M${x0},${base} v-${h - r} a${r},${r} 0 0 1 ${r},-${r} h${bw - 2 * r} a${r},${r} 0 0 1 ${r},${r} v${h - r} z"/>`;
       });
     }
-    s += `<text x="${cx}" y="${H - 6}" text-anchor="middle">${esc(d.mes)}</text></g>`;
+    s += `<text x="${cx}" y="${H - 6}" text-anchor="middle">${esc(d.mes)}</text></g>${d.href ? "</a>" : ""}`;
   });
   const leg = `<div class="legend">${series.map((se) => `<span style="--c:${se.cor}">${esc(se.label)}</span>`).join("")}</div>`;
   return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img">${s}</svg>${leg}</div>`;
 }
 
 /* ===================== componentes de página ===================== */
-const tile = (lbl, val, det = "", tom = "") => `<div class="card tile"><div class="lbl">${lbl}</div><div class="val ${tom}">${val}</div>${det ? `<div class="det">${det}</div>` : ""}</div>`;
+const tile = (lbl, val, det = "", tom = "", href = "") => `<${href ? `a href="${href}"` : "div"} class="card tile"><div class="lbl">${lbl}</div><div class="val ${tom}">${val}</div>${det ? `<div class="det">${det}</div>` : ""}</${href ? "a" : "div"}>`;
 const cabecalho = (titulo, sub, acoes = "") => `<div class="head"><div><h1>${titulo}</h1>${sub ? `<p>${sub}</p>` : ""}</div><div class="actions">${acoes}</div></div>`;
 const botoesExportar = (csv) => `${csv ? `<button class="btn" data-act="csv" data-tipo="${csv}" title="${EMBUTIDO ? "Copia a tabela para colar no Excel" : "Baixa uma planilha para abrir no Excel"}">${EMBUTIDO ? "Copiar p/ Excel" : "Excel"}</button>` : ""}${EMBUTIDO ? "" : `<button class="btn" data-act="pdf">PDF</button>`}`;
 const anosDe = (datas) => [...new Set([HOJE.slice(0, 4), ...datas.map((d) => d.slice(0, 4))])].sort().reverse();
@@ -667,15 +670,15 @@ function pgPainel() {
   const prazos = db.etapas.filter((e) => !e.concluida && e.prazo && e.prazo <= limite && prosp(e.prospeccaoId)?.status !== "cancelado").sort((x, y) => x.prazo.localeCompare(y.prazo));
   const porMes = MESES.map((mes, i) => {
     const doMes = lista.filter((p) => Number(p.contato.slice(5, 7)) === i + 1);
-    return { mes, fechado: doMes.filter((p) => p.status === "fechado").length, aberto: doMes.filter((p) => p.status === "aberto").length, cancelado: doMes.filter((p) => p.status === "cancelado").length };
+    return { mes, href: `#/lista/mes-${i + 1}`, fechado: doMes.filter((p) => p.status === "fechado").length, aberto: doMes.filter((p) => p.status === "aberto").length, cancelado: doMes.filter((p) => p.status === "cancelado").length };
   });
   const minhas = db.tarefas.filter((t) => t.responsavelId === sessao.id && t.andamento !== "concluido").sort(ordemTarefas);
   return cabecalho(`Olá, ${esc(sessao.nome)}`, "Resumo das prospecções e projetos do escritório", selAno(anosDe(db.prospeccoes.map((p) => p.contato)), ano) + botoesExportar()) +
     `<div class="grid ${verValores() ? "g5" : "g4"} mb">
-      ${tile("Clientes cadastrados", db.clientes.length)}
-      ${tile("Projetos fechados", f.length, verValores() ? R$(soma(f)) : "")}
-      ${tile("Em aberto", a.length, verValores() ? R$(soma(a)) + " em negociação" : "em negociação")}
-      ${tile("Taxa de conversão", pct(f.length, f.length + c.length) + "%", `${f.length} fechados de ${f.length + c.length} decididos · ${c.length} cancelados`)}
+      ${tile("Clientes cadastrados", db.clientes.length, "", "", "#/clientes")}
+      ${tile("Projetos fechados", f.length, verValores() ? R$(soma(f)) : "", "", "#/lista/status-fechado")}
+      ${tile("Em aberto", a.length, verValores() ? R$(soma(a)) + " em negociação" : "em negociação", "", "#/lista/status-aberto")}
+      ${tile("Taxa de conversão", pct(f.length, f.length + c.length) + "%", `${f.length} fechados de ${f.length + c.length} decididos · ${c.length} cancelados`, "", "#/lista/decididos")}
       ${verValores() ? tileMedio(f) : ""}
     </div>` +
     (minhas.length ? `<div class="card mb"><div class="bar"><h2>Minhas tarefas</h2><a href="#/tarefas" class="small">Ver todas</a></div><ul class="steps">${minhas.slice(0, 8).map((t) => `<li><button class="btn sm" data-act="tarefa-ok" data-id="${t.id}">○</button><a href="#" class="nm" data-act="editar-tarefa" data-id="${t.id}">${esc(t.titulo)}</a>${t.urgente ? `<span class="urg">Urgente</span>` : ""}${andamentoTag(t.andamento)}${prosp(t.prospeccaoId) ? `<a href="#/prospeccao/${t.prospeccaoId}" class="small muted">${esc(prosp(t.prospeccaoId).titulo)}</a>` : ""}${t.prazo ? situacaoPrazo(t.prazo) : ""}</li>`).join("")}</ul></div>` : "") +
@@ -684,22 +687,42 @@ function pgPainel() {
       return `<tr><td class="num" style="text-align:left">${dataBR(e.prazo)}</td><td><a href="#/prospeccao/${p.id}">${esc(p.titulo)}</a> <span class="muted">· ${esc(cliente(p.clienteId)?.nome)}</span></td><td>${esc(e.nome)}</td><td>${situacaoPrazo(e.prazo)}</td></tr>`;
     }).join("")}</tbody></table></div>` : "") +
     `<div class="grid g2">
-      <div class="card"><h2>Prospecções por situação</h2>${barrasH(Object.keys(STATUS).map((s) => ({ nome: STATUS[s].label, valor: lista.filter((p) => p.status === s).length, cor: STATUS[s].cor })))}</div>
-      <div class="card"><h2>Tipos de projeto fechados</h2><p class="small muted" style="margin:-8px 0 10px">Um projeto pode ter mais de um tipo.</p>${barrasH(contar(f, (p) => p.tipos.map(tipoNome)))}</div>
+      <div class="card"><h2>Prospecções por situação</h2>${barrasH(Object.keys(STATUS).map((s) => ({ nome: STATUS[s].label, valor: lista.filter((p) => p.status === s).length, cor: STATUS[s].cor, href: `#/lista/status-${s}` })))}</div>
+      <div class="card"><h2>Tipos de projeto fechados</h2><p class="small muted" style="margin:-8px 0 10px">Um projeto pode ter mais de um tipo.</p>${barrasH(contar(f, (p) => p.tipos.map(tipoNome)).map((d) => ({ ...d, href: `#/lista/tipo-${db.tipos.find((t) => t.nome === d.nome)?.id ?? ""}` })))}</div>
       ${ano !== "todos" ? `<div class="card span2"><h2>Prospecções por mês de contato · ${ano}</h2>${barrasMes(porMes, [
         { k: "fechado", label: "Fechado", cor: STATUS.fechado.cor }, { k: "aberto", label: "Em aberto", cor: STATUS.aberto.cor }, { k: "cancelado", label: "Cancelado", cor: STATUS.cancelado.cor }], { empilhado: true })}</div>` : ""}
-      <div class="card"><h2>De onde vêm os projetos fechados</h2><p class="small muted" style="margin:-8px 0 10px">Origem do cliente informada no cadastro.</p>${barrasH(contar(f, (p) => cliente(p.clienteId)?.origem))}</div>
-      <div class="card"><h2>Motivos de cancelamento</h2>${c.length ? `<table><tbody>${contar(c, (p) => p.motivo || "Sem motivo informado").map((m) => `<tr><td>${esc(m.nome)}</td><td class="num">${m.valor}</td></tr>`).join("")}</tbody></table>` : `<p class="empty">Nenhum cancelamento no período.</p>`}</div>
+      <div class="card"><h2>De onde vêm os projetos fechados</h2><p class="small muted" style="margin:-8px 0 10px">Origem do cliente informada no cadastro.</p>${barrasH(contar(f, (p) => cliente(p.clienteId)?.origem).map((d) => ({ ...d, href: `#/lista/origem-${encodeURIComponent(d.nome)}` })))}</div>
+      <div class="card"><h2>Motivos de cancelamento</h2>${c.length ? `<table><tbody>${contar(c, (p) => p.motivo || "Sem motivo informado").map((m) => `<tr class="link" data-href="#/lista/motivo-${encodeURIComponent(m.nome)}"><td>${esc(m.nome)}</td><td class="num">${m.valor}</td></tr>`).join("")}</tbody></table>` : `<p class="empty">Nenhum cancelamento no período.</p>`}</div>
     </div>`;
 }
 
+// Lista aberta pelos quadros e gráficos do Painel (respeita o ano escolhido no Painel)
+function pgLista(chave = "") {
+  const ano = filtroAnoPainel, [tipo, ...resto] = chave.split("-"), val = decodeURIComponent(resto.join("-"));
+  const doAno = db.prospeccoes.filter((p) => ano === "todos" || p.contato.startsWith(ano));
+  const tipoM = Number(filtroTipoMedio) || null;
+  const filtros = {
+    status: [{ fechado: "Projetos fechados", aberto: "Projetos em aberto", cancelado: "Projetos cancelados" }[val] || "Projetos", (p) => p.status === val],
+    decididos: ["Projetos decididos (fechados e cancelados)", (p) => p.status !== "aberto"],
+    tipo: [`Projetos fechados: ${tipoNome(Number(val))}`, (p) => p.status === "fechado" && p.tipos.includes(Number(val))],
+    origem: [`Projetos fechados vindos de: ${val}`, (p) => p.status === "fechado" && (cliente(p.clienteId)?.origem || "Não informado") === val],
+    motivo: [`Cancelados: ${val}`, (p) => p.status === "cancelado" && (p.motivo || "Sem motivo informado") === val],
+    mes: [`Prospecções de ${new Date(2026, Number(val) - 1, 1).toLocaleString("pt-BR", { month: "long" })}`, (p) => Number(p.contato.slice(5, 7)) === Number(val)],
+    medio: [`Projetos fechados com valor${tipoM ? `: ${tipoNome(tipoM)}` : ""}`, (p) => p.status === "fechado" && Number(p.valor) > 0 && (!tipoM || p.tipos.includes(tipoM))],
+  };
+  const [titulo, fn] = filtros[tipo] || ["Todas as prospecções", () => true];
+  const ls = doAno.filter(fn).sort((a, b) => b.contato.localeCompare(a.contato));
+  return cabecalho(esc(titulo), `<a href="#/painel">← Painel</a> · ${ls.length} projeto(s) · ${ano === "todos" ? "todos os anos" : ano}${verValores() ? " · " + R$(soma(ls)) + (tipo === "medio" && ls.length ? ` · média ${R$(soma(ls) / ls.length)}` : "") : ""}`, botoesExportar()) +
+    `<div class="card flush">${ls.length ? `<table><thead><tr><th>Projeto</th><th>Cliente</th><th>Tipos</th><th>Situação</th><th>Etapa</th><th>Contato</th>${verValores() ? `<th class="num">Valor</th>` : ""}</tr></thead><tbody>${ls.map((p) => `<tr>
+      <td><a href="#/prospeccao/${p.id}"><b>${esc(p.titulo)}</b></a></td><td><a href="#/cliente/${p.clienteId}">${esc(cliente(p.clienteId)?.nome)}</a></td><td class="ink2">${esc(tiposDe(p))}</td><td>${badge(p.status)}</td><td class="ink2">${p.status === "cancelado" ? "—" : esc(etapaDe(p))}</td><td>${dataBR(p.contato)}</td>${verValores() ? `<td class="num">${R$(p.valor)}</td>` : ""}</tr>`).join("")}</tbody></table>` : `<p class="empty">Nenhum projeto nesta lista.</p>`}</div>`;
+}
 // Valor médio dos projetos fechados (com valor informado), com filtro por tipo de projeto
 function tileMedio(fechados) {
   const tipo = Number(filtroTipoMedio) || null;
   const ps = fechados.filter((p) => Number(p.valor) > 0 && (!tipo || p.tipos.includes(tipo)));
   const media = ps.length ? soma(ps) / ps.length : 0;
-  return `<div class="card tile tile-medio"><div class="tile-sel"><div class="lbl">Valor médio</div><select data-act="tipo-medio" aria-label="Tipo de projeto"><option value="">Todos os tipos</option>${db.tipos.map((t) => `<option value="${t.id}" ${t.id === tipo ? "selected" : ""}>${esc(t.nome)}</option>`).join("")}</select></div>
-    <div class="val" title="${R$(media)}">${ps.length ? R$(Math.round(media)).replace(/,00$/, "") : "—"}</div><div class="det">${ps.length ? `média de ${ps.length} projeto(s) fechado(s)` : "nenhum projeto fechado com valor"}</div></div>`;
+  return `<div class="card tile tile-medio"><div class="tile-sel"><a class="lbl" href="#/lista/medio" style="color:inherit">Valor médio</a><select data-act="tipo-medio" aria-label="Tipo de projeto"><option value="">Todos os tipos</option>${db.tipos.map((t) => `<option value="${t.id}" ${t.id === tipo ? "selected" : ""}>${esc(t.nome)}</option>`).join("")}</select></div>
+    <a href="#/lista/medio" class="val" style="display:block;color:inherit;text-decoration:none" title="${R$(media)}">${ps.length ? R$(Math.round(media)).replace(/,00$/, "") : "—"}</a><div class="det">${ps.length ? `média de ${ps.length} projeto(s) fechado(s)` : "nenhum projeto fechado com valor"}</div></div>`;
 }
 
 /* ---------- Clientes ---------- */
@@ -1795,9 +1818,9 @@ function render() {
   if (carregando) { root.innerHTML = `<div class="center muted">Carregando…</div>`; return; }
   if (!sessao) { root.innerHTML = telaLogin(); return; }
   const [, rota = "painel", id] = ROTA.split("/");
-  const paginas = { painel: pgPainel, clientes: pgClientes, cliente: () => pgCliente(id), prospeccoes: pgProspeccoes, prospeccao: () => pgProspeccao(id), financeiro: () => pgFinanceiro(id), equipe: pgEquipe, esteira: pgEsteira, tarefas: pgTarefas };
+  const paginas = { painel: pgPainel, clientes: pgClientes, cliente: () => pgCliente(id), prospeccoes: pgProspeccoes, prospeccao: () => pgProspeccao(id), lista: () => pgLista(id), financeiro: () => pgFinanceiro(id), equipe: pgEquipe, esteira: pgEsteira, tarefas: pgTarefas };
   const nav = MENUS.filter(([r]) => pode(r));
-  let ativo = { cliente: "clientes", prospeccao: prosp(id)?.status === "fechado" ? "esteira" : "prospeccoes" }[rota] || (paginas[rota] ? rota : "painel");
+  let ativo = { cliente: "clientes", lista: "painel", prospeccao: prosp(id)?.status === "fechado" ? "esteira" : "prospeccoes" }[rota] || (paginas[rota] ? rota : "painel");
   // Quem não tem o menu da página do projeto ainda pode abri-lo pelo outro (Esteira ou Prospecções)
   if (rota === "prospeccao" && !pode(ativo)) ativo = ["esteira", "prospeccoes"].find(pode) || ativo;
   // Página fora dos menus liberados: abre o primeiro menu que a pessoa pode ver
@@ -1825,6 +1848,8 @@ function perguntar(msg, rotulo, fn) {
   $("#confirmar", dlg).onclick = () => { dlg.close(); fn(); };
 }
 document.addEventListener("click", (e) => {
+  const linha = e.target.closest("tr[data-href]");
+  if (linha && !e.target.closest("a, button, input, select")) return ir(linha.dataset.href);
   const link = e.target.closest('a[href^="#/"]');
   if (link) { e.preventDefault(); return ir(link.getAttribute("href")); }
   const el = e.target.closest("[data-act]"); if (!el || el.tagName === "SELECT" || el.tagName === "INPUT" && el.type !== "radio") return;
