@@ -1472,8 +1472,15 @@ function gerarSerieDlg() {
 }
 function somaSerie() {
   const f = dlg.querySelector("form"), vals = [...f.querySelectorAll('[name="pv"]')].map((i) => parseValor(i.value) || 0), tot = Math.round(vals.reduce((a, b) => a + b, 0) * 100) / 100;
-  const alvo = parseValor(f.total.value) || 0, difere = f.dataset.modo === "parcelado" && Math.abs(tot - alvo) > 0.009;
+  const alvo = parseValor((f.total || f.valor).value) || 0, difere = (f.dataset.modo || f.repeticao?.value) === "parcelado" && Math.abs(tot - alvo) > 0.009;
   $("#serie-soma", dlg).innerHTML = `Soma: <b>${R$(tot)}</b>${difere ? ` <span style="color:var(--critical)">(o valor total informado é ${R$(alvo)})</span>` : ""}`;
+}
+// Novo lançamento parcelado/repetido: mostra as linhas para ajustar antes de salvar
+function gerarLancSerie() {
+  const f = dlg.querySelector('form[data-form="lanc"]'), box = $("#lanc-parc", dlg); if (!f || !box) return;
+  const modo = f.repeticao.value; box.hidden = !modo; if (!modo) return;
+  const n = Math.min(Math.max(Number(f.vezes.value) || 2, 2), 120);
+  $("#serie-linhas", dlg).innerHTML = linhasSerie(gerarLinhas(f.data.value || HOJE, n, f.freq.value, modo, parseValor(f.valor.value) || 0)); somaSerie();
 }
 const novoLanc = (o) => ({ id: uid(), categoriaId: null, contaId: fConta === "todas" ? db.contas[0].id : fConta, contaDestinoId: null, competencia: o.data.slice(0, 7), forma: "", documento: "", centroId: null, tags: [], obs: "", descricao: "", clienteId: null, prospeccaoId: null, parcela: null, pagoEm: o.pago ? o.data : null, ...o });
 function importarArquivo(input, tipo) {
@@ -1608,8 +1615,8 @@ function formLanc(l = {}) {
   const contas = db.contas.filter((c) => !c.arquivada || c.id === l.contaId).map((c) => [c.id, c.nome]);
   abrir(novo ? { entrada: "Novo recebimento", saida: "Nova despesa", transf: "Nova transferência" }[tipo] : "Detalhes da transação", `<div class="form">
     <div class="field full"><span>Tipo</span><div class="chips">${[["entrada", "Recebimento"], ["saida", "Despesa"], ["transf", "Transferência"]].map(([v, r]) => `<label class="chip"><input type="radio" name="tipo" value="${v}" ${tipo === v ? "checked" : ""} data-act="tipo-lanc">${r}</label>`).join("")}</div></div>
-    ${campo("Data / vencimento *", inp("data", l.data || (fMes === HOJE.slice(0, 7) ? HOJE : fMes + "-01"), 'type="date" required'))}
-    ${campo("Valor *", inp("valor", l.valor != null ? R$(l.valor) : "", 'inputmode="numeric" placeholder="R$ 0,00" data-mask="moeda" required'))}
+    ${campo("Data / vencimento *", inp("data", l.data || (fMes === HOJE.slice(0, 7) ? HOJE : fMes + "-01"), 'type="date" required data-act="lanc-serie"'))}
+    ${campo("Valor *", inp("valor", l.valor != null ? R$(l.valor) : "", 'inputmode="numeric" placeholder="R$ 0,00" data-mask="moeda" required data-act="lanc-serie"'))}
     ${campo("Descrição", inp("descricao", l.descricao, 'placeholder="Ex.: PROJETO ARQUITETÔNICO - NOME DO CLIENTE"'), true)}
     <label class="field" data-show-t="entrada saida"><span>${tipo === "saida" ? "Pago a" : "Recebido de"}</span><select class="input" name="clienteId" data-act="cliente-lanc" data-prev="${l.clienteId || ""}">${opcoesPessoa(l.clienteId)}</select></label>
     <label class="field" data-show-t="entrada saida"><span>Categoria</span><select class="input" name="categoriaId" id="sel-cat" data-act="cat-lanc" data-prev="${l.categoriaId || ""}">${opcoesCategoria(tipo, l.categoriaId)}</select></label>
@@ -1620,7 +1627,8 @@ function formLanc(l = {}) {
     ${campo("Forma de pagamento", `<select class="input" name="forma">${opts([...FORMAS, "Débito automático"], l.forma, "Selecione...")}</select>`)}
     ${campo("Centro de custo", `<select class="input" name="centroId">${opts(db.centros.map((c) => [c.id, c.nome]), l.centroId, "Selecione...")}</select>`)}
     <div class="field full"><span>Tags</span><div class="chips">${db.tags.length ? db.tags.map((t) => `<label class="chip"><input type="checkbox" name="tags" value="${t.id}" ${(l.tags || []).includes(t.id) ? "checked" : ""}>${esc(t.nome)}</label>`).join("") : `<span class="small muted">Cadastre tags em Configurações.</span>`}</div></div>
-    ${novo ? `<div class="field full" data-show-t="entrada saida"><span>Repetição</span><div class="actions"><select class="input" name="repeticao"><option value="">À vista</option><option value="parcelado">Criar parcelas: dividir o valor em</option><option value="repetir">Repetir transação: repetir o valor</option></select><input class="input" type="number" name="vezes" min="2" max="120" value="2" style="width:80px" aria-label="Quantidade"><span class="small muted">vezes,</span><select class="input" name="freq" aria-label="Frequência">${opts(FREQS, "mensal")}</select></div></div>` : l.parcela ? `<p class="small muted full">Parcela ${l.parcela}.</p>` : ""}
+    ${novo ? `<div class="field full" data-show-t="entrada saida"><span>Repetição</span><div class="actions"><select class="input" name="repeticao" data-act="lanc-serie"><option value="">À vista</option><option value="parcelado">Criar parcelas: dividir o valor em</option><option value="repetir">Repetir transação: repetir o valor</option></select><input class="input" type="number" name="vezes" min="2" max="120" value="2" style="width:80px" aria-label="Quantidade" data-act="lanc-serie"><span class="small muted">vezes,</span><select class="input" name="freq" aria-label="Frequência" data-act="lanc-serie">${opts(FREQS, "mensal")}</select></div>
+      <div id="lanc-parc" hidden style="margin-top:10px"><span class="small muted">Dá para ajustar a data e o valor de cada uma:</span><table class="parc"><thead><tr><th>Nº</th><th>Vencimento</th><th class="num">Valor</th></tr></thead><tbody id="serie-linhas"></tbody></table><p class="small muted" id="serie-soma" style="margin:6px 0 0"></p></div></div>` : l.parcela ? `<p class="small muted full">Parcela ${l.parcela}.</p>` : ""}
     ${campo("Observações", `<textarea class="input" name="obs" rows="2">${esc(l.obs)}</textarea>`, true)}<input type="hidden" name="prospeccaoId" value="${esc(l.prospeccaoId || "")}">
   </div>`, "lanc", `data-id="${l.id || ""}"`);
   if (l.id) dlg.querySelector(".df").insertAdjacentHTML("afterbegin", `<button type="button" class="btn danger" style="margin-right:auto" data-act="del-lanc" data-id="${l.id}">Excluir</button>`);
@@ -1708,6 +1716,7 @@ document.addEventListener("change", (e) => {
     "f-pagto": () => { const l = db.lancamentos.find((z) => z.id === el.dataset.id), m = el.value; render(); if (!l || m === pagamentoDe(l)) return; if (m === "avista") tornarAVista(l); else formSerie(l, m); },
     "serie-gerar": () => gerarSerieDlg(),
     "serie-soma": () => somaSerie(),
+    "lanc-serie": () => gerarLancSerie(),
   };
   if (A[act]) A[act]();
 });
@@ -1773,9 +1782,12 @@ document.addEventListener("submit", (e) => {
       competencia: v("competencia") || v("data").slice(0, 7), forma: v("forma"), documento: (f.dataset.id && db.lancamentos.find((x) => x.id === f.dataset.id)?.documento) || "", centroId: v("centroId") || null, tags: fd.getAll("tags").map(String), obs: v("obs").toUpperCase() };
     if (f.dataset.id) Object.assign(db.lancamentos.find((l) => l.id === f.dataset.id), base);
     else {
-      const rep = v("repeticao"), n = rep ? Math.min(Math.max(Number(v("vezes")) || 2, 2), 120) : 1;
+      const rep = v("repeticao"), datas = fd.getAll("pd").map(String), vals = fd.getAll("pv").map((x) => parseValor(x));
+      if (rep && (datas.some((d) => !d) || vals.some((x) => !x || isNaN(x) || x <= 0))) return erro("Preencha data e valor (maior que zero) em todas as parcelas.");
+      const linhas = rep ? (datas.length ? datas.map((d, i) => ({ data: d, valor: Math.round(vals[i] * 100) / 100 })) : gerarLinhas(base.data, Math.min(Math.max(Number(v("vezes")) || 2, 2), 120), v("freq") || "mensal", rep, valor)) : [];
+      const n = rep ? linhas.length : 1;
       const l = { ...base, id: uid(), parcela: null }; db.lancamentos.push(l);
-      if (rep) aplicarSerie(l, rep, v("freq") || "mensal", gerarLinhas(l.data, n, v("freq") || "mensal", rep, valor));
+      if (rep) aplicarSerie(l, rep, v("freq") || "mensal", linhas);
       toast(n > 1 ? `${n} lançamentos criados` : "Lançamento salvo");
     }
     salvar(); dlg.close(); return render();
