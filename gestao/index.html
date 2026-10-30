@@ -917,21 +917,36 @@ const campo = (rot, html, full = false) => `<label class="field ${full ? "full" 
 const inp = (name, val = "", attrs = "") => `<input class="input" name="${name}" value="${esc(val)}" ${attrs}>`;
 const opts = (lista, atual, vazio) => (vazio != null ? `<option value="">${vazio}</option>` : "") + lista.map((o) => { const [v, l] = Array.isArray(o) ? o : [o, o]; return `<option value="${esc(v)}" ${String(v) === String(atual ?? "") ? "selected" : ""}>${esc(l)}</option>`; }).join("");
 
+// Origens: as padrão mais as que já foram usadas em clientes; "+ Nova origem" cria outra na hora
+const origensUsadas = () => [...new Set([...ORIGENS, ...db.clientes.map((c) => c.origem).filter(Boolean)])];
+const opcoesOrigem = (atual) => opts([...new Set([...origensUsadas(), ...(atual ? [atual] : [])])], atual, "Selecione...") + `<option value="__nova">+ Nova origem...</option>`;
+function novaOrigem(sel) {
+  const prev = sel.dataset.prev || ""; sel.value = prev;
+  dlg2.innerHTML = `<form><div class="dh"><h2 style="margin:0">Nova origem</h2></div><div class="db"><div class="form">${campo("Nome da origem *", inp("nome", "", 'required autofocus data-mask="maiusc" style="text-transform:uppercase" placeholder="EX.: FEIRA DE IMÓVEIS"'), true)}</div></div><div class="df"><button type="button" class="btn" id="dlg2-x">Cancelar</button><button class="btn pri">Adicionar</button></div></form>`;
+  dlg2.showModal();
+  $("#dlg2-x", dlg2).onclick = () => dlg2.close();
+  dlg2.querySelector("form").onsubmit = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const nome = String(new FormData(e.target).get("nome") || "").trim().toUpperCase(); if (!nome) return;
+    const existe = origensUsadas().find((o) => o.toUpperCase() === nome) || nome;
+    sel.innerHTML = opcoesOrigem(existe); sel.value = existe; sel.dataset.prev = existe; dlg2.close();
+  };
+}
 function formCliente(c = {}) {
   cepBuscado = soDigitos(c.cep);
   abrir(c.id ? "Editar cliente" : "Novo cliente", `<div class="form">
     ${campo("Nome *", inp("nome", c.nome, 'required data-mask="maiusc" style="text-transform:uppercase"'), true)}
     ${campo("CPF / CNPJ", inp("documento", c.documento, 'data-mask="doc" inputmode="numeric" placeholder="000.000.000-00"'))}
-    ${campo("Origem do cliente", `<select class="input" name="origem">${opts(ORIGENS, c.origem, "Selecione...")}</select>`)}
+    ${campo("Origem do cliente", `<select class="input" name="origem" data-act="origem-cli" data-prev="${esc(c.origem || "")}">${opcoesOrigem(c.origem)}</select>`)}
     ${campo("Telefone / WhatsApp", inp("telefone", c.telefone, 'data-mask="tel" inputmode="tel" placeholder="(00) 00000-0000"'))}
     ${campo("E-mail", inp("email", c.email, 'type="email"'))}
     ${campo("CEP", inp("cep", c.cep, 'data-mask="cep" inputmode="numeric" placeholder="00000-000"') + `<small class="small muted" id="cep-info">Digite o CEP para preencher o endereço.</small>`)}
-    ${campo("Endereço", inp("endereco", c.endereco))}
-    ${campo("Nº", inp("numero", c.numero, 'placeholder="Ex.: 683"'))}
-    ${campo("Bairro", inp("bairro", c.bairro))}
-    ${campo("Cidade", inp("cidade", c.cidade))}
+    ${campo("Endereço", inp("endereco", c.endereco, 'data-mask="maiusc" style="text-transform:uppercase"'))}
+    ${campo("Nº", inp("numero", c.numero, 'placeholder="EX.: 683" data-mask="maiusc" style="text-transform:uppercase"'))}
+    ${campo("Bairro", inp("bairro", c.bairro, 'data-mask="maiusc" style="text-transform:uppercase"'))}
+    ${campo("Cidade", inp("cidade", c.cidade, 'data-mask="maiusc" style="text-transform:uppercase"'))}
     ${campo("Estado", `<select class="input" name="estado">${opts(ESTADOS.map(([uf, n]) => [uf, n + " (" + uf + ")"]), c.estado, "Selecione...")}</select>`)}
-    ${campo("Observações", `<textarea class="input" name="observacoes" rows="3">${esc(c.observacoes)}</textarea>`, true)}
+    ${campo("Observações", `<textarea class="input" name="observacoes" rows="3" data-mask="maiusc" style="text-transform:uppercase">${esc(c.observacoes)}</textarea>`, true)}
   </div>`, "cliente", `data-id="${c.id || ""}"`);
 }
 function formProsp(p = {}, cancelar = false) {
@@ -1692,8 +1707,8 @@ async function buscarCep(form, cep) {
   try {
     const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`).then((x) => x.json());
     if (r.erro) throw new Error("não encontrado");
-    campo("endereco").value = r.logradouro || ""; if (r.bairro) campo("bairro").value = r.bairro;
-    campo("cidade").value = r.localidade || "";
+    campo("endereco").value = (r.logradouro || "").toUpperCase(); if (r.bairro) campo("bairro").value = r.bairro.toUpperCase();
+    campo("cidade").value = (r.localidade || "").toUpperCase();
     campo("estado").value = r.uf || "";
     if (info) info.textContent = "Endereço preenchido. Confira e informe o número.";
     campo("numero").focus();
@@ -1846,6 +1861,7 @@ document.addEventListener("change", (e) => {
   const el = e.target, act = el.dataset?.act;
   if (act === "ano") { filtroAnoPainel = el.value; render(); }
   if (act === "tipo-medio") { filtroTipoMedio = el.value; render(); }
+  if (act === "origem-cli") { if (el.value === "__nova") novaOrigem(el); else el.dataset.prev = el.value; }
   if (act === "fp-ano") { fpAno = el.value; render(); }
   if (act === "fp-tipo") { fpTipo = el.value; render(); }
   if (act === "status-form") mostrarPorStatus();
@@ -1903,7 +1919,8 @@ document.addEventListener("submit", (e) => {
     return salvarMembro(f.dataset.id, v("nome"), v("email").toLowerCase(), v("senha"), adm, adm ? MENUS.map(([m]) => m) : marcados);
   }
   if (nome === "cliente") {
-    const dados = { nome: v("nome").toUpperCase(), documento: v("documento"), origem: v("origem"), telefone: v("telefone"), email: v("email"), cep: v("cep"), endereco: v("endereco"), numero: v("numero"), bairro: v("bairro"), cidade: v("cidade"), estado: v("estado"), observacoes: v("observacoes") };
+    const M = (k) => v(k).toUpperCase();
+    const dados = { nome: M("nome"), documento: v("documento"), origem: v("origem") === "__nova" ? "" : v("origem"), telefone: v("telefone"), email: v("email").toLowerCase(), cep: v("cep"), endereco: M("endereco"), numero: M("numero"), bairro: M("bairro"), cidade: M("cidade"), estado: v("estado"), observacoes: M("observacoes") };
     let id = f.dataset.id;
     if (id) Object.assign(cliente(id), dados); else { id = uid(); db.clientes.push({ id, criado: HOJE, ...dados }); }
     salvar(); dlg.close(); return ir("#/cliente/" + id);
