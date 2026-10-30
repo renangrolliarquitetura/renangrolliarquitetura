@@ -922,12 +922,12 @@ const origensUsadas = () => [...new Set([...ORIGENS, ...db.clientes.map((c) => c
 const opcoesOrigem = (atual) => opts([...new Set([...origensUsadas(), ...(atual ? [atual] : [])])], atual, "Selecione...") + `<option value="__nova">+ Nova origem...</option>`;
 function novaOrigem(sel) {
   const prev = sel.dataset.prev || ""; sel.value = prev;
-  dlg2.innerHTML = `<form><div class="dh"><h2 style="margin:0">Nova origem</h2></div><div class="db"><div class="form">${campo("Nome da origem *", inp("nome", "", 'required autofocus data-mask="maiusc" style="text-transform:uppercase" placeholder="EX.: FEIRA DE IMÓVEIS"'), true)}</div></div><div class="df"><button type="button" class="btn" id="dlg2-x">Cancelar</button><button class="btn pri">Adicionar</button></div></form>`;
+  dlg2.innerHTML = `<form><div class="dh"><h2 style="margin:0">Nova origem</h2></div><div class="db"><div class="form">${campo("Nome da origem *", inp("nome", "", 'required autofocus placeholder="Ex.: Feira de imóveis"'), true)}</div></div><div class="df"><button type="button" class="btn" id="dlg2-x">Cancelar</button><button class="btn pri">Adicionar</button></div></form>`;
   dlg2.showModal();
   $("#dlg2-x", dlg2).onclick = () => dlg2.close();
   dlg2.querySelector("form").onsubmit = (e) => {
     e.preventDefault(); e.stopPropagation();
-    const nome = String(new FormData(e.target).get("nome") || "").trim().toUpperCase(); if (!nome) return;
+    const nome = String(new FormData(e.target).get("nome") || "").trim(); if (!nome) return;
     const existe = origensUsadas().find((o) => o.toUpperCase() === nome) || nome;
     sel.innerHTML = opcoesOrigem(existe); sel.value = existe; sel.dataset.prev = existe; dlg2.close();
   };
@@ -1920,7 +1920,7 @@ document.addEventListener("submit", (e) => {
   }
   if (nome === "cliente") {
     const M = (k) => v(k).toUpperCase();
-    const dados = { nome: M("nome"), documento: v("documento"), origem: v("origem") === "__nova" ? "" : v("origem"), telefone: v("telefone"), email: v("email").toLowerCase(), cep: v("cep"), endereco: M("endereco"), numero: M("numero"), bairro: M("bairro"), cidade: M("cidade"), estado: v("estado"), observacoes: M("observacoes") };
+    const dados = { nome: M("nome"), documento: v("documento"), origem: v("origem") === "__nova" ? "" : v("origem"), telefone: v("telefone"), email: v("email"), cep: v("cep"), endereco: M("endereco"), numero: M("numero"), bairro: M("bairro"), cidade: M("cidade"), estado: v("estado"), observacoes: M("observacoes") };
     let id = f.dataset.id;
     if (id) Object.assign(cliente(id), dados); else { id = uid(); db.clientes.push({ id, criado: HOJE, ...dados }); }
     salvar(); dlg.close(); return ir("#/cliente/" + id);
