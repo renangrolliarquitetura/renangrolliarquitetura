@@ -1266,7 +1266,7 @@ function finTransacoes() {
           return `<tr class="editando ${selLanc.has(l.id) ? "sel" : ""}" data-linha="${l.id}">
           <td class="ck"><input type="checkbox" data-act="f-sel" data-id="${l.id}" aria-label="Selecionar" ${selLanc.has(l.id) ? "checked" : ""}></td>
           <td><input class="ie ie-data" type="date" data-act="f-ed" data-k="data" data-id="${l.id}" value="${l.data}" aria-label="Data"></td>
-          <td class="celdesc"><button type="button" class="mais-det" data-act="editar-lanc" data-id="${l.id}">Mais detalhes →</button><div class="dcell">${atrasado(l) ? `<span class="alerta" title="Em atraso">!</span>` : ""}<input class="ie ie-desc" data-act="f-ed" data-k="descricao" data-id="${l.id}" value="${esc(l.descricao)}" placeholder="${esc(catNome(l))}" aria-label="Descrição">${l.parcela ? `<button class="tagp" data-act="f-serie" data-id="${l.id}" title="Editar ${pg === "repetir" ? "repetições" : "parcelas"}">${l.parcela} ${freqNome(l.freq).toLowerCase()}</button>` : ""}</div></td>
+          <td class="celdesc"><button type="button" class="mais-det" data-act="editar-lanc" data-id="${l.id}">Mais detalhes →</button><div class="dcell">${atrasado(l) ? `<span class="alerta" title="Em atraso">!</span>` : ""}<input class="ie ie-desc" data-act="f-ed" data-k="descricao" data-id="${l.id}" value="${esc(l.descricao)}" placeholder="${esc(catNome(l))}" aria-label="Descrição">${l.parcela ? `<button class="tagp" data-act="f-serie" data-id="${l.id}" title="Editar ${pg === "repetir" ? "repetições" : "parcelas"}">${seloSerie(l)}</button>` : ""}</div></td>
           <td class="ink2">${tr ? `${esc(conta(l.contaId)?.nome)} → ${esc(conta(l.contaDestinoId)?.nome)}` : `<select class="ie ie-pessoa" data-act="f-ed" data-k="clienteId" data-id="${l.id}" aria-label="${rotulo[0]}">${opcoesPessoa(l.clienteId)}</select>`}</td>
           <td class="num"><input class="ie ie-valor num ${l.tipo === "entrada" ? "pos" : l.tipo === "saida" ? "neg" : ""}" data-act="f-ed" data-k="valor" data-id="${l.id}" value="${R$(l.valor)}" inputmode="numeric" data-mask="moeda" aria-label="Valor"></td>
           <td class="small"><select class="ie ie-forma" data-act="f-ed" data-k="forma" data-id="${l.id}" aria-label="Forma de pagamento">${opts([...new Set([...FORMAS, "Débito automático", ...(l.forma ? [l.forma] : [])])], l.forma, "—")}</select></td>
@@ -1507,15 +1507,19 @@ function gerarSerieDlg() {
 }
 function somaSerie() {
   const f = dlg.querySelector("form"), vals = [...f.querySelectorAll('[name="pv"]')].map((i) => parseValor(i.value) || 0), tot = Math.round(vals.reduce((a, b) => a + b, 0) * 100) / 100;
-  const alvo = parseValor((f.total || f.valor).value) || 0, difere = (f.dataset.modo || f.repeticao?.value) === "parcelado" && Math.abs(tot - alvo) > 0.009;
+  const alvo = parseValor((f.total || f.valor).value) || 0, difere = (f.dataset.modo || (!f.dataset.id && f.repeticao?.value)) === "parcelado" && Math.abs(tot - alvo) > 0.009;
   $("#serie-soma", dlg).innerHTML = `Soma: <b>${R$(tot)}</b>${difere ? ` <span style="color:var(--critical)">(o valor total informado é ${R$(alvo)})</span>` : ""}`;
 }
 // Novo lançamento parcelado/repetido: mostra as linhas para ajustar antes de salvar
-function gerarLancSerie() {
+function gerarLancSerie(el) {
   const f = dlg.querySelector('form[data-form="lanc"]'), box = $("#lanc-parc", dlg); if (!f || !box) return;
   const modo = f.repeticao.value; box.hidden = !modo; if (!modo) return;
+  const atuais = [...f.querySelectorAll('[name="pv"]')], editando = !!f.dataset.id && atuais.length;
+  if (editando && el && (el.name === "valor" || el.name === "data")) return; // série já existente: data/valor deste item não refazem as linhas
   const n = Math.min(Math.max(Number(f.vezes.value) || 2, 2), 120);
-  $("#serie-linhas", dlg).innerHTML = linhasSerie(gerarLinhas(f.data.value || HOJE, n, f.freq.value, modo, parseValor(f.valor.value) || 0)); somaSerie();
+  const total = editando && modo === "parcelado" ? atuais.reduce((a, i) => a + (parseValor(i.value) || 0), 0) : parseValor(f.valor.value) || 0;
+  const data0 = editando ? f.querySelector('[name="pd"]').value || f.data.value : f.data.value;
+  $("#serie-linhas", dlg).innerHTML = linhasSerie(gerarLinhas(data0 || HOJE, n, f.freq.value, modo, Math.round(total * 100) / 100)); somaSerie();
 }
 const novoLanc = (o) => ({ id: uid(), categoriaId: null, contaId: fConta === "todas" ? db.contas[0].id : fConta, contaDestinoId: null, competencia: o.data.slice(0, 7), forma: "", documento: "", centroId: null, tags: [], obs: "", descricao: "", clienteId: null, prospeccaoId: null, parcela: null, pagoEm: o.pago ? o.data : null, ...o });
 function importarArquivo(input, tipo) {
@@ -1632,6 +1636,7 @@ function menuNovo(el, qual) {
 }
 // Edição direto na tabela de transações: salva na hora; a tela se atualiza quando o cursor sai dos campos
 // Linha da tabela em modo leitura (clique abre a edição; a seta abre o menu de ações)
+const seloSerie = (l) => (l.modo === "repetir" ? "recorrente" : `${l.parcela} ${freqNome(l.freq).toLowerCase()}`);
 const SETA_BAIXO = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
 function linhaLeitura(l, tr, pg) {
   const vazio = (t) => `<span class="vazio">${t}</span>`;
@@ -1640,7 +1645,7 @@ function linhaLeitura(l, tr, pg) {
   return `<tr class="ver ${selLanc.has(l.id) ? "sel" : ""}" data-act="f-linha" data-id="${l.id}">
     <td class="ck"><input type="checkbox" data-act="f-sel" data-id="${l.id}" aria-label="Selecionar" ${selLanc.has(l.id) ? "checked" : ""}></td>
     <td class="t-data">${dataBR(l.data).slice(0, 5)}</td>
-    <td><div class="dcell">${atrasado(l) ? `<span class="alerta" title="Em atraso">!</span>` : ""}<span>${l.descricao ? esc(l.descricao) : vazio("Sem descrição")}</span>${l.parcela ? `<span class="tagp">${l.parcela} ${freqNome(l.freq).toLowerCase()}</span>` : ""}${l.recibo ? `<span class="small muted" title="Recibo emitido">📄</span>` : ""}</div></td>
+    <td><div class="dcell">${atrasado(l) ? `<span class="alerta" title="Em atraso">!</span>` : ""}<span>${l.descricao ? esc(l.descricao) : vazio("Sem descrição")}</span>${l.parcela ? `<span class="tagp">${seloSerie(l)}</span>` : ""}${l.recibo ? `<span class="small muted" title="Recibo emitido">📄</span>` : ""}</div></td>
     <td class="ink2">${pes}</td>
     <td class="t-valor ${l.tipo === "entrada" ? "pos" : l.tipo === "saida" ? "neg" : ""}">${R$(l.valor)}</td>
     <td class="small">${l.forma ? esc(l.forma) : vazio("—")}</td>
@@ -1750,8 +1755,12 @@ function formLanc(l = {}) {
     ${campo("Forma de pagamento", `<select class="input" name="forma">${opts([...FORMAS, "Débito automático"], l.forma, "Selecione...")}</select>`)}
     ${campo("Centro de custo", `<select class="input" name="centroId">${opts(db.centros.map((c) => [c.id, c.nome]), l.centroId, "Selecione...")}</select>`)}
     <div class="field full"><span>Tags</span><div class="chips">${db.tags.length ? db.tags.map((t) => `<label class="chip"><input type="checkbox" name="tags" value="${t.id}" ${(l.tags || []).includes(t.id) ? "checked" : ""}>${esc(t.nome)}</label>`).join("") : `<span class="small muted">Cadastre tags em Configurações.</span>`}</div></div>
-    ${novo ? `<div class="field full" data-show-t="entrada saida"><span>Repetição</span><div class="actions"><select class="input" name="repeticao" data-act="lanc-serie"><option value="">À vista</option><option value="parcelado">Criar parcelas: dividir o valor em</option><option value="repetir">Repetir transação: repetir o valor</option></select><input class="input" type="number" name="vezes" min="2" max="120" value="2" style="width:80px" aria-label="Quantidade" data-act="lanc-serie"><span class="small muted">vezes,</span><select class="input" name="freq" aria-label="Frequência" data-act="lanc-serie">${opts(FREQS, "mensal")}</select></div>
-      <div id="lanc-parc" hidden style="margin-top:10px"><span class="small muted">Dá para ajustar a data e o valor de cada uma:</span><table class="parc"><thead><tr><th>Nº</th><th>Vencimento</th><th class="num">Valor</th></tr></thead><tbody id="serie-linhas"></tbody></table><p class="small muted" id="serie-soma" style="margin:6px 0 0"></p></div></div>` : l.parcela ? `<p class="small muted full">Parcela ${l.parcela}.</p>` : ""}
+    ${(() => {
+      const membros = novo ? [l] : membrosSerie(l), modo = novo ? "" : { avista: "", parcelado: "parcelado", repetir: "repetir" }[pagamentoDe(l)];
+      const linhas = modo ? membros.map((x) => ({ data: x.data, valor: x.valor })) : [];
+      return `<div class="field full" data-show-t="entrada saida"><span>Pagamento</span><div class="actions"><select class="input" name="repeticao" data-act="lanc-serie"><option value="">À vista</option><option value="parcelado" ${modo === "parcelado" ? "selected" : ""}>Criar parcelas: dividir o valor em</option><option value="repetir" ${modo === "repetir" ? "selected" : ""}>Repetição: repetir o valor</option></select><input class="input" type="number" name="vezes" min="2" max="120" value="${modo ? membros.length : 2}" style="width:80px" aria-label="Quantidade" data-act="lanc-serie"><span class="small muted">vezes,</span><select class="input" name="freq" aria-label="Frequência" data-act="lanc-serie">${opts(FREQS, l.freq || "mensal")}</select></div>
+      <div id="lanc-parc" ${modo ? "" : "hidden"} style="margin-top:10px"><span class="small muted">Dá para ajustar a data e o valor de cada uma:</span><table class="parc"><thead><tr><th>Nº</th><th>Vencimento</th><th class="num">Valor</th></tr></thead><tbody id="serie-linhas">${modo ? linhasSerie(linhas, membros.map((x) => x.pago)) : ""}</tbody></table><p class="small muted" id="serie-soma" style="margin:6px 0 0"></p></div></div>`;
+    })()}
     ${campo("Observações", `<textarea class="input" name="obs" rows="2">${esc(l.obs)}</textarea>`, true)}<input type="hidden" name="prospeccaoId" value="${esc(l.prospeccaoId || "")}">
     ${novo ? "" : `<div class="field full"><span>Recibo</span><div class="actions">${l.recibo ? `<button type="button" class="btn" data-act="recibo-ver" data-id="${l.id}">📄 Recibo nº ${numRecibo(l.recibo.numero)} · emitido em ${dataBR(l.recibo.emitido)}</button>` : `<button type="button" class="btn" data-act="recibo-gerar" data-id="${l.id}">📄 Gerar recibo</button>`}<span class="small muted">Usa os dados já salvos desta transação.</span></div></div>`}
   </div>`, "lanc", `data-id="${l.id || ""}"`);
@@ -1847,7 +1856,7 @@ document.addEventListener("change", (e) => {
     "f-pagto": () => { const l = db.lancamentos.find((z) => z.id === el.dataset.id), m = el.value; render(); if (!l || m === pagamentoDe(l)) return; if (m === "avista") tornarAVista(l); else formSerie(l, m); },
     "serie-gerar": () => gerarSerieDlg(),
     "serie-soma": () => somaSerie(),
-    "lanc-serie": () => gerarLancSerie(),
+    "lanc-serie": () => gerarLancSerie(el),
   };
   if (A[act]) A[act]();
 });
@@ -1911,6 +1920,24 @@ document.addEventListener("submit", (e) => {
     const base = { tipo, valor, data: v("data"), descricao: v("descricao").toUpperCase(), pago, pagoEm: pago ? v("pagoEm") || v("data") : null, contaId: v("contaId"), contaDestinoId: tipo === "transf" ? v("contaDestinoId") : null,
       categoriaId: tipo === "transf" ? null : v("categoriaId") || null, clienteId: tipo === "transf" ? null : v("clienteId") || null, prospeccaoId: tipo === "transf" ? null : (f.dataset.id && db.lancamentos.find((x) => x.id === f.dataset.id)?.prospeccaoId) || fd.get("prospeccaoId") || null,
       competencia: v("competencia") || v("data").slice(0, 7), forma: v("forma"), documento: (f.dataset.id && db.lancamentos.find((x) => x.id === f.dataset.id)?.documento) || "", centroId: v("centroId") || null, tags: fd.getAll("tags").map(String), obs: v("obs").toUpperCase() };
+    if (f.dataset.id && tipo !== "transf") {
+      const alvo = db.lancamentos.find((l) => l.id === f.dataset.id), membros = membrosSerie(alvo);
+      const modoAntes = { avista: "", parcelado: "parcelado", repetir: "repetir" }[pagamentoDe(alvo)], modo = v("repeticao");
+      const datas = fd.getAll("pd").map(String), vals = fd.getAll("pv").map((x) => Math.round((parseValor(x) || 0) * 100) / 100);
+      const linhasAntes = modoAntes ? membros.map((x) => `${x.data}|${x.valor}`).join() : "";
+      const serieMudou = modo !== modoAntes || (modo && (datas.map((d, i) => `${d}|${vals[i]}`).join() !== linhasAntes || v("freq") !== (alvo.freq || "mensal")));
+      if (serieMudou) {
+        if (modo && (datas.some((d) => !d) || vals.some((x) => !x || x <= 0))) return erro("Preencha data e valor (maior que zero) em todas as parcelas.");
+        const fixos = ["pago", "pagoEm", "data", "competencia", "valor", "tipo", "documento", "prospeccaoId"];
+        const mudou = Object.keys(base).filter((k) => !fixos.includes(k) && JSON.stringify(base[k] ?? null) !== JSON.stringify(alvo[k] ?? null));
+        Object.assign(alvo, base);
+        if (!modo) { dlg.close(); return tornarAVista(alvo); }
+        membros.forEach((x) => x !== alvo && mudou.forEach((k) => (x[k] = Array.isArray(base[k]) ? [...base[k]] : base[k])));
+        if (modo !== modoAntes && modoAntes) membros.forEach((x) => x !== alvo && (x.modo = modo));
+        aplicarSerie(alvo, modo, v("freq") || "mensal", datas.map((d, i) => ({ data: d, valor: vals[i] })));
+        salvar(); dlg.close(); toast(modo === "parcelado" ? `${datas.length} parcelas salvas` : `${datas.length} repetições salvas`); return render();
+      }
+    }
     if (f.dataset.id) {
       const alvo = db.lancamentos.find((l) => l.id === f.dataset.id), antes = { ...alvo };
       const fixos = ["pago", "pagoEm", "data", "competencia", "tipo", "documento", "prospeccaoId"];
