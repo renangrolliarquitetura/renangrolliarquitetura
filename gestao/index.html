@@ -1666,6 +1666,7 @@ function formLanc(l = {}) {
     ${novo ? `<div class="field full" data-show-t="entrada saida"><span>Repetição</span><div class="actions"><select class="input" name="repeticao" data-act="lanc-serie"><option value="">À vista</option><option value="parcelado">Criar parcelas: dividir o valor em</option><option value="repetir">Repetir transação: repetir o valor</option></select><input class="input" type="number" name="vezes" min="2" max="120" value="2" style="width:80px" aria-label="Quantidade" data-act="lanc-serie"><span class="small muted">vezes,</span><select class="input" name="freq" aria-label="Frequência" data-act="lanc-serie">${opts(FREQS, "mensal")}</select></div>
       <div id="lanc-parc" hidden style="margin-top:10px"><span class="small muted">Dá para ajustar a data e o valor de cada uma:</span><table class="parc"><thead><tr><th>Nº</th><th>Vencimento</th><th class="num">Valor</th></tr></thead><tbody id="serie-linhas"></tbody></table><p class="small muted" id="serie-soma" style="margin:6px 0 0"></p></div></div>` : l.parcela ? `<p class="small muted full">Parcela ${l.parcela}.</p>` : ""}
     ${campo("Observações", `<textarea class="input" name="obs" rows="2">${esc(l.obs)}</textarea>`, true)}<input type="hidden" name="prospeccaoId" value="${esc(l.prospeccaoId || "")}">
+    ${novo ? "" : `<div class="field full"><span>Recibo</span><div class="actions">${l.recibo ? `<button type="button" class="btn" data-act="recibo-ver" data-id="${l.id}">📄 Recibo nº ${numRecibo(l.recibo.numero)} · emitido em ${dataBR(l.recibo.emitido)}</button>` : `<button type="button" class="btn" data-act="recibo-gerar" data-id="${l.id}">📄 Gerar recibo</button>`}<span class="small muted">Usa os dados já salvos desta transação.</span></div></div>`}
   </div>`, "lanc", `data-id="${l.id || ""}"`);
   if (l.id) dlg.querySelector(".df").insertAdjacentHTML("afterbegin", `<button type="button" class="btn danger" style="margin-right:auto" data-act="del-lanc" data-id="${l.id}">Excluir</button>`);
   mostrarPorTipo();
@@ -1703,6 +1704,8 @@ document.addEventListener("click", (e) => {
     bloquear: () => { finAte = 0; guardarSessao(); ir("#/painel"); },
     "novo-lanc": () => formLanc({ tipo: el.dataset.tipo || "entrada", clienteId: el.dataset.cliente || null, prospeccaoId: el.dataset.prosp || null }),
     "editar-lanc": () => { if (finLiberado()) formLanc(db.lancamentos.find((l) => l.id === id)); },
+    "recibo-gerar": () => gerarRecibo(db.lancamentos.find((l) => l.id === id), el),
+    "recibo-ver": () => verRecibo(db.lancamentos.find((l) => l.id === id)),
     "del-lanc": () => perguntar("Excluir este lançamento?", "Excluir", () => { db.lancamentos = db.lancamentos.filter((l) => l.id !== id); salvar(); render(); }),
     "f-pago": () => { const l = db.lancamentos.find((z) => z.id === id); l.pago = !l.pago; l.pagoEm = l.pago ? HOJE : null; salvar(); render(); toast(l.pago ? (l.tipo === "entrada" ? "Marcado como recebido" : "Marcado como pago") : "Marcado como não pago"); },
     "f-serie": () => { const l = db.lancamentos.find((z) => z.id === id); if (l) formSerie(l, pagamentoDe(l)); },
@@ -2124,6 +2127,125 @@ document.addEventListener("pointercancel", () => encerrarArraste(false));
 addEventListener("click", (e) => { if (Date.now() - soltouEm < 100) { e.stopPropagation(); e.preventDefault(); } }, true);
 document.addEventListener("contextmenu", (e) => { if (arraste) e.preventDefault(); });
 document.addEventListener("dragstart", (e) => { if (e.target.closest?.("[data-drag]")) e.preventDefault(); });
+
+/* ===================== recibo em PDF (A4, papel timbrado) ===================== */
+const EMPRESA = { razao: "RENAN GROLLI ARQUITETURA LTDA", cnpj: "54.443.802/0001-03", endereco: "Rua Bandeirantes, 683 · Bela Vista", cidade: "Sorriso - MT", cep: "78.890-049", telefone: "(66) 99985-5772", site: "renangrolliarquitetura.com.br" };
+const numRecibo = (n) => String(n).padStart(4, "0");
+const MESES_EXT = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+const dataExtenso = (s) => `${Number(s.slice(8, 10))} de ${MESES_EXT[Number(s.slice(5, 7)) - 1]} de ${s.slice(0, 4)}`;
+function porExtenso(v) {
+  const U = ["", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove", "dez", "onze", "doze", "treze", "quatorze", "quinze", "dezesseis", "dezessete", "dezoito", "dezenove"];
+  const D = ["", "", "vinte", "trinta", "quarenta", "cinquenta", "sessenta", "setenta", "oitenta", "noventa"];
+  const C = ["", "cento", "duzentos", "trezentos", "quatrocentos", "quinhentos", "seiscentos", "setecentos", "oitocentos", "novecentos"];
+  const ate999 = (n) => {
+    if (n === 100) return "cem";
+    const c = Math.floor(n / 100), r = n % 100, p = [];
+    if (c) p.push(C[c]);
+    if (r) p.push(r < 20 ? U[r] : D[Math.floor(r / 10)] + (r % 10 ? " e " + U[r % 10] : ""));
+    return p.join(" e ");
+  };
+  const inteiro = (n) => {
+    if (n === 0) return "zero";
+    const grupos = [], nomes = [["", ""], ["mil", "mil"], ["milhão", "milhões"], ["bilhão", "bilhões"]];
+    for (let i = 0; n > 0; i++, n = Math.floor(n / 1000)) {
+      const g = n % 1000; if (!g) continue;
+      const txt = i === 1 && g === 1 ? "mil" : ate999(g) + (i ? " " + nomes[i][g === 1 ? 0 : 1] : "");
+      grupos.unshift({ txt, g, i });
+    }
+    return grupos.map((x, k) => (k === 0 ? "" : x.i === 0 && (x.g < 100 || x.g % 100 === 0) ? " e " : " ") + x.txt).join("");
+  };
+  const cent = Math.round(v * 100), r = Math.floor(cent / 100), c = cent % 100, p = [];
+  if (r) p.push(inteiro(r) + (r === 1 ? " real" : r % 1000000 === 0 ? " de reais" : " reais"));
+  if (c) p.push(inteiro(c) + (c === 1 ? " centavo" : " centavos"));
+  return p.join(" e ") || "zero real";
+}
+const rotDoc = (d) => (soDigitos(d).length === 14 ? "CNPJ" : "CPF");
+function enderecoDe(p) {
+  if (!p) return "";
+  const rua = [p.endereco, p.numero].filter(Boolean).join(", "), resto = [p.bairro, [p.cidade, p.estado].filter(Boolean).join(" - ")].filter(Boolean).join(", ");
+  return [rua, resto].filter(Boolean).join(", ") + (p.cep ? `, CEP ${p.cep}` : "");
+}
+let jsPDFpronto = null, logoRecibo = null;
+const carregarJsPDF = () => (jsPDFpronto ||= new Promise((ok, falha) => {
+  if (window.jspdf) return ok();
+  const sc = document.createElement("script");
+  sc.src = "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"; sc.onload = () => ok(); sc.onerror = () => { jsPDFpronto = null; falha(new Error("jsPDF")); };
+  document.head.appendChild(sc);
+}));
+const carregarLogo = async () => logoRecibo || (logoRecibo = await fetch("../logo-horizontal.png").then((r) => r.blob()).then((b) => new Promise((ok) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(b); })).catch(() => null));
+async function pdfRecibo(l) {
+  await carregarJsPDF(); const logo = await carregarLogo();
+  const doc = new window.jspdf.jsPDF({ unit: "mm", format: "a4" }), W = 210, M = 22;
+  const p = pessoa(l.clienteId), tipo = l.tipo, valorTxt = R$(l.valor), extenso = porExtenso(l.valor);
+  const dataPg = l.pagoEm || l.data, ref = (l.descricao || fcat(l.categoriaId)?.nome || (l.tipo === "transf" ? "transferência entre contas" : "serviços prestados")).toUpperCase();
+  const tinta = [22, 21, 19], cinza = [110, 108, 104], linha = [205, 202, 196];
+  doc.setProperties({ title: `Recibo ${numRecibo(l.recibo.numero)} - ${EMPRESA.razao}` });
+  // papel timbrado
+  if (logo) doc.addImage(logo, "PNG", M, 16, 50, 18.5);
+  doc.setTextColor(...tinta); doc.setFont("helvetica", "bold"); doc.setFontSize(9);
+  doc.text(EMPRESA.razao, W - M, 19, { align: "right" });
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(...cinza);
+  [`CNPJ ${EMPRESA.cnpj}`, EMPRESA.endereco, `${EMPRESA.cidade} · CEP ${EMPRESA.cep}`, EMPRESA.telefone].forEach((t, i) => doc.text(t, W - M, 23.5 + i * 4, { align: "right" }));
+  doc.setDrawColor(...tinta); doc.setLineWidth(0.4); doc.line(M, 42, W - M, 42);
+  // título e valor
+  doc.setTextColor(...tinta); doc.setFont("helvetica", "normal"); doc.setFontSize(24);
+  doc.text("R E C I B O", W / 2, 64, { align: "center" });
+  doc.setDrawColor(...linha); doc.setLineWidth(0.3); doc.rect(M, 74, W - 2 * M, 16);
+  doc.setFontSize(8); doc.setTextColor(...cinza); doc.text("NÚMERO", M + 5, 80); doc.text("VALOR", W - M - 5, 80, { align: "right" });
+  doc.setFontSize(13); doc.setTextColor(...tinta); doc.setFont("helvetica", "bold");
+  doc.text(numRecibo(l.recibo.numero), M + 5, 86.5); doc.text(valorTxt, W - M - 5, 86.5, { align: "right" });
+  // texto
+  const docP = p?.documento ? `, inscrito(a) no ${rotDoc(p.documento)} sob o nº ${p.documento}` : "", endP = enderecoDe(p) ? `, com endereço em ${enderecoDe(p)}` : "";
+  const nomeP = (p?.nome || "—").toUpperCase(), empresa = `${EMPRESA.razao}, inscrita no CNPJ sob o nº ${EMPRESA.cnpj}`;
+  let corpo, assina, assinaDoc;
+  if (tipo === "entrada") { corpo = `Recebemos de ${nomeP}${docP}${endP}, a importância de ${valorTxt} (${extenso}), referente a ${ref}.`; assina = EMPRESA.razao; assinaDoc = `CNPJ ${EMPRESA.cnpj}`; }
+  else if (tipo === "saida") { corpo = `Recebi(emos) de ${empresa}, a importância de ${valorTxt} (${extenso}), referente a ${ref}, dando plena e geral quitação do valor recebido.`; assina = nomeP; assinaDoc = p?.documento ? `${rotDoc(p.documento)} ${p.documento}` : ""; }
+  else { corpo = `Declaramos, para os devidos fins, a transferência de ${valorTxt} (${extenso}) da conta ${(conta(l.contaId)?.nome || "—").toUpperCase()} para a conta ${(conta(l.contaDestinoId)?.nome || "—").toUpperCase()}, referente a ${ref}.`; assina = EMPRESA.razao; assinaDoc = `CNPJ ${EMPRESA.cnpj}`; }
+  doc.setFont("helvetica", "normal"); doc.setFontSize(11.5); doc.setTextColor(...tinta); doc.setLineHeightFactor(1.6);
+  const linhas = doc.splitTextToSize(corpo, W - 2 * M); doc.text(linhas, M, 106, { align: "justify", maxWidth: W - 2 * M });
+  let y = 106 + linhas.length * 11.5 * 0.3528 * 1.6 + 8;
+  // detalhes
+  const det = [["Data do pagamento", dataBR(dataPg)], ["Forma de pagamento", (l.forma || "—").toUpperCase()], ...(tipo !== "transf" && fcat(l.categoriaId) ? [["Categoria", fcat(l.categoriaId).nome]] : []), ...(l.parcela ? [["Parcela", l.parcela]] : [])];
+  doc.setLineHeightFactor(1.15); doc.setFontSize(9.5);
+  det.forEach(([k, v]) => { doc.setDrawColor(...linha); doc.line(M, y + 2.5, W - M, y + 2.5); doc.setTextColor(...cinza); doc.text(k.toUpperCase(), M, y); doc.setTextColor(...tinta); doc.text(String(v), W - M, y, { align: "right" }); y += 8; });
+  // local, data e assinatura
+  y = Math.max(y + 14, 190);
+  doc.setFontSize(11); doc.text(`${EMPRESA.cidade}, ${dataExtenso(dataPg)}.`, W - M, y, { align: "right" });
+  y += 34; doc.setDrawColor(...tinta); doc.setLineWidth(0.3); doc.line(W / 2 - 45, y, W / 2 + 45, y);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.text(assina, W / 2, y + 5.5, { align: "center" });
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...cinza); if (assinaDoc) doc.text(assinaDoc, W / 2, y + 10, { align: "center" });
+  // rodapé
+  doc.setDrawColor(...linha); doc.line(M, 280, W - M, 280); doc.setFontSize(8);
+  doc.text(`${EMPRESA.endereco} · ${EMPRESA.cidade} · CEP ${EMPRESA.cep} · ${EMPRESA.telefone} · ${EMPRESA.site}`, W / 2, 285, { align: "center" });
+  return doc.output("blob");
+}
+async function gerarRecibo(l, btn) {
+  if (!l) return;
+  if (!l.recibo) { const n = db.lancamentos.reduce((m, x) => Math.max(m, x.recibo?.numero || 0), 0) + 1; l.recibo = { numero: n, emitido: HOJE }; salvar(); }
+  if (btn) { btn.outerHTML = `<button type="button" class="btn" data-act="recibo-ver" data-id="${l.id}">📄 Recibo nº ${numRecibo(l.recibo.numero)} · emitido em ${dataBR(l.recibo.emitido)}</button>`; }
+  verRecibo(l);
+}
+let urlRecibo = null;
+async function verRecibo(l) {
+  if (!l?.recibo) return;
+  dlg2.style.width = "min(860px, calc(100vw - 24px))";
+  dlg2.innerHTML = `<div class="dh"><h2 style="margin:0">Recibo nº ${numRecibo(l.recibo.numero)}</h2><button type="button" class="btn sm" id="rec-x" aria-label="Fechar">×</button></div><div class="db" style="padding:0;max-height:none"><p class="muted" id="rec-msg" style="padding:20px;margin:0">Gerando o PDF…</p><iframe id="rec-pdf" title="Recibo em PDF" style="display:none;width:100%;height:68vh;border:0;background:#fff"></iframe></div>
+    <div class="df"><button type="button" class="btn" id="rec-fechar">Fechar</button><a class="btn" id="rec-baixar" download="Recibo ${numRecibo(l.recibo.numero)} - ${esc((pessoa(l.clienteId)?.nome || "Renan Grolli Arquitetura").replace(/[\\/:*?"<>|]/g, ""))}.pdf" aria-disabled="true">Baixar PDF</a><button type="button" class="btn pri" id="rec-imprimir" disabled>Imprimir</button></div>`;
+  const fechar = () => dlg2.close();
+  dlg2.onclose = () => { dlg2.onclose = null; dlg2.style.width = ""; if (urlRecibo) { URL.revokeObjectURL(urlRecibo); urlRecibo = null; } };
+  dlg2.showModal();
+  $("#rec-x", dlg2).onclick = fechar; $("#rec-fechar", dlg2).onclick = fechar;
+  try {
+    const blob = await pdfRecibo(l); urlRecibo = URL.createObjectURL(blob);
+    const fr = $("#rec-pdf", dlg2), a = $("#rec-baixar", dlg2);
+    fr.src = urlRecibo; fr.style.display = "block"; $("#rec-msg", dlg2).remove();
+    a.href = urlRecibo; a.removeAttribute("aria-disabled");
+    const imp = $("#rec-imprimir", dlg2); imp.disabled = false;
+    imp.onclick = () => { try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch { window.open(urlRecibo, "_blank"); } };
+  } catch (e) {
+    $("#rec-msg", dlg2).textContent = "Não foi possível gerar o PDF agora. Verifique a internet e tente de novo.";
+  }
+}
 
 /* ===================== saída automática por inatividade ===================== */
 // Sem mexer no sistema por 30 minutos (em qualquer aba), a pessoa precisa entrar de novo
