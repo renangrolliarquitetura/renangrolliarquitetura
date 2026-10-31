@@ -308,6 +308,30 @@ table.dre tr.t td { font-weight: 650; background: var(--surface-2); }
 .mini .legend { display: none; }
 @media (max-width: 1000px) { .topo { grid-template-columns: minmax(0, 1fr); } }
 table.trans td { vertical-align: middle; }
+/* linhas como no Zenply: leitura; clique abre a edição com "Mais detalhes" */
+table.trans tr.ver { cursor: pointer; } table.trans tr.ver:hover td { background: color-mix(in srgb, var(--surface-2) 70%, transparent); }
+table.trans tr.ver td { padding-top: 12px; padding-bottom: 12px; }
+table.trans .t-data { font-weight: 600; white-space: nowrap; } table.trans .t-valor { font-weight: 700; white-space: nowrap; text-align: right; }
+table.trans .t-valor.pos { color: var(--good-text); } table.trans .t-valor.neg { color: var(--critical-text); }
+table.trans tr.ver td { text-transform: uppercase; } table.trans .vazio { font-style: italic; color: var(--muted); text-transform: none; }
+table.trans tr.editando td { background: color-mix(in srgb, var(--surface-2) 85%, transparent); }
+table.trans tr.editando .celdesc { position: relative; }
+.mais-det { position: absolute; left: 50%; bottom: -17px; transform: translateX(-50%); z-index: 3; border: 0; border-radius: 20px; background: #2f9e6e; color: #fff; font: inherit; font-size: 13px; font-weight: 600; padding: 7px 18px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.18); white-space: nowrap; }
+.mais-det:hover { background: #26875d; }
+.ok-linha { border: 0; border-radius: 4px; background: #2f9e6e; color: #fff; width: 32px; height: 32px; cursor: pointer; font-size: 16px; }
+.seta-lanc { border: 0; background: transparent; color: var(--ink-2); width: 32px; height: 32px; border-radius: 4px; cursor: pointer; display: grid; place-items: center; }
+.seta-lanc:hover, .seta-lanc.on { background: var(--surface-2); color: var(--ink); }
+.menu-lanc, .menu-lanc ul { list-style: none; margin: 0; padding: 6px 0; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.16); min-width: 230px; }
+.menu-lanc { position: fixed; z-index: 50; }
+.menu-lanc li { position: relative; }
+.menu-lanc li > button { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 14px; padding: 9px 16px; cursor: pointer; text-align: left; }
+.menu-lanc li > button:hover, .menu-lanc li:hover > button { background: var(--surface-2); }
+.menu-lanc li > button .ic { width: 18px; text-align: center; color: var(--ink-2); } .menu-lanc li > button .sub { margin-left: auto; font-size: 10px; color: var(--ink-2); }
+.menu-lanc li.sep { border-top: 1px solid var(--line); margin: 5px 0; }
+.menu-lanc li.perigo > button { color: var(--critical-text); }
+.menu-lanc ul { display: none; position: absolute; top: -7px; right: 100%; margin-right: 2px; }
+.menu-lanc li:hover > ul, .menu-lanc li:focus-within > ul { display: block; }
+.menu-lanc ul li > button.marcado::after { content: "✓"; margin-left: auto; }
 .addrow { width: 100%; border: 1.5px dashed var(--rec); background: transparent; color: var(--good-text); border-radius: 99px; padding: 6px; font: inherit; font-weight: 500; cursor: pointer; }
 .addrow:hover { background: color-mix(in srgb, var(--rec) 10%, transparent); }
 tr.clic { cursor: pointer; } tr.clic:hover td { background: var(--surface-2); }
@@ -1074,6 +1098,7 @@ function resumoMes(ym) {
 
 /* ---------- estado da tela ---------- */
 let selLanc = new Set(), lancVisiveis = [];
+let linhaEd = null; // transação aberta para edição na tabela
 let fMes = HOJE.slice(0, 7), fConta = "todas", fDia = HOJE, fAba = "entrada", fGrupo = "", fDespAberta = false, fStatus = "todos", fBusca = "", fCentro = "";
 let fRel = "desp-categoria", fRelDe = HOJE.slice(0, 8) + "01", fRelAte = addDias(addMeses(HOJE.slice(0, 8) + "01", 1), -1), fRelPagos = true, fRelPend = true;
 let fCfg = "contas", fCfgGrupo = "receita", fCtAba = "Todos", fCtBusca = "", fCtSel = null;
@@ -1235,17 +1260,19 @@ function finTransacoes() {
       ${selVis.length ? `<div class="selbar"><b>${selVis.length} selecionado(s) · ${R$(soma(selVis))}</b><button class="btn sm" data-act="f-sel-pago" data-v="1">Marcar como ${fAba === "entrada" ? "recebido" : "pago"}</button><button class="btn sm" data-act="f-sel-pago" data-v="0">Marcar como não ${fAba === "entrada" ? "recebido" : "pago"}</button><button class="btn sm danger" data-act="f-sel-del">Excluir</button><button class="btn sm" data-act="f-sel-limpar">Limpar seleção</button></div>` : ""}
       <div class="trans-wrap"><table class="trans"><thead><tr><th class="ck"><input type="checkbox" data-act="f-sel-todos" aria-label="Selecionar todos" ${ls.length && selVis.length === ls.length ? "checked" : ""}></th><th>Data</th><th class="grow">Descrição</th><th>${rotulo[0]}</th><th class="num">Valor</th><th style="white-space:normal">Forma de pagamento</th><th>Categoria</th><th>Pagamento</th><th>Pago?</th><th></th></tr></thead><tbody>
         <tr><td colspan="10"><button class="addrow" data-act="novo-lanc" data-tipo="${fAba}">+ Adicionar ${rotulo[1]}</button></td></tr>
-        ${ls.map((l) => { const tr = l.tipo === "transf", pg = pagamentoDe(l); return `<tr class="${selLanc.has(l.id) ? "sel" : ""}">
+        ${ls.map((l) => { const tr = l.tipo === "transf", pg = pagamentoDe(l);
+          if (l.id !== linhaEd) return linhaLeitura(l, tr, pg);
+          return `<tr class="editando ${selLanc.has(l.id) ? "sel" : ""}" data-linha="${l.id}">
           <td class="ck"><input type="checkbox" data-act="f-sel" data-id="${l.id}" aria-label="Selecionar" ${selLanc.has(l.id) ? "checked" : ""}></td>
           <td><input class="ie ie-data" type="date" data-act="f-ed" data-k="data" data-id="${l.id}" value="${l.data}" aria-label="Data"></td>
-          <td><div class="dcell">${atrasado(l) ? `<span class="alerta" title="Em atraso">!</span>` : ""}<input class="ie ie-desc" data-act="f-ed" data-k="descricao" data-id="${l.id}" value="${esc(l.descricao)}" placeholder="${esc(catNome(l))}" aria-label="Descrição">${l.parcela ? `<button class="tagp" data-act="f-serie" data-id="${l.id}" title="Editar ${pg === "repetir" ? "repetições" : "parcelas"}">${l.parcela} ${freqNome(l.freq).toLowerCase()}</button>` : ""}</div></td>
+          <td class="celdesc"><button type="button" class="mais-det" data-act="editar-lanc" data-id="${l.id}">Mais detalhes →</button><div class="dcell">${atrasado(l) ? `<span class="alerta" title="Em atraso">!</span>` : ""}<input class="ie ie-desc" data-act="f-ed" data-k="descricao" data-id="${l.id}" value="${esc(l.descricao)}" placeholder="${esc(catNome(l))}" aria-label="Descrição">${l.parcela ? `<button class="tagp" data-act="f-serie" data-id="${l.id}" title="Editar ${pg === "repetir" ? "repetições" : "parcelas"}">${l.parcela} ${freqNome(l.freq).toLowerCase()}</button>` : ""}</div></td>
           <td class="ink2">${tr ? `${esc(conta(l.contaId)?.nome)} → ${esc(conta(l.contaDestinoId)?.nome)}` : `<select class="ie ie-pessoa" data-act="f-ed" data-k="clienteId" data-id="${l.id}" aria-label="${rotulo[0]}">${opcoesPessoa(l.clienteId)}</select>`}</td>
           <td class="num"><input class="ie ie-valor num ${l.tipo === "entrada" ? "pos" : l.tipo === "saida" ? "neg" : ""}" data-act="f-ed" data-k="valor" data-id="${l.id}" value="${R$(l.valor)}" inputmode="numeric" data-mask="moeda" aria-label="Valor"></td>
           <td class="small"><select class="ie ie-forma" data-act="f-ed" data-k="forma" data-id="${l.id}" aria-label="Forma de pagamento">${opts([...new Set([...FORMAS, "Débito automático", ...(l.forma ? [l.forma] : [])])], l.forma, "—")}</select></td>
           <td class="small">${tr ? "Transferência" : `<select class="ie ie-cat" data-act="f-ed" data-k="categoriaId" data-id="${l.id}" aria-label="Categoria">${opcoesCategoria(l.tipo, l.categoriaId)}</select>`}</td>
           <td class="small">${tr ? "—" : `<select class="ie ie-pag" data-act="f-pagto" data-id="${l.id}" aria-label="Pagamento">${opts([["avista", "À vista"], ["parcelado", pg === "parcelado" ? "Parcelado" : "Criar parcelas"], ["repetir", pg === "repetir" ? "Repetindo" : "Repetir transação"]], pg)}</select>`}</td>
           <td>${toggle(l)}</td>
-          <td><button class="btn sm" data-act="editar-lanc" data-id="${l.id}" title="Abrir todos os detalhes" aria-label="Abrir detalhes">⋯</button></td></tr>`; }).join("")}
+          <td><button type="button" class="ok-linha" data-act="f-linha-ok" title="Concluir edição" aria-label="Concluir edição">✓</button></td></tr>`; }).join("")}
         ${ls.length ? "" : `<tr><td colspan="10" class="empty">Nenhuma movimentação neste mês.</td></tr>`}
       </tbody></table></div>
       <div class="totais"><span>Total <b>${R$(soma(total))}</b></span><span>${rotulo[2]} <b>${R$(soma(total.filter((l) => l.pago)))}</b></span><span>${rotulo[3]} <b>${R$(soma(total.filter((l) => !l.pago)))}</b></span></div>
@@ -1603,6 +1630,69 @@ function menuNovo(el, qual) {
   return true;
 }
 // Edição direto na tabela de transações: salva na hora; a tela se atualiza quando o cursor sai dos campos
+// Linha da tabela em modo leitura (clique abre a edição; a seta abre o menu de ações)
+const SETA_BAIXO = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
+function linhaLeitura(l, tr, pg) {
+  const vazio = (t) => `<span class="vazio">${t}</span>`;
+  const pes = tr ? `${esc(conta(l.contaId)?.nome || "—")} → ${esc(conta(l.contaDestinoId)?.nome || "—")}` : pessoa(l.clienteId) ? esc(pessoa(l.clienteId).nome) : vazio("Não preenchido");
+  const cat = tr ? "Transferência" : fcat(l.categoriaId) ? esc(fcat(l.categoriaId).nome) : vazio("Não preenchido");
+  return `<tr class="ver ${selLanc.has(l.id) ? "sel" : ""}" data-act="f-linha" data-id="${l.id}">
+    <td class="ck"><input type="checkbox" data-act="f-sel" data-id="${l.id}" aria-label="Selecionar" ${selLanc.has(l.id) ? "checked" : ""}></td>
+    <td class="t-data">${dataBR(l.data).slice(0, 5)}</td>
+    <td><div class="dcell">${atrasado(l) ? `<span class="alerta" title="Em atraso">!</span>` : ""}<span>${l.descricao ? esc(l.descricao) : vazio("Sem descrição")}</span>${l.parcela ? `<span class="tagp">${l.parcela} ${freqNome(l.freq).toLowerCase()}</span>` : ""}${l.recibo ? `<span class="small muted" title="Recibo emitido">📄</span>` : ""}</div></td>
+    <td class="ink2">${pes}</td>
+    <td class="t-valor ${l.tipo === "entrada" ? "pos" : l.tipo === "saida" ? "neg" : ""}">${R$(l.valor)}</td>
+    <td class="small">${l.forma ? esc(l.forma) : vazio("—")}</td>
+    <td class="small">${cat}</td>
+    <td class="small">${tr ? "—" : { avista: "À vista", parcelado: "Parcelado", repetir: "Repete" }[pg]}</td>
+    <td>${toggle(l)}</td>
+    <td><button type="button" class="seta-lanc" data-act="f-menu" data-id="${l.id}" title="Mais ações" aria-label="Mais ações" aria-haspopup="menu">${SETA_BAIXO}</button></td></tr>`;
+}
+function fecharMenuLanc() { $(".menu-lanc")?.remove(); document.querySelectorAll(".seta-lanc.on").forEach((b) => b.classList.remove("on")); }
+function abrirMenuLanc(btn, l) {
+  const aberto = btn.classList.contains("on"); fecharMenuLanc(); if (aberto) return;
+  const item = (op, ic, rot, extra = "") => `<li><button type="button" data-act="f-op" data-op="${op}" data-id="${l.id}" ${extra}><span class="ic">${ic}</span>${rot}</button></li>`;
+  const sub = (ic, rot, itens) => `<li><button type="button" aria-haspopup="menu"><span class="ic">${ic}</span>${rot}<span class="sub">▶</span></button><ul>${itens}</ul></li>`;
+  const it = (op, rot, v = "", marcado = false) => `<li><button type="button" class="${marcado ? "marcado" : ""}" data-act="f-op" data-op="${op}" data-v="${esc(v)}" data-id="${l.id}">${rot}</button></li>`;
+  const pagoTxt = l.tipo === "entrada" ? "Recebido" : l.tipo === "saida" ? "Pago" : "Realizado";
+  const outrosTipos = l.tipo === "transf" ? [] : [["entrada", "Recebimentos"], ["saida", "Despesas"]].filter(([t]) => t !== l.tipo);
+  const contasOutras = db.contas.filter((c) => !c.arquivada && c.id !== l.contaId);
+  const m = document.createElement("ul"); m.className = "menu-lanc"; m.setAttribute("role", "menu");
+  m.innerHTML = sub("⧉", "Duplicar ...", it("dup", "Na mesma data") + it("dup", "No mês seguinte", "1"))
+    + sub("✔", "Marcar como ...", it("marcar", pagoTxt, "1", l.pago) + it("marcar", `Não ${pagoTxt.toLowerCase()}`, "0", !l.pago))
+    + sub("⇄", "Mover para ...", (outrosTipos.map(([t, n]) => it("mover-tipo", n, t)).join("") + contasOutras.map((c) => it("mover-conta", `Conta: ${esc(c.nome)}`, c.id)).join("")) || `<li><button type="button" disabled>Nada para mover</button></li>`)
+    + `<li class="sep"></li>`
+    + sub("🏷", "Aplicar Tags ...", db.tags.map((t) => it("tag", esc(t.nome), t.id, (l.tags || []).includes(t.id))).join("") || `<li><button type="button" disabled>Nenhuma tag cadastrada</button></li>`)
+    + sub("⌂", "Aplicar Centro de Custo ...", it("centro", "Nenhum", "", !l.centroId) + db.centros.map((c) => it("centro", esc(c.nome), c.id, l.centroId === c.id)).join(""))
+    + item("recibo", "📄", l.recibo ? `Ver recibo nº ${numRecibo(l.recibo.numero)}` : "Gerar Recibo")
+    + `<li class="sep"></li>` + item("excluir", "🗑", "Excluir").replace("<li>", '<li class="perigo">');
+  document.body.appendChild(m); btn.classList.add("on");
+  const r = btn.getBoundingClientRect(), h = m.offsetHeight, w = m.offsetWidth;
+  m.style.left = Math.max(8, r.right - w) + "px";
+  m.style.top = (r.bottom + 4 + h > innerHeight ? Math.max(8, r.top - h - 4) : r.bottom + 4) + "px";
+}
+function opLanc(l, op, v) {
+  fecharMenuLanc();
+  if (op === "dup") {
+    const data = v ? passoData(l.data, "mensal", 1) : l.data;
+    db.lancamentos.push({ ...l, id: uid(), data, competencia: data.slice(0, 7), tags: [...(l.tags || [])], pago: false, pagoEm: null, grupo: null, modo: null, freq: null, parcela: null, recibo: null });
+    salvar(); render(); return toast(v ? "Duplicado no mês seguinte" : "Duplicado");
+  }
+  if (op === "marcar") { l.pago = v === "1"; l.pagoEm = l.pago ? l.pagoEm || HOJE : null; salvar(); return render(); }
+  if (op === "mover-tipo") { l.tipo = v; l.categoriaId = null; salvar(); render(); return toast(`Movido para ${v === "entrada" ? "Recebimentos" : "Despesas"}`); }
+  if (op === "mover-conta") { l.contaId = v; salvar(); render(); return toast(`Movido para ${conta(v)?.nome}`); }
+  if (op === "tag") { l.tags = (l.tags || []).includes(v) ? l.tags.filter((t) => t !== v) : [...(l.tags || []), v]; salvar(); return render(); }
+  if (op === "centro") { l.centroId = v || null; salvar(); return render(); }
+  if (op === "recibo") return l.recibo ? verRecibo(l) : gerarRecibo(l);
+  if (op === "excluir") return perguntar("Excluir este lançamento?", "Excluir", () => { db.lancamentos = db.lancamentos.filter((x) => x !== l); salvar(); render(); });
+}
+// Fora da linha em edição ou do menu: fecha
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".menu-lanc, .seta-lanc")) fecharMenuLanc();
+  if (linhaEd && !e.target.closest("tr.editando, dialog, .menu-lanc") && document.contains(e.target)) { linhaEd = null; if (!e.target.closest('tr.ver[data-act="f-linha"]')) render(); }
+}, true);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") { fecharMenuLanc(); if (linhaEd && !document.querySelector("dialog[open]")) { linhaEd = null; render(); } } });
+addEventListener("scroll", fecharMenuLanc, { passive: true });
 // Editar item de série (parcelas/repetições): pergunta, como no Zenply, se a mudança vale para os demais
 const somaDias = (data, d) => { const t = new Date(data + "T12:00:00"); t.setDate(t.getDate() + d); return t.toISOString().slice(0, 10); };
 const difDias = (de, ate) => Math.round((new Date(ate + "T12:00:00") - new Date(de + "T12:00:00")) / 864e5);
@@ -1705,6 +1795,10 @@ document.addEventListener("click", (e) => {
     bloquear: () => { finAte = 0; guardarSessao(); ir("#/painel"); },
     "novo-lanc": () => formLanc({ tipo: el.dataset.tipo || "entrada", clienteId: el.dataset.cliente || null, prospeccaoId: el.dataset.prosp || null }),
     "editar-lanc": () => { if (finLiberado()) formLanc(db.lancamentos.find((l) => l.id === id)); },
+    "f-linha": () => { if (e.target.closest("input, button, select, a")) return; linhaEd = id; fecharMenuLanc(); render(); const d = document.querySelector(`tr.editando [data-k="descricao"]`); if (d) { d.focus(); d.setSelectionRange(d.value.length, d.value.length); } },
+    "f-linha-ok": () => { linhaEd = null; render(); },
+    "f-menu": () => abrirMenuLanc(el.isConnected ? el : document.querySelector(`.seta-lanc[data-id="${id}"]`), db.lancamentos.find((l) => l.id === id)),
+    "f-op": () => { const l = db.lancamentos.find((x) => x.id === id); if (l) opLanc(l, el.dataset.op, v); },
     "recibo-gerar": () => gerarRecibo(db.lancamentos.find((l) => l.id === id), el),
     "recibo-ver": () => verRecibo(db.lancamentos.find((l) => l.id === id)),
     "del-lanc": () => perguntar("Excluir este lançamento?", "Excluir", () => { db.lancamentos = db.lancamentos.filter((l) => l.id !== id); salvar(); render(); }),
