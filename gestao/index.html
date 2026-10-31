@@ -308,6 +308,9 @@ table.dre tr.t td { font-weight: 650; background: var(--surface-2); }
 .mini .legend { display: none; }
 @media (max-width: 1000px) { .topo { grid-template-columns: minmax(0, 1fr); } }
 table.trans td { vertical-align: middle; }
+table.trans th .ord { all: unset; cursor: pointer; display: inline-flex; gap: 4px; align-items: center; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; }
+table.trans th .ord:hover, table.trans th .ord.on { color: var(--ink); } table.trans th .ord span { font-size: 8px; }
+table.trans th.num .ord { justify-content: flex-end; }
 /* linhas como no Zenply: leitura; clique abre a edição com "Mais detalhes" */
 table.trans tr.ver { cursor: pointer; } table.trans tr.ver:hover td { background: color-mix(in srgb, var(--surface-2) 70%, transparent); }
 table.trans tr.ver td { padding-top: 12px; padding-bottom: 12px; }
@@ -1098,7 +1101,8 @@ function resumoMes(ym) {
 
 /* ---------- estado da tela ---------- */
 let selLanc = new Set(), lancVisiveis = [];
-let linhaEd = null; // transação aberta para edição na tabela
+let linhaEd = null, fOrd = { k: "data", dir: -1 }; // ordem da tabela de transações
+ // transação aberta para edição na tabela
 let fMes = HOJE.slice(0, 7), fConta = "todas", fDia = HOJE, fAba = "entrada", fGrupo = "", fDespAberta = false, fStatus = "todos", fBusca = "", fCentro = "";
 let fRel = "desp-categoria", fRelDe = HOJE.slice(0, 8) + "01", fRelAte = addDias(addMeses(HOJE.slice(0, 8) + "01", 1), -1), fRelPagos = true, fRelPend = true;
 let fCfg = "contas", fCfgGrupo = "receita", fCtAba = "Todos", fCtBusca = "", fCtSel = null;
@@ -1236,7 +1240,12 @@ function finTransacoes() {
   if (fStatus === "pendentes") ls = ls.filter((l) => !l.pago);
   if (fCentro) ls = ls.filter((l) => l.centroId === fCentro);
   if (q) ls = ls.filter((l) => [l.descricao, catNome(l), pessoaNome(l.clienteId), l.documento].join(" ").toLowerCase().includes(q));
-  ls.sort((a, b) => b.data.localeCompare(a.data));
+  const chaveOrd = {
+    data: (l) => l.data, descricao: (l) => l.descricao || "", pessoa: (l) => (l.tipo === "transf" ? conta(l.contaDestinoId)?.nome : pessoa(l.clienteId)?.nome) || "",
+    valor: (l) => l.valor, forma: (l) => l.forma || "", categoria: (l) => (l.tipo === "transf" ? "" : fcat(l.categoriaId)?.nome || ""), pagamento: (l) => pagamentoDe(l), pago: (l) => (l.pago ? 1 : 0),
+  }[fOrd.k] || ((l) => l.data);
+  ls.sort((a, b) => { const x = chaveOrd(a), y = chaveOrd(b); const c = typeof x === "number" ? x - y : String(x).localeCompare(String(y), "pt-BR"); return (c || a.data.localeCompare(b.data)) * fOrd.dir; });
+  const th = (k, rot, cls = "", st = "") => `<th class="${cls}" ${st}><button type="button" class="ord ${fOrd.k === k ? "on" : ""}" data-act="f-ord" data-v="${k}" title="Ordenar">${rot}<span aria-hidden="true">${fOrd.k === k ? (fOrd.dir > 0 ? "▲" : "▼") : ""}</span></button></th>`;
   const rotulo = { entrada: ["Recebido de", "recebimento", "Recebido", "A receber"], saida: ["Pago a", "despesa", "Pago", "A pagar"], transf: ["Destino", "transferência", "Realizado", "Pendente"] }[fAba];
   const resPrev = atual.rPrev - atual.dPrev;
   const selVis = ls.filter((l) => selLanc.has(l.id)); lancVisiveis = ls.map((l) => l.id);
@@ -1258,7 +1267,7 @@ function finTransacoes() {
     </div>
     <div class="card flush">
       ${selVis.length ? `<div class="selbar"><b>${selVis.length} selecionado(s) · ${R$(soma(selVis))}</b><button class="btn sm" data-act="f-sel-pago" data-v="1">Marcar como ${fAba === "entrada" ? "recebido" : "pago"}</button><button class="btn sm" data-act="f-sel-pago" data-v="0">Marcar como não ${fAba === "entrada" ? "recebido" : "pago"}</button><button class="btn sm danger" data-act="f-sel-del">Excluir</button><button class="btn sm" data-act="f-sel-limpar">Limpar seleção</button></div>` : ""}
-      <div class="trans-wrap"><table class="trans"><thead><tr><th class="ck"><input type="checkbox" data-act="f-sel-todos" aria-label="Selecionar todos" ${ls.length && selVis.length === ls.length ? "checked" : ""}></th><th>Data</th><th class="grow">Descrição</th><th>${rotulo[0]}</th><th class="num">Valor</th><th style="white-space:normal">Forma de pagamento</th><th>Categoria</th><th>Pagamento</th><th>Pago?</th><th></th></tr></thead><tbody>
+      <div class="trans-wrap"><table class="trans"><thead><tr><th class="ck"><input type="checkbox" data-act="f-sel-todos" aria-label="Selecionar todos" ${ls.length && selVis.length === ls.length ? "checked" : ""}></th>${th("data", "Data")}${th("descricao", "Descrição", "grow")}${th("pessoa", rotulo[0])}${th("valor", "Valor", "num")}${th("forma", "Forma de pagamento", "", 'style="white-space:normal"')}${th("categoria", "Categoria")}${th("pagamento", "Pagamento")}${th("pago", "Pago?")}<th></th></tr></thead><tbody>
         <tr><td colspan="10"><button class="addrow" data-act="novo-lanc" data-tipo="${fAba}">+ Adicionar ${rotulo[1]}</button></td></tr>
         ${ls.map((l) => { const tr = l.tipo === "transf", pg = pagamentoDe(l);
           if (l.id !== linhaEd) return linhaLeitura(l, tr, pg);
@@ -1800,6 +1809,7 @@ document.addEventListener("click", (e) => {
     "editar-lanc": () => { if (finLiberado()) formLanc(db.lancamentos.find((l) => l.id === id)); },
     "f-linha": () => { if (e.target.closest("input, button, select, a")) return; linhaEd = id; fecharMenuLanc(); render(); const d = document.querySelector(`tr.editando [data-k="descricao"]`); if (d) { d.focus(); d.setSelectionRange(d.value.length, d.value.length); } },
     "f-linha-ok": () => { linhaEd = null; render(); },
+    "f-ord": () => { fOrd = fOrd.k === v ? { k: v, dir: -fOrd.dir } : { k: v, dir: 1 }; render(); },
     "f-menu": () => abrirMenuLanc(el.isConnected ? el : document.querySelector(`.seta-lanc[data-id="${id}"]`), db.lancamentos.find((l) => l.id === id)),
     "f-op": () => { const l = db.lancamentos.find((x) => x.id === id); if (l) opLanc(l, el.dataset.op, v); },
     "recibo-gerar": () => gerarRecibo(db.lancamentos.find((l) => l.id === id), el),
