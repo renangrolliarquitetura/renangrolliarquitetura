@@ -482,7 +482,6 @@ function completarBasicos() {
     Object.entries(CATEGORIAS_ZENPLY).forEach(([grupo, nomes]) => nomes.forEach((nome) => db.categorias.push({ id: uid(), nome, grupo })));
     db.contas.push({ id: "cp", nome: "Conta Principal", tipo: "Conta Corrente", saldoInicial: 0, arquivada: false }, { id: "cx", nome: "Caixa do escritório", tipo: "Caixa", saldoInicial: 0, arquivada: false });
     db.centros.push({ id: uid(), nome: "Escritório" }, { id: uid(), nome: "Obras" });
-    db.tags.push({ id: uid(), nome: "Recorrente" });
     mudou = true;
   }
   if (mudou) salvar();
@@ -1235,7 +1234,7 @@ function finTransacoes() {
   const total = ls;
   if (fStatus === "pagos") ls = ls.filter((l) => l.pago);
   if (fStatus === "pendentes") ls = ls.filter((l) => !l.pago);
-  if (fCentro) ls = ls.filter((l) => l.centroId === fCentro || l.tags.includes(fCentro));
+  if (fCentro) ls = ls.filter((l) => l.centroId === fCentro);
   if (q) ls = ls.filter((l) => [l.descricao, catNome(l), pessoaNome(l.clienteId), l.documento].join(" ").toLowerCase().includes(q));
   ls.sort((a, b) => b.data.localeCompare(a.data));
   const rotulo = { entrada: ["Recebido de", "recebimento", "Recebido", "A receber"], saida: ["Pago a", "despesa", "Pago", "A pagar"], transf: ["Destino", "transferência", "Realizado", "Pendente"] }[fAba];
@@ -1255,7 +1254,7 @@ function finTransacoes() {
     <div class="actions mb">
       <select class="input" data-act="f-status" aria-label="Status de pagamento">${[["todos", "Status: Todos"], ["pagos", "Status: Pagos"], ["pendentes", "Status: Não pagos"]].map(([v, l]) => `<option value="${v}" ${fStatus === v ? "selected" : ""}>${l}</option>`).join("")}</select>
       <input class="input" id="f-busca" style="flex:1;min-width:180px;width:auto" placeholder="Pesquisar na tabela" value="${esc(fBusca)}">
-      <select class="input" data-act="f-centro" aria-label="Tags / Centro de custo"><option value="">Tags / Centro de custo</option>${db.centros.map((c) => `<option value="${c.id}" ${fCentro === c.id ? "selected" : ""}>Centro: ${esc(c.nome)}</option>`).join("")}${db.tags.map((t) => `<option value="${t.id}" ${fCentro === t.id ? "selected" : ""}>Tag: ${esc(t.nome)}</option>`).join("")}</select>
+      <select class="input" data-act="f-centro" aria-label="Centro de custo"><option value="">Centro de custo</option>${db.centros.map((c) => `<option value="${c.id}" ${fCentro === c.id ? "selected" : ""}>Centro: ${esc(c.nome)}</option>`).join("")}</select>
     </div>
     <div class="card flush">
       ${selVis.length ? `<div class="selbar"><b>${selVis.length} selecionado(s) · ${R$(soma(selVis))}</b><button class="btn sm" data-act="f-sel-pago" data-v="1">Marcar como ${fAba === "entrada" ? "recebido" : "pago"}</button><button class="btn sm" data-act="f-sel-pago" data-v="0">Marcar como não ${fAba === "entrada" ? "recebido" : "pago"}</button><button class="btn sm danger" data-act="f-sel-del">Excluir</button><button class="btn sm" data-act="f-sel-limpar">Limpar seleção</button></div>` : ""}
@@ -1282,8 +1281,8 @@ function finTransacoes() {
 
 /* ---------- Relatórios ---------- */
 const RELATORIOS = [
-  ["DESPESAS", [["desp-descricao", "Por Descrição"], ["desp-dia", "Por Dia"], ["desp-tipo", "Por Tipo"], ["desp-categoria", "Por Categoria"], ["desp-tags", "Por Tags"], ["desp-centro", "Por Centro de Custo"], ["desp-contato", "Pago a..."]]],
-  ["RECEBIMENTOS", [["rec-descricao", "Por Descrição"], ["rec-dia", "Por Dia"], ["rec-categoria", "Por Categoria"], ["rec-tags", "Por Tags"], ["rec-centro", "Por Centro de Custo"], ["rec-contato", "Recebido de..."]]],
+  ["DESPESAS", [["desp-descricao", "Por Descrição"], ["desp-dia", "Por Dia"], ["desp-tipo", "Por Tipo"], ["desp-categoria", "Por Categoria"], ["desp-centro", "Por Centro de Custo"], ["desp-contato", "Pago a..."]]],
+  ["RECEBIMENTOS", [["rec-descricao", "Por Descrição"], ["rec-dia", "Por Dia"], ["rec-categoria", "Por Categoria"], ["rec-centro", "Por Centro de Custo"], ["rec-contato", "Recebido de..."]]],
   ["FLUXO DE CAIXA", [["extrato", "Extrato"], ["desp-rec", "Despesas/Receitas"], ["historico", "Histórico"], ["dre", "Demonstrativo (DRE)"], ["perf-mensal", "Performance Mensal"], ["perf-anual", "Performance Anual"], ["saldos", "Saldos"]]],
 ];
 function lancPeriodo(de, ate) {
@@ -1558,7 +1557,7 @@ function importarArquivo(input, tipo) {
 
 /* ---------- Configurações ---------- */
 function finConfig() {
-  const menu = [["contas", "Contas bancárias"], ["categorias", "Categorias"], ["centros", "Centros de custo"], ["tags", "Marcadores (tags)"]];
+  const menu = [["contas", "Contas bancárias"], ["categorias", "Categorias"], ["centros", "Centros de custo"]];
   let corpo = "";
   if (fCfg === "contas") {
     corpo = `<div class="bar"><h2 style="margin:0">Contas bancárias</h2><button class="btn pri sm" data-act="f-conta-nova">Nova conta</button></div>
@@ -1754,7 +1753,6 @@ function formLanc(l = {}) {
     ${campo("Competência", inp("competencia", l.competencia || "", 'type="month"'))}
     ${campo("Forma de pagamento", `<select class="input" name="forma">${opts([...FORMAS, "Débito automático"], l.forma, "Selecione...")}</select>`)}
     ${campo("Centro de custo", `<select class="input" name="centroId">${opts(db.centros.map((c) => [c.id, c.nome]), l.centroId, "Selecione...")}</select>`)}
-    <div class="field full"><span>Tags</span><div class="chips">${db.tags.length ? db.tags.map((t) => `<label class="chip"><input type="checkbox" name="tags" value="${t.id}" ${(l.tags || []).includes(t.id) ? "checked" : ""}>${esc(t.nome)}</label>`).join("") : `<span class="small muted">Cadastre tags em Configurações.</span>`}</div></div>
     ${(() => {
       const membros = novo ? [l] : membrosSerie(l), modo = novo ? "" : { avista: "", parcelado: "parcelado", repetir: "repetir" }[pagamentoDe(l)];
       const linhas = modo ? membros.map((x) => ({ data: x.data, valor: x.valor })) : [];
@@ -1919,7 +1917,7 @@ document.addEventListener("submit", (e) => {
     const pago = fd.get("pago") === "on";
     const base = { tipo, valor, data: v("data"), descricao: v("descricao").toUpperCase(), pago, pagoEm: pago ? v("pagoEm") || v("data") : null, contaId: v("contaId"), contaDestinoId: tipo === "transf" ? v("contaDestinoId") : null,
       categoriaId: tipo === "transf" ? null : v("categoriaId") || null, clienteId: tipo === "transf" ? null : v("clienteId") || null, prospeccaoId: tipo === "transf" ? null : (f.dataset.id && db.lancamentos.find((x) => x.id === f.dataset.id)?.prospeccaoId) || fd.get("prospeccaoId") || null,
-      competencia: v("competencia") || v("data").slice(0, 7), forma: v("forma"), documento: (f.dataset.id && db.lancamentos.find((x) => x.id === f.dataset.id)?.documento) || "", centroId: v("centroId") || null, tags: fd.getAll("tags").map(String), obs: v("obs").toUpperCase() };
+      competencia: v("competencia") || v("data").slice(0, 7), forma: v("forma"), documento: (f.dataset.id && db.lancamentos.find((x) => x.id === f.dataset.id)?.documento) || "", centroId: v("centroId") || null, tags: (f.dataset.id && db.lancamentos.find((x) => x.id === f.dataset.id)?.tags) || [], obs: v("obs").toUpperCase() };
     if (f.dataset.id && tipo !== "transf") {
       const alvo = db.lancamentos.find((l) => l.id === f.dataset.id), membros = membrosSerie(alvo);
       const modoAntes = { avista: "", parcelado: "parcelado", repetir: "repetir" }[pagamentoDe(alvo)], modo = v("repeticao");
