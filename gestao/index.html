@@ -196,6 +196,12 @@ dialog { border: 1px solid var(--line); border-radius: 2px; background: var(--su
 dialog::backdrop { background: rgba(0,0,0,.35); }
 dialog .dh { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line); }
 dialog .db { padding: 20px; max-height: 70vh; overflow: auto; }
+.aviso-serie { text-align: center; padding: 34px 28px 28px; }
+.aviso-serie .ic { width: 84px; height: 84px; margin: 0 auto 26px; border: 3px solid #3fc3ee; border-radius: 50%; color: #3fc3ee; display: grid; place-items: center; font: 300 46px/1 Georgia, serif; }
+.aviso-serie h2 { margin: 0 0 12px; font-size: 24px; } .aviso-serie p { margin: 0 0 14px; color: var(--ink-2, inherit); }
+.aviso-serie .ops { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-bottom: 24px; text-align: left; }
+.aviso-serie .ops label { display: flex; gap: 8px; align-items: center; cursor: pointer; } .aviso-serie .ops input { accent-color: var(--accent); }
+.aviso-serie .bts { display: flex; justify-content: center; gap: 10px; }
 dialog .df { padding: 14px 20px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 8px; }
 
 /* charts */
@@ -1596,19 +1602,49 @@ function menuNovo(el, qual) {
   return true;
 }
 // Edição direto na tabela de transações: salva na hora; a tela se atualiza quando o cursor sai dos campos
+// Editar item de série (parcelas/repetições): pergunta, como no Zenply, se a mudança vale para os demais
+const somaDias = (data, d) => { const t = new Date(data + "T12:00:00"); t.setDate(t.getDate() + d); return t.toISOString().slice(0, 10); };
+const difDias = (de, ate) => Math.round((new Date(ate + "T12:00:00") - new Date(de + "T12:00:00")) / 864e5);
+function alterarSerie(l, mudar, cancelar) {
+  const membros = membrosSerie(l);
+  if (membros.length < 2) { mudar([l]); return; }
+  dlg2.innerHTML = `<div class="aviso-serie"><div class="ic" aria-hidden="true">i</div><h2>Esta transação se repete</h2><p>Você deseja alterar os demais itens?</p>
+    <div class="ops"><label><input type="radio" name="escopo" value="este" checked> Não, alterar somente este</label><label><input type="radio" name="escopo" value="proximos"> Sim, alterar os próximos</label><label><input type="radio" name="escopo" value="todos"> Sim, alterar os anteriores e os próximos</label></div>
+    <div class="bts"><button type="button" class="btn pri" id="serie-ok">Alterar</button><button type="button" class="btn" id="serie-x">Cancelar</button></div></div>`;
+  dlg2.showModal();
+  let feito = false;
+  dlg2.onclose = () => { dlg2.onclose = null; if (!feito && cancelar) cancelar(); };
+  $("#serie-x", dlg2).onclick = () => dlg2.close();
+  $("#serie-ok", dlg2).onclick = () => {
+    const escopo = dlg2.querySelector('[name="escopo"]:checked').value, i = membros.indexOf(l);
+    feito = true; dlg2.close();
+    mudar(escopo === "este" ? [l] : escopo === "proximos" ? membros.slice(i) : membros);
+  };
+}
 function editarNaLinha(el) {
   const l = db.lancamentos.find((z) => z.id === el.dataset.id); if (!l) return;
   const k = el.dataset.k, val = el.value.trim();
   if (val.startsWith("__")) { el.value = l[k] || ""; return cadastroRapido(k === "categoriaId" ? "cat" : "pessoa", val === "__editar" ? l[k] : null, l.tipo, (id) => { l[k] = id; salvar(); render(); }); }
-  if (k === "descricao") l.descricao = val.toUpperCase();
-  else if (k === "valor") { const n = parseValor(val); if (!n || isNaN(n) || n <= 0) { toast("Informe um valor maior que zero."); return render(); } l.valor = Math.round(n * 100) / 100; }
-  else if (k === "data") { if (!val) return render(); if (l.competencia === l.data.slice(0, 7)) l.competencia = val.slice(0, 7); l.data = val; }
-  else if (k === "clienteId") { l.clienteId = val || null; if (l.prospeccaoId && prosp(l.prospeccaoId)?.clienteId !== l.clienteId) l.prospeccaoId = null; }
-  else if (k === "categoriaId") l.categoriaId = val || null;
-  else if (k === "forma") l.forma = val;
-  if (k === "descricao") el.value = l.descricao;
-  if (k === "valor") el.value = R$(l.valor);
-  salvar(); renderPendente = true; setTimeout(atualizarTela, 0);
+  let mudar;
+  if (k === "descricao") mudar = (x) => (x.descricao = val.toUpperCase());
+  else if (k === "valor") { const n = parseValor(val); if (!n || isNaN(n) || n <= 0) { toast("Informe um valor maior que zero."); return render(); } mudar = (x) => (x.valor = Math.round(n * 100) / 100); }
+  else if (k === "data") {
+    if (!val) return render();
+    const d = difDias(l.data, val);
+    mudar = (x) => { const nova = x === l ? val : somaDias(x.data, d); if (x.competencia === x.data.slice(0, 7)) x.competencia = nova.slice(0, 7); x.data = nova; };
+  }
+  else if (k === "clienteId") mudar = (x) => { x.clienteId = val || null; if (x.prospeccaoId && prosp(x.prospeccaoId)?.clienteId !== x.clienteId) x.prospeccaoId = null; };
+  else if (k === "categoriaId") mudar = (x) => (x.categoriaId = val || null);
+  else if (k === "forma") mudar = (x) => (x.forma = val);
+  else return;
+  if ((l[k] ?? "") === (k === "descricao" ? val.toUpperCase() : val)) return;
+  alterarSerie(l, (alvos) => {
+    alvos.forEach(mudar);
+    if (k === "descricao") el.value = l.descricao;
+    if (k === "valor") el.value = R$(l.valor);
+    salvar();
+    if (alvos.length > 1) render(); else { renderPendente = true; setTimeout(atualizarTela, 0); }
+  }, () => render());
 }
 function formLanc(l = {}) {
   const tipo = l.tipo || "entrada", novo = !l.id;
@@ -1780,8 +1816,20 @@ document.addEventListener("submit", (e) => {
     const base = { tipo, valor, data: v("data"), descricao: v("descricao").toUpperCase(), pago, pagoEm: pago ? v("pagoEm") || v("data") : null, contaId: v("contaId"), contaDestinoId: tipo === "transf" ? v("contaDestinoId") : null,
       categoriaId: tipo === "transf" ? null : v("categoriaId") || null, clienteId: tipo === "transf" ? null : v("clienteId") || null, prospeccaoId: tipo === "transf" ? null : (f.dataset.id && db.lancamentos.find((x) => x.id === f.dataset.id)?.prospeccaoId) || fd.get("prospeccaoId") || null,
       competencia: v("competencia") || v("data").slice(0, 7), forma: v("forma"), documento: (f.dataset.id && db.lancamentos.find((x) => x.id === f.dataset.id)?.documento) || "", centroId: v("centroId") || null, tags: fd.getAll("tags").map(String), obs: v("obs").toUpperCase() };
-    if (f.dataset.id) Object.assign(db.lancamentos.find((l) => l.id === f.dataset.id), base);
-    else {
+    if (f.dataset.id) {
+      const alvo = db.lancamentos.find((l) => l.id === f.dataset.id), antes = { ...alvo };
+      const fixos = ["pago", "pagoEm", "data", "competencia", "tipo", "documento", "prospeccaoId"];
+      const mudou = Object.keys(base).filter((k) => !fixos.includes(k) && JSON.stringify(base[k] ?? null) !== JSON.stringify(antes[k] ?? null));
+      const d = difDias(antes.data, base.data);
+      return alterarSerie(alvo, (alvos) => {
+        alvos.forEach((x) => {
+          if (x === alvo) return Object.assign(x, base);
+          mudou.forEach((k) => (x[k] = Array.isArray(base[k]) ? [...base[k]] : base[k]));
+          if (d) { const nova = somaDias(x.data, d); if (x.competencia === x.data.slice(0, 7)) x.competencia = nova.slice(0, 7); x.data = nova; }
+        });
+        salvar(); dlg.close(); render();
+      });
+    } else {
       const rep = v("repeticao"), datas = fd.getAll("pd").map(String), vals = fd.getAll("pv").map((x) => parseValor(x));
       if (rep && (datas.some((d) => !d) || vals.some((x) => !x || isNaN(x) || x <= 0))) return erro("Preencha data e valor (maior que zero) em todas as parcelas.");
       const linhas = rep ? (datas.length ? datas.map((d, i) => ({ data: d, valor: Math.round(vals[i] * 100) / 100 })) : gerarLinhas(base.data, Math.min(Math.max(Number(v("vezes")) || 2, 2), 120), v("freq") || "mensal", rep, valor)) : [];
