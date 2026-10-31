@@ -1068,7 +1068,8 @@ const CATEGORIAS_ZENPLY = {
 /* ---------- consultas ---------- */
 const fcat = (id) => db.categorias.find((c) => c.id === id);
 const catNome = (l) => (l.tipo === "transf" ? "Transferência" : fcat(l.categoriaId)?.nome || "Sem categoria");
-const catGrupo = (l) => (l.tipo === "entrada" ? "receita" : fcat(l.categoriaId)?.grupo || "variavel");
+const grupoDesp = (l) => fcat(l.categoriaId)?.grupo || l.grupoDesp || "";
+const catGrupo = (l) => (l.tipo === "entrada" ? "receita" : grupoDesp(l) || "variavel");
 const conta = (id) => db.contas.find((c) => c.id === id);
 const pessoa = (id) => cliente(id) || db.fornecedores.find((f) => f.id === id);
 const pessoaNome = (id) => pessoa(id)?.nome || "—";
@@ -1230,7 +1231,7 @@ function finTransacoes() {
   const atual = resumoMes(fMes);
   const tres = [-1, 0, 1].map((n) => { const ym = ymAdd(fMes, n), r = resumoMes(ym); return { ym, r: r.rPrev, d: r.dPrev }; });
   const q = fBusca.toLowerCase();
-  let ls = db.lancamentos.filter((l) => noMes(l, fMes) && l.tipo === fAba && filtraConta(l) && (fAba !== "saida" || !fGrupo || fcat(l.categoriaId)?.grupo === fGrupo));
+  let ls = db.lancamentos.filter((l) => noMes(l, fMes) && l.tipo === fAba && filtraConta(l) && (fAba !== "saida" || !fGrupo || grupoDesp(l) === fGrupo));
   const total = ls;
   if (fStatus === "pagos") ls = ls.filter((l) => l.pago);
   if (fStatus === "pendentes") ls = ls.filter((l) => !l.pago);
@@ -1655,16 +1656,13 @@ function abrirMenuLanc(btn, l) {
   const sub = (ic, rot, itens) => `<li><button type="button" aria-haspopup="menu"><span class="ic">${ic}</span>${rot}<span class="sub">▶</span></button><ul>${itens}</ul></li>`;
   const it = (op, rot, v = "", marcado = false) => `<li><button type="button" class="${marcado ? "marcado" : ""}" data-act="f-op" data-op="${op}" data-v="${esc(v)}" data-id="${l.id}">${rot}</button></li>`;
   const pagoTxt = l.tipo === "entrada" ? "Recebido" : l.tipo === "saida" ? "Pago" : "Realizado";
-  const outrosTipos = l.tipo === "transf" ? [] : [["entrada", "Recebimentos"], ["saida", "Despesas"]].filter(([t]) => t !== l.tipo);
-  const contasOutras = db.contas.filter((c) => !c.arquivada && c.id !== l.contaId);
+  const destinos = l.tipo === "transf" ? [] : GRUPOS_DESP.filter((g) => l.tipo !== "saida" || g !== grupoDesp(l));
   const m = document.createElement("ul"); m.className = "menu-lanc"; m.setAttribute("role", "menu");
   m.innerHTML = sub("⧉", "Duplicar ...", it("dup", "Na mesma data") + it("dup", "No mês seguinte", "1"))
     + sub("✔", "Marcar como ...", it("marcar", pagoTxt, "1", l.pago) + it("marcar", `Não ${pagoTxt.toLowerCase()}`, "0", !l.pago))
-    + sub("⇄", "Mover para ...", (outrosTipos.map(([t, n]) => it("mover-tipo", n, t)).join("") + contasOutras.map((c) => it("mover-conta", `Conta: ${esc(c.nome)}`, c.id)).join("")) || `<li><button type="button" disabled>Nada para mover</button></li>`)
+    + (destinos.length ? sub("⇄", "Mover para ...", destinos.map((g) => it("mover-grupo", GRUPOS[g], g)).join("")) : "")
     + `<li class="sep"></li>`
-    + sub("🏷", "Aplicar Tags ...", db.tags.map((t) => it("tag", esc(t.nome), t.id, (l.tags || []).includes(t.id))).join("") || `<li><button type="button" disabled>Nenhuma tag cadastrada</button></li>`)
-    + sub("⌂", "Aplicar Centro de Custo ...", it("centro", "Nenhum", "", !l.centroId) + db.centros.map((c) => it("centro", esc(c.nome), c.id, l.centroId === c.id)).join(""))
-    + item("recibo", "📄", l.recibo ? `Ver recibo nº ${numRecibo(l.recibo.numero)}` : "Gerar Recibo")
+    + item("recibo", "📄", "Gerar Recibo")
     + `<li class="sep"></li>` + item("excluir", "🗑", "Excluir").replace("<li>", '<li class="perigo">');
   document.body.appendChild(m); btn.classList.add("on");
   const r = btn.getBoundingClientRect(), h = m.offsetHeight, w = m.offsetWidth;
@@ -1679,10 +1677,8 @@ function opLanc(l, op, v) {
     salvar(); render(); return toast(v ? "Duplicado no mês seguinte" : "Duplicado");
   }
   if (op === "marcar") { l.pago = v === "1"; l.pagoEm = l.pago ? l.pagoEm || HOJE : null; salvar(); return render(); }
-  if (op === "mover-tipo") { l.tipo = v; l.categoriaId = null; salvar(); render(); return toast(`Movido para ${v === "entrada" ? "Recebimentos" : "Despesas"}`); }
-  if (op === "mover-conta") { l.contaId = v; salvar(); render(); return toast(`Movido para ${conta(v)?.nome}`); }
-  if (op === "tag") { l.tags = (l.tags || []).includes(v) ? l.tags.filter((t) => t !== v) : [...(l.tags || []), v]; salvar(); return render(); }
-  if (op === "centro") { l.centroId = v || null; salvar(); return render(); }
+  // Mover para um tipo de despesa: a categoria só fica se for desse grupo (recebimento vira despesa)
+  if (op === "mover-grupo") { if (l.tipo !== "saida" || fcat(l.categoriaId)?.grupo !== v) l.categoriaId = null; l.tipo = "saida"; l.grupoDesp = v; salvar(); render(); return toast(`Movido para ${GRUPOS[v]}`); }
   if (op === "recibo") return l.recibo ? verRecibo(l) : gerarRecibo(l);
   if (op === "excluir") return perguntar("Excluir este lançamento?", "Excluir", () => { db.lancamentos = db.lancamentos.filter((x) => x !== l); salvar(); render(); });
 }
