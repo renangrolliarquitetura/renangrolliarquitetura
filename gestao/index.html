@@ -2130,7 +2130,7 @@ document.addEventListener("dragstart", (e) => { if (e.target.closest?.("[data-dr
 
 /* ===================== recibo em PDF (A4, papel timbrado) ===================== */
 const EMPRESA = { razao: "RENAN GROLLI ARQUITETURA LTDA", cnpj: "54.443.802/0001-03", endereco: "Rua Bandeirantes, 683 · Bela Vista", cidade: "Sorriso - MT", cep: "78.890-049", telefone: "(66) 99985-5772", site: "renangrolliarquitetura.com.br" };
-const numRecibo = (n) => String(n).padStart(4, "0");
+const numRecibo = (n) => (/^\d+$/.test(String(n)) ? String(n).padStart(4, "0") : String(n));
 const MESES_EXT = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 const dataExtenso = (s) => `${Number(s.slice(8, 10))} de ${MESES_EXT[Number(s.slice(5, 7)) - 1]} de ${s.slice(0, 4)}`;
 function porExtenso(v) {
@@ -2221,7 +2221,7 @@ async function pdfRecibo(l) {
 }
 async function gerarRecibo(l, btn) {
   if (!l) return;
-  if (!l.recibo) { const n = db.lancamentos.reduce((m, x) => Math.max(m, x.recibo?.numero || 0), 0) + 1; l.recibo = { numero: n, emitido: HOJE }; salvar(); }
+  if (!l.recibo) { const n = db.lancamentos.reduce((m, x) => Math.max(m, Number(x.recibo?.numero) || 0), 0) + 1; l.recibo = { numero: n, emitido: HOJE }; salvar(); }
   if (btn) { btn.outerHTML = `<button type="button" class="btn" data-act="recibo-ver" data-id="${l.id}">📄 Recibo nº ${numRecibo(l.recibo.numero)} · emitido em ${dataBR(l.recibo.emitido)}</button>`; }
   verRecibo(l);
 }
@@ -2229,21 +2229,35 @@ let urlRecibo = null;
 async function verRecibo(l) {
   if (!l?.recibo) return;
   dlg2.style.width = "min(860px, calc(100vw - 24px))";
-  dlg2.innerHTML = `<div class="dh"><h2 style="margin:0">Recibo nº ${numRecibo(l.recibo.numero)}</h2><button type="button" class="btn sm" id="rec-x" aria-label="Fechar">×</button></div><div class="db" style="padding:0;max-height:none"><p class="muted" id="rec-msg" style="padding:20px;margin:0">Gerando o PDF…</p><iframe id="rec-pdf" title="Recibo em PDF" style="display:none;width:100%;height:68vh;border:0;background:#fff"></iframe></div>
-    <div class="df"><button type="button" class="btn" id="rec-fechar">Fechar</button><a class="btn" id="rec-baixar" download="Recibo ${numRecibo(l.recibo.numero)} - ${esc((pessoa(l.clienteId)?.nome || "Renan Grolli Arquitetura").replace(/[\\/:*?"<>|]/g, ""))}.pdf" aria-disabled="true">Baixar PDF</a><button type="button" class="btn pri" id="rec-imprimir" disabled>Imprimir</button></div>`;
+  dlg2.innerHTML = `<div class="dh"><h2 style="margin:0;display:flex;align-items:center;gap:10px">Recibo nº <input class="input" id="rec-num" value="${esc(numRecibo(l.recibo.numero))}" maxlength="30" aria-label="Número do recibo" title="Edite e tecle Enter" style="width:150px;font:inherit;font-size:18px;padding:4px 8px"></h2><button type="button" class="btn sm" id="rec-x" aria-label="Fechar">×</button></div><div class="db" style="padding:0;max-height:none"><p class="muted" id="rec-msg" style="padding:20px;margin:0">Gerando o PDF…</p><iframe id="rec-pdf" title="Recibo em PDF" style="display:none;width:100%;height:68vh;border:0;background:#fff"></iframe></div>
+    <div class="df"><button type="button" class="btn" id="rec-fechar">Fechar</button><a class="btn" id="rec-baixar" download="Recibo ${esc(numRecibo(l.recibo.numero).replace(/[\\/:*?"<>|]/g, "-"))} - ${esc((pessoa(l.clienteId)?.nome || "Renan Grolli Arquitetura").replace(/[\\/:*?"<>|]/g, ""))}.pdf" aria-disabled="true">Baixar PDF</a><button type="button" class="btn pri" id="rec-imprimir" disabled>Imprimir</button></div>`;
   const fechar = () => dlg2.close();
   dlg2.onclose = () => { dlg2.onclose = null; dlg2.style.width = ""; if (urlRecibo) { URL.revokeObjectURL(urlRecibo); urlRecibo = null; } };
   dlg2.showModal();
   $("#rec-x", dlg2).onclick = fechar; $("#rec-fechar", dlg2).onclick = fechar;
+  // Número do recibo editável: grava e refaz o PDF
+  const campoNum = $("#rec-num", dlg2), montar = () => montarRecibo(l);
+  campoNum.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); campoNum.blur(); } };
+  campoNum.onchange = () => {
+    const v = campoNum.value.trim().toUpperCase(); if (!v) { campoNum.value = numRecibo(l.recibo.numero); return; }
+    if (db.lancamentos.some((x) => x !== l && x.recibo && numRecibo(x.recibo.numero) === v)) { toast("Já existe um recibo com esse número."); campoNum.value = numRecibo(l.recibo.numero); return; }
+    l.recibo.numero = /^\d+$/.test(v) ? Number(v) : v; salvar();
+    const b = dlg.querySelector(`[data-act="recibo-ver"][data-id="${l.id}"]`); if (b) b.textContent = `📄 Recibo nº ${numRecibo(l.recibo.numero)} · emitido em ${dataBR(l.recibo.emitido)}`;
+    $("#rec-baixar", dlg2).download = `Recibo ${numRecibo(l.recibo.numero).replace(/[\\/:*?"<>|]/g, "-")} - ${(pessoa(l.clienteId)?.nome || "Renan Grolli Arquitetura").replace(/[\\/:*?"<>|]/g, "")}.pdf`;
+    montar();
+  };
+  montar();
+}
+async function montarRecibo(l) {
   try {
-    const blob = await pdfRecibo(l); urlRecibo = URL.createObjectURL(blob);
+    const blob = await pdfRecibo(l); if (urlRecibo) URL.revokeObjectURL(urlRecibo); urlRecibo = URL.createObjectURL(blob);
     const fr = $("#rec-pdf", dlg2), a = $("#rec-baixar", dlg2);
-    fr.src = urlRecibo; fr.style.display = "block"; $("#rec-msg", dlg2).remove();
+    fr.src = urlRecibo; fr.style.display = "block"; $("#rec-msg", dlg2)?.remove();
     a.href = urlRecibo; a.removeAttribute("aria-disabled");
     const imp = $("#rec-imprimir", dlg2); imp.disabled = false;
     imp.onclick = () => { try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch { window.open(urlRecibo, "_blank"); } };
   } catch (e) {
-    $("#rec-msg", dlg2).textContent = "Não foi possível gerar o PDF agora. Verifique a internet e tente de novo.";
+    const m = $("#rec-msg", dlg2); if (m) m.textContent = "Não foi possível gerar o PDF agora. Verifique a internet e tente de novo.";
   }
 }
 
