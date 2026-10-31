@@ -358,6 +358,7 @@ table.trans select.ie { width: auto; field-sizing: content; max-width: 240px; pa
 .dcell { display: flex; align-items: center; gap: 6px; }
 .selbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--surface-2); font-size: 13px; }
 .selbar b { margin-right: 6px; }
+.link-rec { border: 0; background: none; color: #1a7fd1; font: inherit; font-size: 13px; cursor: pointer; padding: 0; white-space: nowrap; } .link-rec:hover { text-decoration: underline; }
 table.parc td { padding: 4px 6px; } table.parc .input { padding: 6px 8px; }
 .totais { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 18px; padding: 12px 18px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-2); }
 .totais b { color: var(--ink); margin-left: 4px; }
@@ -1489,7 +1490,7 @@ function tornarAVista(l) {
 }
 const fmtValor = (v) => Number(v || 0).toFixed(2).replace(".", ",");
 function linhasSerie(linhas, pagos = []) {
-  return linhas.map((r, i) => `<tr><td class="small">${i + 1}/${linhas.length}${pagos[i] ? ` <span class="badge b-good">pago</span>` : ""}</td><td><input class="input" type="date" name="pd" value="${r.data}" required></td><td><input class="input" name="pv" inputmode="numeric" data-mask="moeda" value="${R$(r.valor)}" data-act="serie-soma" required style="text-align:right"></td></tr>`).join("");
+  return linhas.map((r, i) => `<tr><td class="small">${i + 1}/${linhas.length}${pagos[i] ? ` <span class="badge b-good">pago</span>` : ""}</td><td><input class="input" type="date" name="pd" value="${r.data}" required></td><td><input class="input" name="pv" inputmode="numeric" data-mask="moeda" value="${R$(r.valor)}" data-act="serie-soma" required style="text-align:right"></td><td class="rec-acao"></td></tr>`).join("");
 }
 function formSerie(l, modo) {
   const membros = membrosSerie(l), mesmo = pagamentoDe(l) === modo && membros.length > 1;
@@ -1502,7 +1503,7 @@ function formSerie(l, modo) {
     ${campo("Frequência", `<select class="input" name="freq" data-act="serie-gerar">${opts(FREQS, freq)}</select>`)}
     ${campo(modo === "parcelado" ? "Valor total" : "Valor de cada vez", inp("total", R$(valor), 'inputmode="numeric" data-mask="moeda" data-act="serie-gerar"'))}
     <div class="field full"><span>${modo === "parcelado" ? "Parcelas (dá para ajustar data e valor de cada uma)" : "Repetições (dá para ajustar data e valor de cada uma)"}</span>
-      <table class="parc"><thead><tr><th>Nº</th><th>Vencimento</th><th class="num">Valor</th></tr></thead><tbody id="serie-linhas">${linhasSerie(linhas, mesmo ? membros.map((x) => x.pago) : [])}</tbody></table>
+      <table class="parc"><thead><tr><th>Nº</th><th>Vencimento</th><th class="num">Valor</th><th></th></tr></thead><tbody id="serie-linhas">${linhasSerie(linhas, mesmo ? membros.map((x) => x.pago) : [])}</tbody></table>
       <p class="small muted" id="serie-soma" style="margin:6px 0 0"></p></div>
   </div>`, "f-serie", `data-id="${l.id}" data-modo="${modo}"`);
   somaSerie();
@@ -1513,11 +1514,39 @@ function gerarSerieDlg() {
   const linhas = gerarLinhas(data0, n, f.freq.value, f.dataset.modo, parseValor(f.total.value) || 0);
   $("#serie-linhas", dlg).innerHTML = linhasSerie(linhas); somaSerie();
 }
-function somaSerie() {
-  const f = dlg.querySelector("form"), vals = [...f.querySelectorAll('[name="pv"]')].map((i) => parseValor(i.value) || 0), tot = Math.round(vals.reduce((a, b) => a + b, 0) * 100) / 100;
-  const alvo = parseValor((f.total || f.valor).value) || 0, difere = (f.dataset.modo || (!f.dataset.id && f.repeticao?.value)) === "parcelado" && Math.abs(tot - alvo) > 0.009;
-  $("#serie-soma", dlg).innerHTML = `Soma: <b>${R$(tot)}</b>${difere ? ` <span style="color:var(--critical)">(o valor total informado é ${R$(alvo)})</span>` : ""}`;
+// Parcelas: a soma tem de bater com o total. Na parcela alterada, "Recalcular parcelas" (as demais absorvem a diferença);
+// na linha do total, "Recalcular total" (o total passa a ser a soma), como no Zenply
+const modoSerieForm = (f) => f.dataset.modo || f.repeticao?.value || "";
+const totalSerieForm = (f) => Math.round((parseValor(f.total ? f.total.value : f.totalSerie?.value) || 0) * 100) / 100;
+const somaPv = (f) => Math.round([...f.querySelectorAll('[name="pv"]')].reduce((a, i) => a + (parseValor(i.value) || 0), 0) * 100) / 100;
+function somaSerie(el) {
+  const f = dlg.querySelector("form"); if (!f) return;
+  if (el?.name === "pv") el.dataset.editado = "1";
+  const tot = somaPv(f), alvo = totalSerieForm(f), parc = modoSerieForm(f) === "parcelado", difere = parc && Math.abs(tot - alvo) > 0.009;
+  f.querySelectorAll("#serie-linhas tr").forEach((tr) => {
+    const pv = tr.querySelector('[name="pv"]'), c = tr.querySelector(".rec-acao"); if (!c) return;
+    c.innerHTML = pv.dataset.editado ? (difere ? `<button type="button" class="link-rec" data-act="serie-rec-parc">Recalcular parcelas ↻</button>` : `<span class="small muted" title="Valor alterado">✎</span>`) : "";
+  });
+  $("#serie-soma", dlg).innerHTML = parc
+    ? `Total: <b>${R$(tot)}</b>${difere ? ` <span style="color:var(--critical)">≠ valor total de ${R$(alvo)}</span> <button type="button" class="link-rec" data-act="serie-rec-total">Recalcular total ↻</button>` : ""}`
+    : `Soma: <b>${R$(tot)}</b>`;
 }
+function recalcParcelas() {
+  const f = dlg.querySelector("form"), pvs = [...f.querySelectorAll('[name="pv"]')];
+  const fixas = pvs.filter((i) => i.dataset.editado), livres = pvs.filter((i) => !i.dataset.editado);
+  const resto = Math.round((totalSerieForm(f) - fixas.reduce((a, i) => a + (parseValor(i.value) || 0), 0)) * 100) / 100;
+  if (!livres.length) return toast("Todas as parcelas foram alteradas; use Recalcular total.");
+  if (resto <= 0) return toast("As parcelas alteradas já passam do valor total.");
+  dividir(resto, livres.length).forEach((v, i) => (livres[i].value = R$(v)));
+  somaSerie();
+}
+function recalcTotal() {
+  const f = dlg.querySelector("form"), tot = somaPv(f);
+  if (f.total) f.total.value = R$(tot); else { f.totalSerie.value = tot; if (!f.dataset.id && f.valor) f.valor.value = R$(tot); }
+  somaSerie();
+}
+const erroSomaSerie = (f) => (modoSerieForm(f) === "parcelado" && f.querySelector('[name="pv"]') && Math.abs(somaPv(f) - totalSerieForm(f)) > 0.009
+  ? `A soma das parcelas (${R$(somaPv(f))}) precisa ser igual ao valor total (${R$(totalSerieForm(f))}). Use "Recalcular parcelas" ou "Recalcular total".` : "");
 // Novo lançamento parcelado/repetido: mostra as linhas para ajustar antes de salvar
 function gerarLancSerie(el) {
   const f = dlg.querySelector('form[data-form="lanc"]'), box = $("#lanc-parc", dlg); if (!f || !box) return;
@@ -1527,6 +1556,7 @@ function gerarLancSerie(el) {
   const n = Math.min(Math.max(Number(f.vezes.value) || 2, 2), 120);
   const total = editando && modo === "parcelado" ? atuais.reduce((a, i) => a + (parseValor(i.value) || 0), 0) : parseValor(f.valor.value) || 0;
   const data0 = editando ? f.querySelector('[name="pd"]').value || f.data.value : f.data.value;
+  f.totalSerie.value = Math.round(total * 100) / 100;
   $("#serie-linhas", dlg).innerHTML = linhasSerie(gerarLinhas(data0 || HOJE, n, f.freq.value, modo, Math.round(total * 100) / 100)); somaSerie();
 }
 const novoLanc = (o) => ({ id: uid(), categoriaId: null, contaId: fConta === "todas" ? db.contas[0].id : fConta, contaDestinoId: null, competencia: o.data.slice(0, 7), forma: "", documento: "", centroId: null, tags: [], obs: "", descricao: "", clienteId: null, prospeccaoId: null, parcela: null, pagoEm: o.pago ? o.data : null, ...o });
@@ -1766,7 +1796,7 @@ function formLanc(l = {}) {
       const membros = novo ? [l] : membrosSerie(l), modo = novo ? "" : { avista: "", parcelado: "parcelado", repetir: "repetir" }[pagamentoDe(l)];
       const linhas = modo ? membros.map((x) => ({ data: x.data, valor: x.valor })) : [];
       return `<div class="field full" data-show-t="entrada saida"><span>Pagamento</span><div class="actions"><select class="input" name="repeticao" data-act="lanc-serie"><option value="">À vista</option><option value="parcelado" ${modo === "parcelado" ? "selected" : ""}>Criar parcelas: dividir o valor em</option><option value="repetir" ${modo === "repetir" ? "selected" : ""}>Repetição: repetir o valor</option></select><input class="input" type="number" name="vezes" min="2" max="120" value="${modo ? membros.length : 2}" style="width:80px" aria-label="Quantidade" data-act="lanc-serie"><span class="small muted">vezes,</span><select class="input" name="freq" aria-label="Frequência" data-act="lanc-serie">${opts(FREQS, l.freq || "mensal")}</select></div>
-      <div id="lanc-parc" ${modo ? "" : "hidden"} style="margin-top:10px"><span class="small muted">Dá para ajustar a data e o valor de cada uma:</span><table class="parc"><thead><tr><th>Nº</th><th>Vencimento</th><th class="num">Valor</th></tr></thead><tbody id="serie-linhas">${modo ? linhasSerie(linhas, membros.map((x) => x.pago)) : ""}</tbody></table><p class="small muted" id="serie-soma" style="margin:6px 0 0"></p></div></div>`;
+      <div id="lanc-parc" ${modo ? "" : "hidden"} style="margin-top:10px"><span class="small muted">Dá para ajustar a data e o valor de cada uma:</span><table class="parc"><thead><tr><th>Nº</th><th>Vencimento</th><th class="num">Valor</th><th></th></tr></thead><tbody id="serie-linhas">${modo ? linhasSerie(linhas, membros.map((x) => x.pago)) : ""}</tbody></table><input type="hidden" name="totalSerie" value="${modo ? Math.round(soma(membros) * 100) / 100 : ""}"><p class="small muted" id="serie-soma" style="margin:6px 0 0"></p></div></div>`;
     })()}
     ${campo("Observações", `<textarea class="input" name="obs" rows="2">${esc(l.obs)}</textarea>`, true)}<input type="hidden" name="prospeccaoId" value="${esc(l.prospeccaoId || "")}">
     ${novo ? "" : `<div class="field full"><span>Recibo</span><div class="actions">${l.recibo ? `<button type="button" class="btn" data-act="recibo-ver" data-id="${l.id}">📄 Recibo nº ${numRecibo(l.recibo.numero)} · emitido em ${dataBR(l.recibo.emitido)}</button>` : `<button type="button" class="btn" data-act="recibo-gerar" data-id="${l.id}">📄 Gerar recibo</button>`}<span class="small muted">Usa os dados já salvos desta transação.</span></div></div>`}
@@ -1809,6 +1839,8 @@ document.addEventListener("click", (e) => {
     "editar-lanc": () => { if (finLiberado()) formLanc(db.lancamentos.find((l) => l.id === id)); },
     "f-linha": () => { if (e.target.closest("input, button, select, a")) return; linhaEd = id; fecharMenuLanc(); render(); const d = document.querySelector(`tr.editando [data-k="descricao"]`); if (d) { d.focus(); d.setSelectionRange(d.value.length, d.value.length); } },
     "f-linha-ok": () => { linhaEd = null; render(); },
+    "serie-rec-parc": () => recalcParcelas(),
+    "serie-rec-total": () => recalcTotal(),
     "f-ord": () => { fOrd = fOrd.k === v ? { k: v, dir: -fOrd.dir } : { k: v, dir: 1 }; render(); },
     "f-menu": () => abrirMenuLanc(el.isConnected ? el : document.querySelector(`.seta-lanc[data-id="${id}"]`), db.lancamentos.find((l) => l.id === id)),
     "f-op": () => { const l = db.lancamentos.find((x) => x.id === id); if (l) opLanc(l, el.dataset.op, v); },
@@ -1863,7 +1895,7 @@ document.addEventListener("change", (e) => {
     "f-ed": () => editarNaLinha(el),
     "f-pagto": () => { const l = db.lancamentos.find((z) => z.id === el.dataset.id), m = el.value; render(); if (!l || m === pagamentoDe(l)) return; if (m === "avista") tornarAVista(l); else formSerie(l, m); },
     "serie-gerar": () => gerarSerieDlg(),
-    "serie-soma": () => somaSerie(),
+    "serie-soma": () => somaSerie(el),
     "lanc-serie": () => gerarLancSerie(el),
   };
   if (A[act]) A[act]();
@@ -1922,6 +1954,7 @@ document.addEventListener("submit", (e) => {
   const erro = (msg) => { const el = $("#err-dlg"); if (el) el.textContent = msg; };
   if (nome === "lanc") {
     const valor = parseValor(v("valor")), tipo = v("tipo");
+    if (tipo !== "transf" && erroSomaSerie(f)) return erro(erroSomaSerie(f));
     if (!valor || isNaN(valor) || valor <= 0) return erro("Informe um valor maior que zero.");
     if (tipo === "transf" && (!v("contaDestinoId") || v("contaDestinoId") === v("contaId"))) return erro("Escolha uma conta de destino diferente da origem.");
     const pago = fd.get("pago") === "on";
@@ -1975,6 +2008,7 @@ document.addEventListener("submit", (e) => {
     const datas = fd.getAll("pd").map(String), vals = fd.getAll("pv").map((x) => parseValor(x));
     if (datas.length !== Math.min(Math.max(Number(v("n")) || 2, 2), 120)) return gerarSerieDlg();
     if (datas.some((d) => !d) || vals.some((x) => !x || isNaN(x) || x <= 0)) return erro("Preencha data e valor (maior que zero) em todas as linhas.");
+    if (erroSomaSerie(f)) return erro(erroSomaSerie(f));
     aplicarSerie(l, f.dataset.modo, v("freq"), datas.map((d, i) => ({ data: d, valor: Math.round(vals[i] * 100) / 100 })));
     salvar(); dlg.close(); toast(f.dataset.modo === "parcelado" ? `${datas.length} parcelas salvas` : `${datas.length} repetições salvas`); return render();
   }
