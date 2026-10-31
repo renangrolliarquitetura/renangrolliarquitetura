@@ -303,6 +303,7 @@ table.dre tr.t td { font-weight: 650; background: var(--surface-2); }
 .tabs.full button { flex: 1; padding: 8px 4px; font-size: 13px; }
 .tabs button { border: 0; background: transparent; color: var(--ink-2); font: inherit; font-weight: 500; padding: 8px 12px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
 .tabs button.on { color: var(--ink); border-bottom-color: var(--ink); }
+.tabs button.seta-desp { padding: 4px 10px; font-size: 18px; line-height: 1; background: var(--surface-2); border-radius: 3px 3px 0 0; }
 .topo { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, .9fr); gap: 20px; align-items: start; }
 .mini .legend { display: none; }
 @media (max-width: 1000px) { .topo { grid-template-columns: minmax(0, 1fr); } }
@@ -1073,7 +1074,7 @@ function resumoMes(ym) {
 
 /* ---------- estado da tela ---------- */
 let selLanc = new Set(), lancVisiveis = [];
-let fMes = HOJE.slice(0, 7), fConta = "todas", fDia = HOJE, fAba = "entrada", fStatus = "todos", fBusca = "", fCentro = "";
+let fMes = HOJE.slice(0, 7), fConta = "todas", fDia = HOJE, fAba = "entrada", fGrupo = "", fDespAberta = false, fStatus = "todos", fBusca = "", fCentro = "";
 let fRel = "desp-categoria", fRelDe = HOJE.slice(0, 8) + "01", fRelAte = addDias(addMeses(HOJE.slice(0, 8) + "01", 1), -1), fRelPagos = true, fRelPend = true;
 let fCfg = "contas", fCfgGrupo = "receita", fCtAba = "Todos", fCtBusca = "", fCtSel = null;
 
@@ -1204,7 +1205,7 @@ function finTransacoes() {
   const atual = resumoMes(fMes);
   const tres = [-1, 0, 1].map((n) => { const ym = ymAdd(fMes, n), r = resumoMes(ym); return { ym, r: r.rPrev, d: r.dPrev }; });
   const q = fBusca.toLowerCase();
-  let ls = db.lancamentos.filter((l) => noMes(l, fMes) && l.tipo === fAba && filtraConta(l));
+  let ls = db.lancamentos.filter((l) => noMes(l, fMes) && l.tipo === fAba && filtraConta(l) && (fAba !== "saida" || !fGrupo || fcat(l.categoriaId)?.grupo === fGrupo));
   const total = ls;
   if (fStatus === "pagos") ls = ls.filter((l) => l.pago);
   if (fStatus === "pendentes") ls = ls.filter((l) => !l.pago);
@@ -1224,7 +1225,7 @@ function finTransacoes() {
         <div class="small muted">Previsão de fechamento do mês: ${R$(saldoTotal() + (atual.rPrev - atual.rReal) - (atual.dPrev - atual.dReal))}</div>
         <div class="actions" style="margin-top:10px"><a class="btn sm" href="#/financeiro/importar">Importar extrato OFX</a><a class="btn sm" href="#/financeiro/importar">Importar movimentações</a></div></div>
     </div>
-    <div class="bar mb" style="justify-content:flex-start;gap:24px">${seletorMes()}<div class="tabs">${[["entrada", "Recebimentos"], ["saida", "Despesas"], ["transf", "Transferências"]].map(([v, l]) => `<button class="${fAba === v ? "on" : ""}" data-act="f-aba" data-v="${v}">${l}</button>`).join("")}</div></div>
+    <div class="bar mb" style="justify-content:flex-start;gap:24px">${seletorMes()}<div class="tabs">${[["entrada", "Recebimentos"], ...(fDespAberta ? GRUPOS_DESP.map((g) => ["saida", GRUPOS[g], g]) : [["saida", "Despesas", ""]])].map(([v, l, g = ""]) => `<button class="${fAba === v && fGrupo === g ? "on" : ""}" data-act="f-aba" data-v="${v}" data-g="${g}">${l}</button>`).join("")}<button class="seta-desp" data-act="f-desp-abrir" title="${fDespAberta ? "Recolher" : "Ver despesas fixas, variáveis, pessoas e impostos"}" aria-label="${fDespAberta ? "Recolher tipos de despesa" : "Expandir tipos de despesa"}" aria-expanded="${fDespAberta}">${fDespAberta ? "‹" : "›"}</button><button class="${fAba === "transf" ? "on" : ""}" data-act="f-aba" data-v="transf" data-g="">Transferências</button></div></div>
     <div class="actions mb">
       <select class="input" data-act="f-status" aria-label="Status de pagamento">${[["todos", "Status: Todos"], ["pagos", "Status: Pagos"], ["pendentes", "Status: Não pagos"]].map(([v, l]) => `<option value="${v}" ${fStatus === v ? "selected" : ""}>${l}</option>`).join("")}</select>
       <input class="input" id="f-busca" style="flex:1;min-width:180px;width:auto" placeholder="Pesquisar na tabela" value="${esc(fBusca)}">
@@ -1714,7 +1715,8 @@ document.addEventListener("click", (e) => {
     "f-sel-del": () => { const ids = [...selLanc].filter((x) => lancVisiveis.includes(x)); perguntar(`Excluir ${ids.length} lançamento(s)? Não dá para desfazer.`, "Excluir", () => { db.lancamentos = db.lancamentos.filter((l) => !ids.includes(l.id)); selLanc.clear(); salvar(); render(); toast(`${ids.length} lançamento(s) excluídos`); }); },
     "f-mes": () => { selLanc.clear(); fMes = ymAdd(fMes, Number(v)); fDia = fMes === HOJE.slice(0, 7) ? HOJE : fMes + "-01"; render(); },
     "f-dia": () => { fDia = v; render(); },
-    "f-aba": () => { selLanc.clear(); fAba = v; render(); },
+    "f-aba": () => { selLanc.clear(); fAba = v; fGrupo = el.dataset.g || ""; render(); },
+    "f-desp-abrir": () => { selLanc.clear(); fDespAberta = !fDespAberta; fAba = "saida"; fGrupo = fDespAberta ? GRUPOS_DESP[0] : ""; render(); },
     "f-rel": () => { fRel = v; render(); },
     "f-rel-per": () => { if (v === "mes") { fRelDe = fMes + "-01"; fRelAte = addDias(addMeses(fRelDe, 1), -1); } else if (v === "ano") { fRelDe = fMes.slice(0, 4) + "-01-01"; fRelAte = fMes.slice(0, 4) + "-12-31"; } else { fRelAte = addDias(addMeses(HOJE.slice(0, 8) + "01", 1), -1); fRelDe = addMeses(HOJE.slice(0, 8) + "01", -11); } render(); },
     "f-ct-aba": () => { fCtAba = v; render(); },
