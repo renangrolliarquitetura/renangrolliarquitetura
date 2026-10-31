@@ -1490,7 +1490,7 @@ function tornarAVista(l) {
 }
 const fmtValor = (v) => Number(v || 0).toFixed(2).replace(".", ",");
 function linhasSerie(linhas, pagos = []) {
-  return linhas.map((r, i) => `<tr><td class="small">${i + 1}/${linhas.length}${pagos[i] ? ` <span class="badge b-good">pago</span>` : ""}</td><td><input class="input" type="date" name="pd" value="${r.data}" required></td><td><input class="input" name="pv" inputmode="numeric" data-mask="moeda" value="${R$(r.valor)}" data-act="serie-soma" required style="text-align:right"></td><td class="rec-acao"></td></tr>`).join("");
+  return linhas.map((r, i) => `<tr><td class="small">${i + 1}/${linhas.length}${pagos[i] ? ` <span class="badge b-good">pago</span>` : ""}</td><td><input class="input" type="date" name="pd" value="${r.data}" required></td><td><input class="input" name="pv" inputmode="numeric" data-mask="moeda" value="${R$(r.valor)}" data-act="serie-soma" ${pagos[i] ? 'data-pago="1"' : ""} required style="text-align:right"></td><td class="rec-acao"></td></tr>`).join("");
 }
 function formSerie(l, modo) {
   const membros = membrosSerie(l), mesmo = pagamentoDe(l) === modo && membros.length > 1;
@@ -1542,19 +1542,38 @@ function recalcParcelas() {
 }
 function recalcTotal() {
   const f = dlg.querySelector("form"), tot = somaPv(f);
-  if (f.total) f.total.value = R$(tot); else { f.totalSerie.value = tot; if (!f.dataset.id && f.valor) f.valor.value = R$(tot); }
+  if (f.total) f.total.value = R$(tot); else { f.totalSerie.value = tot; if (f.valor) f.valor.value = R$(tot); }
   somaSerie();
 }
 const erroSomaSerie = (f) => (modoSerieForm(f) === "parcelado" && f.querySelector('[name="pv"]') && Math.abs(somaPv(f) - totalSerieForm(f)) > 0.009
   ? `A soma das parcelas (${R$(somaPv(f))}) precisa ser igual ao valor total (${R$(totalSerieForm(f))}). Use "Recalcular parcelas" ou "Recalcular total".` : "");
 // Novo lançamento parcelado/repetido: mostra as linhas para ajustar antes de salvar
+function rotuloValorLanc(f) {
+  const sp = f.valor?.closest(".field")?.querySelector("span"); if (sp) sp.textContent = f.repeticao?.value === "parcelado" && f.querySelector('[name="tipo"]:checked')?.value !== "transf" ? "Valor total *" : "Valor *";
+}
 function gerarLancSerie(el) {
   const f = dlg.querySelector('form[data-form="lanc"]'), box = $("#lanc-parc", dlg); if (!f || !box) return;
-  const modo = f.repeticao.value; box.hidden = !modo; if (!modo) return;
+  const modo = f.repeticao.value; box.hidden = !modo; rotuloValorLanc(f); if (!modo) return;
   const atuais = [...f.querySelectorAll('[name="pv"]')], editando = !!f.dataset.id && atuais.length;
-  if (editando && el && (el.name === "valor" || el.name === "data")) return; // série já existente: data/valor deste item não refazem as linhas
+  const somaAtual = Math.round(atuais.reduce((a, i) => a + (parseValor(i.value) || 0), 0) * 100) / 100;
+  // Parcelado: o "Valor total" lá em cima redistribui as parcelas (as já pagas ficam como estão)
+  if (modo === "parcelado" && el?.name === "valor" && atuais.length) {
+    const total = Math.round((parseValor(f.valor.value) || 0) * 100) / 100; f.totalSerie.value = total;
+    const pagas = atuais.filter((i) => i.dataset.pago), livres = atuais.filter((i) => !i.dataset.pago);
+    const resto = Math.round((total - pagas.reduce((a, i) => a + (parseValor(i.value) || 0), 0)) * 100) / 100;
+    if (livres.length && resto > 0) { dividir(resto, livres.length).forEach((v, i) => { livres[i].value = R$(v); delete livres[i].dataset.editado; }); }
+    return somaSerie();
+  }
+  if (editando && el && (el.name === "valor" || el.name === "data")) return; // repetição já existente: data/valor deste item não refazem as linhas
   const n = Math.min(Math.max(Number(f.vezes.value) || 2, 2), 120);
-  const total = editando && modo === "parcelado" ? atuais.reduce((a, i) => a + (parseValor(i.value) || 0), 0) : parseValor(f.valor.value) || 0;
+  let total;
+  if (modo === "parcelado") {
+    total = el?.name === "repeticao" && atuais.length ? somaAtual : parseValor(f.valor.value) || somaAtual || 0; // vindo de uma repetição: soma o que já existe
+    f.valor.value = R$(Math.round(total * 100) / 100);
+  } else {
+    total = el?.name === "repeticao" && atuais.length ? parseValor(atuais[0].value) || 0 : parseValor(f.valor.value) || 0; // vindo de parcelas: o valor de cada vez é o de uma parcela
+    if (el?.name === "repeticao" && atuais.length) f.valor.value = R$(total);
+  }
   const data0 = editando ? f.querySelector('[name="pd"]').value || f.data.value : f.data.value;
   f.totalSerie.value = Math.round(total * 100) / 100;
   $("#serie-linhas", dlg).innerHTML = linhasSerie(gerarLinhas(data0 || HOJE, n, f.freq.value, modo, Math.round(total * 100) / 100)); somaSerie();
@@ -1782,7 +1801,7 @@ function formLanc(l = {}) {
   abrir(novo ? { entrada: "Novo recebimento", saida: "Nova despesa", transf: "Nova transferência" }[tipo] : "Detalhes da transação", `<div class="form">
     <div class="field full"><span>Tipo</span><div class="chips">${[["entrada", "Recebimento"], ["saida", "Despesa"], ["transf", "Transferência"]].map(([v, r]) => `<label class="chip"><input type="radio" name="tipo" value="${v}" ${tipo === v ? "checked" : ""} data-act="tipo-lanc">${r}</label>`).join("")}</div></div>
     ${campo("Data / vencimento *", inp("data", l.data || (fMes === HOJE.slice(0, 7) ? HOJE : fMes + "-01"), 'type="date" required data-act="lanc-serie"'))}
-    ${campo("Valor *", inp("valor", l.valor != null ? R$(l.valor) : "", 'inputmode="numeric" placeholder="R$ 0,00" data-mask="moeda" required data-act="lanc-serie"'))}
+    ${campo(!novo && pagamentoDe(l) === "parcelado" && tipo !== "transf" ? "Valor total *" : "Valor *", inp("valor", l.valor != null ? R$(!novo && pagamentoDe(l) === "parcelado" && tipo !== "transf" ? Math.round(soma(membrosSerie(l)) * 100) / 100 : l.valor) : "", 'inputmode="numeric" placeholder="R$ 0,00" data-mask="moeda" required data-act="lanc-serie"'))}
     ${campo("Descrição", inp("descricao", l.descricao, 'placeholder="Ex.: PROJETO ARQUITETÔNICO - NOME DO CLIENTE"'), true)}
     <label class="field" data-show-t="entrada saida"><span>${tipo === "saida" ? "Pago a" : "Recebido de"}</span><select class="input" name="clienteId" data-act="cliente-lanc" data-prev="${l.clienteId || ""}">${opcoesPessoa(l.clienteId)}</select></label>
     <label class="field" data-show-t="entrada saida"><span>Categoria</span><select class="input" name="categoriaId" id="sel-cat" data-act="cat-lanc" data-prev="${l.categoriaId || ""}">${opcoesCategoria(tipo, l.categoriaId)}</select></label>
@@ -1803,6 +1822,7 @@ function formLanc(l = {}) {
   </div>`, "lanc", `data-id="${l.id || ""}"`);
   if (l.id) dlg.querySelector(".df").insertAdjacentHTML("afterbegin", `<button type="button" class="btn danger" style="margin-right:auto" data-act="del-lanc" data-id="${l.id}">Excluir</button>`);
   mostrarPorTipo();
+  if ($("#serie-linhas tr", dlg)) somaSerie();
 }
 function mostrarPorTipo() {
   const t = dlg.querySelector('[name="tipo"]:checked')?.value;
@@ -1832,7 +1852,7 @@ function exportarFin(tipo) {
 document.addEventListener("click", (e) => {
   const el = e.target.closest("[data-act]"); if (!el) return;
   const { act, id, v } = el.dataset;
-  if (el.tagName === "INPUT" || el.tagName === "SELECT") { if (act === "tipo-lanc") { $("#sel-cat", dlg).innerHTML = opcoesCategoria(el.value, null); $("#sel-cat", dlg).dataset.prev = ""; mostrarPorTipo(); } return; }
+  if (el.tagName === "INPUT" || el.tagName === "SELECT") { if (act === "tipo-lanc") { $("#sel-cat", dlg).innerHTML = opcoesCategoria(el.value, null); $("#sel-cat", dlg).dataset.prev = ""; mostrarPorTipo(); rotuloValorLanc(el.form); } return; }
   const A = {
     bloquear: () => { finAte = 0; guardarSessao(); ir("#/painel"); },
     "novo-lanc": () => formLanc({ tipo: el.dataset.tipo || "entrada", clienteId: el.dataset.cliente || null, prospeccaoId: el.dataset.prosp || null }),
@@ -1961,6 +1981,10 @@ document.addEventListener("submit", (e) => {
     const base = { tipo, valor, data: v("data"), descricao: v("descricao").toUpperCase(), pago, pagoEm: pago ? v("pagoEm") || v("data") : null, contaId: v("contaId"), contaDestinoId: tipo === "transf" ? v("contaDestinoId") : null,
       categoriaId: tipo === "transf" ? null : v("categoriaId") || null, clienteId: tipo === "transf" ? null : v("clienteId") || null, prospeccaoId: tipo === "transf" ? null : (f.dataset.id && db.lancamentos.find((x) => x.id === f.dataset.id)?.prospeccaoId) || fd.get("prospeccaoId") || null,
       competencia: v("competencia") || v("data").slice(0, 7), forma: v("forma"), documento: (f.dataset.id && db.lancamentos.find((x) => x.id === f.dataset.id)?.documento) || "", centroId: v("centroId") || null, tags: (f.dataset.id && db.lancamentos.find((x) => x.id === f.dataset.id)?.tags) || [], obs: v("obs").toUpperCase() };
+    if (tipo !== "transf" && v("repeticao") === "parcelado" && f.dataset.id) { // lá em cima é o valor total; o deste item vem da sua linha
+      const alvo0 = db.lancamentos.find((l) => l.id === f.dataset.id), i0 = membrosSerie(alvo0).indexOf(alvo0), pv0 = fd.getAll("pv")[i0];
+      base.valor = pv0 != null ? Math.round((parseValor(pv0) || 0) * 100) / 100 : alvo0.valor;
+    }
     if (f.dataset.id && tipo !== "transf") {
       const alvo = db.lancamentos.find((l) => l.id === f.dataset.id), membros = membrosSerie(alvo);
       const modoAntes = { avista: "", parcelado: "parcelado", repetir: "repetir" }[pagamentoDe(alvo)], modo = v("repeticao");
