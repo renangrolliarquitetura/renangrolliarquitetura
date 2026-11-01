@@ -1045,7 +1045,7 @@ function formProsp(p = {}, cancelar = false) {
     <div class="field full"><span>Tipos de projeto (marque quantos quiser)</span><div class="chips">${db.tipos.map((t) => `<label class="chip"><input type="checkbox" name="tipos" value="${t.id}" ${(p.tipos || []).includes(t.id) ? "checked" : ""}>${esc(t.nome)}</label>`).join("")}</div>
       <input class="input" name="novoTipo" placeholder="Outro tipo (cria um novo)" style="max-width:280px;margin-top:6px"></div>
     ${campo("Situação", `<select class="input" name="status" data-act="status-form">${opts(Object.keys(STATUS).map((s) => [s, STATUS[s].label]), st)}</select>`)}
-    ${verValores() ? campo("Valor da proposta (R$)", inp("valor", p.valor != null ? String(p.valor).replace(".", ",") : "", 'inputmode="decimal" placeholder="0,00"')) : ""}
+    ${verValores() ? campo("Valor da proposta (R$)", inp("valor", p.valor != null ? R$(p.valor) : "", 'inputmode="numeric" placeholder="R$ 0,00" data-mask="moeda"')) : ""}
     ${campo("Etapa da esteira", `<select class="input" name="esteira">${opts(ESTEIRA, p.id ? etapaDe(p) : ESTEIRA[0])}</select>`)}
     ${campo("Responsável", `<select class="input" name="responsavelId">${opcoesPessoas(p.responsavelId)}</select>`)}
     ${campo("Andamento", `<select class="input" name="andamento">${opts(Object.entries(ANDAMENTOS).map(([k, a]) => [k, a.label]), p.andamento, "—")}</select>`)}
