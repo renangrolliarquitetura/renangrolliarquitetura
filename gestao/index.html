@@ -1011,10 +1011,36 @@ function formCliente(c = {}) {
     ${campo("Observações", `<textarea class="input" name="observacoes" rows="3" data-mask="maiusc" style="text-transform:uppercase">${esc(c.observacoes)}</textarea>`, true)}
   </div>`, "cliente", `data-id="${c.id || ""}"`);
 }
+// Lista de clientes da prospecção, com "+ Novo cliente..." logo no topo para cadastrar sem sair da janela
+const opcoesClienteProsp = (atual) => `<option value="">Selecione o cliente...</option><option value="__novo">+ Novo cliente...</option>`
+  + opts(db.clientes.slice().sort((a, b) => a.nome.localeCompare(b.nome)).map((c) => [c.id, c.nome]), atual);
+function novoClienteRapido(sel) {
+  sel.value = sel.dataset.prev || "";
+  dlg2.innerHTML = `<form><div class="dh"><h2 style="margin:0">Novo cliente</h2></div><div class="db"><div class="form">
+    ${campo("Nome *", inp("nome", "", 'required autofocus data-mask="maiusc" style="text-transform:uppercase"'), true)}
+    ${campo("CPF / CNPJ", inp("documento", "", 'data-mask="doc" inputmode="numeric" placeholder="000.000.000-00"'))}
+    ${campo("Telefone / WhatsApp", inp("telefone", "", 'data-mask="tel" inputmode="tel" placeholder="(00) 00000-0000"'))}
+    ${campo("E-mail", inp("email", "", 'type="email"'))}
+    ${campo("Cidade", inp("cidade", "", 'data-mask="maiusc" style="text-transform:uppercase"'))}
+    <p class="small muted full" style="margin:0">Os demais dados (endereço, origem...) podem ser completados depois em Clientes.</p>
+    </div><div class="err" id="err-dlg2"></div></div><div class="df"><button type="button" class="btn" id="dlg2-x">Cancelar</button><button class="btn pri">Salvar cliente</button></div></form>`;
+  dlg2.showModal();
+  $("#dlg2-x", dlg2).onclick = () => dlg2.close();
+  dlg2.querySelector("form").onsubmit = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const fd = new FormData(e.target), v = (k) => String(fd.get(k) || "").trim(), nome = v("nome").toUpperCase();
+    if (!nome) return;
+    if (db.clientes.some((c) => c.nome.trim().toUpperCase() === nome)) return ($("#err-dlg2", dlg2).textContent = "Já existe um cliente com esse nome. Escolha-o na lista.");
+    const id = uid();
+    db.clientes.push({ id, criado: HOJE, nome, documento: v("documento"), origem: "", telefone: v("telefone"), email: v("email").toLowerCase(), cep: "", endereco: "", numero: "", bairro: "", cidade: v("cidade").toUpperCase(), estado: "", observacoes: "" });
+    salvar(); dlg2.close(); toast("Cliente cadastrado");
+    sel.innerHTML = opcoesClienteProsp(id); sel.value = id; sel.dataset.prev = id;
+  };
+}
 function formProsp(p = {}, cancelar = false) {
   const st = cancelar ? "cancelado" : p.status || "aberto";
   abrir(p.id ? "Editar prospecção" : "Nova prospecção", `<div class="form">
-    ${campo("Cliente *", `<select class="input" name="clienteId" required>${opts(db.clientes.slice().sort((a, b) => a.nome.localeCompare(b.nome)).map((c) => [c.id, c.nome]), p.clienteId, "Selecione o cliente...")}</select>`, true)}
+    ${campo("Cliente *", `<select class="input" name="clienteId" required data-act="prosp-cliente" data-prev="${esc(p.clienteId || "")}">${opcoesClienteProsp(p.clienteId)}</select>`, true)}
     ${campo("Projeto *", inp("titulo", p.titulo, 'required placeholder="Ex.: Reforma apartamento Rua X"'), true)}
     <div class="field full"><span>Tipos de projeto (marque quantos quiser)</span><div class="chips">${db.tipos.map((t) => `<label class="chip"><input type="checkbox" name="tipos" value="${t.id}" ${(p.tipos || []).includes(t.id) ? "checked" : ""}>${esc(t.nome)}</label>`).join("")}</div>
       <input class="input" name="novoTipo" placeholder="Outro tipo (cria um novo)" style="max-width:280px;margin-top:6px"></div>
@@ -2142,6 +2168,7 @@ document.addEventListener("change", (e) => {
   const el = e.target, act = el.dataset?.act;
   if (act === "ano") { filtroAnoPainel = el.value; render(); }
   if (act === "tipo-medio") { filtroTipoMedio = el.value; render(); }
+  if (act === "prosp-cliente") { if (el.value === "__novo") novoClienteRapido(el); else el.dataset.prev = el.value; }
   if (act === "origem-cli") { if (el.value === "__nova") novaOrigem(el); else el.dataset.prev = el.value; }
   if (act === "fp-ano") { fpAno = el.value; render(); }
   if (act === "fp-tipo") { fpTipo = el.value; render(); }
