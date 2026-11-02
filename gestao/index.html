@@ -198,6 +198,8 @@ dialog .dh { display: flex; justify-content: space-between; align-items: center;
 dialog .db { padding: 20px; max-height: 70vh; overflow: auto; }
 .aviso-serie { text-align: center; padding: 34px 28px 28px; }
 .aviso-serie .ic { width: 84px; height: 84px; margin: 0 auto 26px; border: 3px solid #3fc3ee; border-radius: 50%; color: #3fc3ee; display: grid; place-items: center; font: 300 46px/1 Georgia, serif; }
+.aviso-serie.perigo .ic { border-color: #f8bb86; color: #f8bb86; font: 300 52px/1 Georgia, serif; }
+.aviso-serie .btn.del { background: #dc3545; border-color: #dc3545; color: #fff; }
 .aviso-serie h2 { margin: 0 0 12px; font-size: 24px; } .aviso-serie p { margin: 0 0 14px; color: var(--ink-2, inherit); }
 .aviso-serie .ops { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-bottom: 24px; text-align: left; }
 .aviso-serie .ops label { display: flex; gap: 8px; align-items: center; cursor: pointer; } .aviso-serie .ops input { accent-color: var(--accent); }
@@ -1768,7 +1770,7 @@ function opLanc(l, op, v) {
   // Mover para um tipo de despesa: a categoria só fica se for desse grupo (recebimento vira despesa)
   if (op === "mover-grupo") { if (l.tipo !== "saida" || fcat(l.categoriaId)?.grupo !== v) l.categoriaId = null; l.tipo = "saida"; l.grupoDesp = v; salvar(); render(); return toast(`Movido para ${GRUPOS[v]}`); }
   if (op === "recibo") return l.recibo ? verRecibo(l) : gerarRecibo(l);
-  if (op === "excluir") return perguntar("Excluir este lançamento?", "Excluir", () => { db.lancamentos = db.lancamentos.filter((x) => x !== l); salvar(); render(); });
+  if (op === "excluir") return excluirLanc(l);
 }
 // Fora da linha em edição ou do menu: fecha
 document.addEventListener("click", (e) => {
@@ -1780,6 +1782,21 @@ addEventListener("scroll", fecharMenuLanc, { passive: true });
 // Editar item de série (parcelas/repetições): pergunta, como no Zenply, se a mudança vale para os demais
 const somaDias = (data, d) => { const t = new Date(data + "T12:00:00"); t.setDate(t.getDate() + d); return t.toISOString().slice(0, 10); };
 const difDias = (de, ate) => Math.round((new Date(ate + "T12:00:00") - new Date(de + "T12:00:00")) / 864e5);
+// Excluir: em parcelas/repetições pergunta o alcance (só esta, esta e as próximas, anteriores e próximas), como no Zenply
+function excluirLanc(l, depois) {
+  const membros = membrosSerie(l), apagar = (alvos) => { db.lancamentos = db.lancamentos.filter((x) => !alvos.includes(x)); alvos.forEach((x) => selLanc.delete(x.id)); salvar(); if (depois) depois(); render(); toast(alvos.length > 1 ? `${alvos.length} lançamentos excluídos` : "Lançamento excluído"); };
+  if (membros.length < 2) return perguntar("Excluir este lançamento?", "Excluir", () => apagar([l]));
+  const parc = l.modo !== "repetir", nome = parc ? "parcela" : "repetição", nomes = parc ? "parcelas" : "repetições";
+  dlg2.innerHTML = `<div class="aviso-serie perigo"><div class="ic" aria-hidden="true">!</div><h2>Exclusão de item ${parc ? "parcelado" : "recorrente"}</h2><p>Essa transação é parte de ${parc ? "um parcelamento" : "uma repetição"}.<br><b>O que você deseja excluir?</b></p>
+    <div class="ops"><label><input type="radio" name="escopo" value="este" checked> Somente esta ${nome}</label><label><input type="radio" name="escopo" value="proximos"> Esta ${nome} e as próximas</label><label><input type="radio" name="escopo" value="todos"> As ${nomes} anteriores e as próximas</label></div>
+    <div class="bts"><button type="button" class="btn del" id="serie-ok">Sim, excluir!</button><button type="button" class="btn" id="serie-x">Cancelar</button></div></div>`;
+  dlg2.onclose = null; dlg2.showModal();
+  $("#serie-x", dlg2).onclick = () => dlg2.close();
+  $("#serie-ok", dlg2).onclick = () => {
+    const escopo = dlg2.querySelector('[name="escopo"]:checked').value, i = membros.indexOf(l);
+    dlg2.close(); apagar(escopo === "este" ? [l] : escopo === "proximos" ? membros.slice(i) : membros);
+  };
+}
 function alterarSerie(l, mudar, cancelar) {
   const membros = membrosSerie(l);
   if (membros.length < 2) { mudar([l]); return; }
@@ -1892,7 +1909,7 @@ document.addEventListener("click", (e) => {
     "f-op": () => { const l = db.lancamentos.find((x) => x.id === id); if (l) opLanc(l, el.dataset.op, v); },
     "recibo-gerar": () => gerarRecibo(db.lancamentos.find((l) => l.id === id), el),
     "recibo-ver": () => verRecibo(db.lancamentos.find((l) => l.id === id)),
-    "del-lanc": () => perguntar("Excluir este lançamento?", "Excluir", () => { db.lancamentos = db.lancamentos.filter((l) => l.id !== id); salvar(); render(); }),
+    "del-lanc": () => { const l = db.lancamentos.find((x) => x.id === id); if (l) excluirLanc(l, () => dlg.open && dlg.close()); },
     "f-pago": () => { const l = db.lancamentos.find((z) => z.id === id); l.pago = !l.pago; l.pagoEm = l.pago ? HOJE : null; salvar(); render(); toast(l.pago ? (l.tipo === "entrada" ? "Marcado como recebido" : "Marcado como pago") : "Marcado como não pago"); },
     "f-serie": () => { const l = db.lancamentos.find((z) => z.id === id); if (l) formSerie(l, pagamentoDe(l)); },
     "f-sel-limpar": () => { selLanc.clear(); render(); },
