@@ -958,7 +958,7 @@ function blocoTarefas(prospeccaoId) {
       <a href="#" class="nm" data-act="editar-tarefa" data-id="${t.id}">${esc(t.titulo)}</a>${t.urgente ? `<span class="urg">Urgente</span>` : ""}${andamentoTag(t.andamento)}${respTag(t.responsavelId)}${t.prazo ? `<span class="small muted">${dataBR(t.prazo)}</span>` : ""}</li>`).join("")}</ul>` : `<p class="muted">Nenhuma tarefa para este projeto.</p>`}</div>`;
 }
 function formTarefa(t = {}) {
-  const projetos = db.prospeccoes.filter((p) => p.status !== "cancelado" || p.id === t.prospeccaoId).sort((a, b) => a.titulo.localeCompare(b.titulo)).map((p) => [p.id, `${cliente(p.clienteId)?.nome || "?"} · ${p.titulo}`]);
+  const projetos = db.prospeccoes.filter((p) => p.status !== "cancelado" || p.id === t.prospeccaoId).map((p) => [p.id, `${cliente(p.clienteId)?.nome || "?"} · ${p.titulo}`]).sort((a, b) => a[1].localeCompare(b[1], "pt-BR", { sensitivity: "base" }));
   abrir(t.id ? "Editar tarefa" : "Nova tarefa", `<div class="form">
     ${campo("Tarefa *", inp("titulo", t.titulo, 'required placeholder="Ex.: Luminotécnico, alterações, orçamento..."'), true)}
     ${campo("Responsável", `<select class="input" name="responsavelId">${opcoesPessoas(t.responsavelId, "Compartilhada (sem responsável)")}</select>`)}
