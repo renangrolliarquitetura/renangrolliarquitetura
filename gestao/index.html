@@ -548,21 +548,55 @@ function salvar() {
     const porCol = {};
     apagar.forEach((ch) => { const i = ch.indexOf("/"); (porCol[ch.slice(0, i)] ||= []).push(ch.slice(i + 1)); });
     for (const [k, ids] of Object.entries(porCol)) { const { error } = await sb.from("registros").delete().eq("colecao", k).in("id", ids); if (error) throw error; }
-    tentativas = 0;
+    tentativas = 0; tirarPendentes([...gravar.map((r) => chaveReg(r.colecao, r.id)), ...apagar]);
   }).catch((e) => {
-    // Marca o que falhou como pendente e tenta de novo sozinho (renovando o login), até conseguir
+    // Marca o que falhou como pendente (também guardado neste aparelho) e tenta de novo sozinho, renovando o login
     gravar.forEach((r) => espelho.delete(chaveReg(r.colecao, r.id)));
     apagar.forEach((ch) => espelho.set(ch, "?"));
+    guardarPendentes(gravar, apagar);
+    if (e?.status === 401 || /jwt|token/i.test(e?.message || "")) forcarRenovar = true;
     console.error(e); falhou = true; tentativas++;
     clearTimeout(timerRetry); timerRetry = setTimeout(() => { if (sessao) salvar(); }, Math.min(30000, 3000 * tentativas));
   }).finally(() => { emVoo--; if (!emVoo && !temPendente()) falhou = false; avisoSalvar(); });
 }
 // Estado do salvamento: aviso fixo enquanto houver algo não gravado, e o navegador pergunta antes de fechar a página
-let emVoo = 0, falhou = false, tentativas = 0, timerRetry = null;
+let emVoo = 0, falhou = false, tentativas = 0, timerRetry = null, forcarRenovar = false;
+// O que não foi gravado fica guardado neste aparelho até ir para o banco (sobrevive a fechar a página ou sair do login)
+const CHAVE_PEND = "gestao-pendentes";
+const lerPendentes = () => { try { return JSON.parse(localStorage.getItem(CHAVE_PEND) || "{}"); } catch { return {}; } };
+const escreverPendentes = (p) => { try { Object.keys(p).length ? localStorage.setItem(CHAVE_PEND, JSON.stringify(p)) : localStorage.removeItem(CHAVE_PEND); } catch {} };
+function guardarPendentes(gravar, apagar) {
+  const p = lerPendentes(), u = sessao?.id;
+  gravar.forEach((r) => (p[chaveReg(r.colecao, r.id)] = { u, dados: r.dados }));
+  apagar.forEach((ch) => (p[ch] = { u, apagar: true }));
+  escreverPendentes(p);
+}
+function tirarPendentes(chaves) { const p = lerPendentes(); let mudou = false; chaves.forEach((ch) => { if (p[ch]) { delete p[ch]; mudou = true; } }); if (mudou) escreverPendentes(p); }
+// Depois de carregar do banco: reaplica o que tinha ficado pendente deste usuário e grava
+function recuperarPendentes() {
+  const p = lerPendentes(), chaves = Object.keys(p).filter((ch) => p[ch].u === sessao.id); if (!chaves.length) return;
+  chaves.forEach((ch) => {
+    const i = ch.indexOf("/"), k = ch.slice(0, i), id = ch.slice(i + 1), lista = db[k]; if (!lista) return;
+    const pos = lista.findIndex((x) => String(x.id) === id);
+    if (p[ch].apagar) { if (pos >= 0) lista.splice(pos, 1); } else if (pos >= 0) lista[pos] = p[ch].dados; else lista.push(p[ch].dados);
+  });
+  salvar(); toast(`${chaves.length} alteração(ões) que não tinham sido salvas foram recuperadas e enviadas.`);
+}
 const temPendente = () => { if (!sessao) return false; for (const k of COLECOES) { if (!pode("financeiro") && COLECOES_FIN.includes(k)) continue; for (const item of db[k]) if (espelho.get(chaveReg(k, item.id)) !== JSON.stringify(item)) return true; } for (const v of espelho.values()) if (v === "?") return true; return false; };
 async function garantirSessao() {
   const { data } = await sb.auth.getSession(), exp = data?.session?.expires_at || 0;
-  if (!data?.session || exp * 1000 - Date.now() < 60000) { const r = await sb.auth.refreshSession(); if (r.error) throw r.error; }
+  if (forcarRenovar || !data?.session || exp * 1000 - Date.now() < 120000) {
+    const r = await sb.auth.refreshSession();
+    if (r.error) {
+      // Login não renova mais (ex.: saiu em outro aparelho): pede para entrar de novo; o pendente fica guardado e volta depois
+      if (sessao && /refresh|session|invalid|revoked|not found/i.test(r.error.message || "")) {
+        toast("Sua sessão expirou. Entre de novo: o que não foi salvo está guardado e será enviado.");
+        if (canal) sb.removeChannel(canal); sessao = null; await sb.auth.signOut({ scope: "local" });
+      }
+      throw r.error;
+    }
+    forcarRenovar = false;
+  }
 }
 function avisoSalvar() {
   let el = document.getElementById("aviso-salvar");
@@ -612,11 +646,11 @@ async function entrar(user) {
   if (entrando) return; entrando = true;
   carregando = true; render();
   const { data: perfil, error } = await sb.from("perfis").select("nome, admin, ativo, menus").eq("id", user.id).maybeSingle();
-  if (error || !perfil?.ativo) { sessao = null; carregando = false; entrando = false; await sb.auth.signOut(); render(); return toast(error ? "Erro ao abrir: " + error.message : "Seu acesso ainda não foi liberado pelo administrador."); }
+  if (error || !perfil?.ativo) { sessao = null; carregando = false; entrando = false; await sb.auth.signOut({ scope: "local" }); render(); return toast(error ? "Erro ao abrir: " + error.message : "Seu acesso ainda não foi liberado pelo administrador."); }
   sessao = { id: user.id, email: user.email, nome: perfil.nome, admin: perfil.admin, menus: perfil.menus || MENUS_PADRAO };
   await carregarPessoas();
   try { await carregarDados(); } catch (e) { toast("Erro ao carregar os dados: " + e.message); }
-  completarBasicos(); ouvirMudancas();
+  completarBasicos(); recuperarPendentes(); ouvirMudancas();
   carregando = false; entrando = false; render();
 }
 
@@ -2215,7 +2249,7 @@ document.addEventListener("click", (e) => {
   const el = e.target.closest("[data-act]"); if (!el || el.tagName === "SELECT" || el.tagName === "INPUT" && el.type !== "radio") return;
   const { act, id } = el.dataset;
   const acoes = {
-    sair: async () => { finAte = 0; guardarSessao(); if (canal) sb.removeChannel(canal); await sb.auth.signOut(); sessao = null; db = vazio(); espelho = new Map(); ir("#/painel"); },
+    sair: async () => { finAte = 0; guardarSessao(); if (canal) sb.removeChannel(canal); await sb.auth.signOut({ scope: "local" }); sessao = null; db = vazio(); espelho = new Map(); ir("#/painel"); },
     esqueci: () => formEsqueci(),
     "trocar-senha": () => abrir("Trocar minha senha", `<div class="form">${campo("Nova senha (mínimo 6 caracteres) *", `<input class="input" type="password" name="senha" minlength="6" required autocomplete="new-password">`, true)}</div>`, "trocar-senha"),
     "eq-editar": () => formEditarMembro(equipe.find((x) => x.id === id)),
@@ -2573,7 +2607,7 @@ async function conferirInatividade() {
   if (emVoo || falhou || temPendente()) { salvar(); return; } // só sai depois que tudo estiver gravado
   finAte = 0; guardarSessao();
   if (canal) sb.removeChannel(canal);
-  await sb.auth.signOut();
+  await sb.auth.signOut({ scope: "local" });
   sessao = null; db = vazio(); espelho = new Map(); ROTA = "#/painel"; render();
   toast("Sessão encerrada depois de 30 minutos sem uso. Entre de novo.");
 }
@@ -2667,7 +2701,7 @@ sb.auth.onAuthStateChange((evento, s) => {
   if (evento === "PASSWORD_RECOVERY") { recuperandoSenha = true; carregando = false; return render(); }
   if (evento === "SIGNED_IN" || evento === "INITIAL_SESSION") {
     const parada = evento === "INITIAL_SESSION" && lerAtividade() && Date.now() - lerAtividade() > INATIVO_MS;
-    if (s?.user && parada) { setTimeout(async () => { await sb.auth.signOut(); carregando = false; render(); toast("Sessão encerrada depois de 30 minutos sem uso. Entre de novo."); }); return; }
+    if (s?.user && parada) { setTimeout(async () => { await sb.auth.signOut({ scope: "local" }); carregando = false; render(); toast("Sessão encerrada depois de 30 minutos sem uso. Entre de novo."); }); return; }
     if (s?.user && sessao?.id !== s.user.id) setTimeout(() => entrar(s.user));
     else if (!s) { carregando = false; render(); }
   }
