@@ -221,6 +221,8 @@ tr.link { cursor: pointer; } tr.link:hover td { background: var(--surface-2); }
 .legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; background: var(--c); }
 #tip { position: fixed; pointer-events: none; z-index: 50; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 13px; box-shadow: var(--shadow); display: none; max-width: 260px; }
 #tip b { display: block; margin-bottom: 2px; }
+#aviso-salvar { position: fixed; right: 16px; bottom: 16px; z-index: 70; background: var(--surface); border: 1px solid var(--line); padding: 8px 14px; font-size: 12px; color: var(--ink-2, #666); box-shadow: var(--shadow); }
+#aviso-salvar.falha { background: #fff3cd; border-color: #e0b84c; color: #6b4e00; font-size: 13px; font-weight: 500; }
 .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 0; font-size: 13px; z-index: 60; }
 .proto { position: fixed; right: 12px; bottom: 12px; z-index: 40; font-size: 12px; }
 
@@ -539,19 +541,38 @@ function salvar() {
   for (const [ch, txt] of atual) if (espelho.get(ch) !== txt) { const [k] = ch.split("/"); gravar.push({ colecao: k, id: String(JSON.parse(txt).id), dados: JSON.parse(txt) }); }
   for (const ch of espelho.keys()) if (!atual.has(ch)) apagar.push(ch);
   if (!gravar.length && !apagar.length) return;
-  espelho = atual;
+  espelho = atual; emVoo++; avisoSalvar();
   fila = fila.then(async () => {
+    await garantirSessao();
     if (gravar.length) for (let i = 0; i < gravar.length; i += 500) { const { error } = await sb.from("registros").upsert(gravar.slice(i, i + 500)); if (error) throw error; }
     const porCol = {};
     apagar.forEach((ch) => { const i = ch.indexOf("/"); (porCol[ch.slice(0, i)] ||= []).push(ch.slice(i + 1)); });
     for (const [k, ids] of Object.entries(porCol)) { const { error } = await sb.from("registros").delete().eq("colecao", k).in("id", ids); if (error) throw error; }
+    tentativas = 0;
   }).catch((e) => {
-    // Marca o que falhou como pendente, para ir de novo no próximo salvamento
+    // Marca o que falhou como pendente e tenta de novo sozinho (renovando o login), até conseguir
     gravar.forEach((r) => espelho.delete(chaveReg(r.colecao, r.id)));
     apagar.forEach((ch) => espelho.set(ch, "?"));
-    console.error(e); toast("Não foi possível salvar. Verifique a internet e tente de novo.");
-  });
+    console.error(e); falhou = true; tentativas++;
+    clearTimeout(timerRetry); timerRetry = setTimeout(() => { if (sessao) salvar(); }, Math.min(30000, 3000 * tentativas));
+  }).finally(() => { emVoo--; if (!emVoo && !temPendente()) falhou = false; avisoSalvar(); });
 }
+// Estado do salvamento: aviso fixo enquanto houver algo não gravado, e o navegador pergunta antes de fechar a página
+let emVoo = 0, falhou = false, tentativas = 0, timerRetry = null;
+const temPendente = () => { if (!sessao) return false; for (const k of COLECOES) { if (!pode("financeiro") && COLECOES_FIN.includes(k)) continue; for (const item of db[k]) if (espelho.get(chaveReg(k, item.id)) !== JSON.stringify(item)) return true; } for (const v of espelho.values()) if (v === "?") return true; return false; };
+async function garantirSessao() {
+  const { data } = await sb.auth.getSession(), exp = data?.session?.expires_at || 0;
+  if (!data?.session || exp * 1000 - Date.now() < 60000) { const r = await sb.auth.refreshSession(); if (r.error) throw r.error; }
+}
+function avisoSalvar() {
+  let el = document.getElementById("aviso-salvar");
+  const txt = falhou ? "⚠ Alterações ainda não salvas. Tentando de novo… não feche a página." : emVoo ? "Salvando…" : "";
+  if (!txt) return el?.remove();
+  if (!el) { el = document.createElement("div"); el.id = "aviso-salvar"; document.body.appendChild(el); }
+  el.className = falhou ? "falha" : ""; el.textContent = txt;
+}
+addEventListener("beforeunload", (e) => { if (emVoo || falhou || temPendente()) { e.preventDefault(); e.returnValue = ""; } });
+addEventListener("online", () => { if (sessao && falhou) salvar(); });
 async function carregarDados() {
   const novo = vazio(), esp = new Map();
   for (let de = 0; ; de += 1000) {
@@ -1444,7 +1465,7 @@ function finContatos() {
   let det = "";
   if (sel) {
     const ls = db.lancamentos.filter((l) => l.clienteId === sel.id).sort((a, b) => b.data.localeCompare(a.data));
-    det = `<div class="card"><div class="bar"><h2 style="margin:0">${esc(sel.nome)} <span class="badge">${sel.tipo}</span></h2><div class="actions">${sel.tipo === "Cliente" ? `<a class="btn sm" href="#/cliente/${sel.id}">Abrir ficha do cliente</a>` : `<button class="btn sm" data-act="f-ct-edit" data-id="${sel.id}">Editar</button>`}<button class="btn sm danger" data-act="del-contato" data-id="${sel.id}">Excluir</button></div></div>
+    det = `<div class="card"><div class="bar"><h2 style="margin:0">${esc(sel.nome)} <span class="badge">${sel.tipo}</span></h2><div class="actions">${sel.tipo === "Cliente" ? `<a class="btn sm" href="#/cliente/${sel.id}">Abrir ficha do cliente</a>` : `<button class="btn sm" data-act="f-ct-edit" data-id="${sel.id}">Editar</button>`}<button class="btn sm danger" data-act="del-pessoa" data-id="${sel.id}">Excluir</button></div></div>
       <div class="grid g3" style="margin:12px 0">${tile("Recebido", R$(soma(ls.filter((l) => ehReceb(l) && l.pago))), "", "pos")}${tile("Pago", R$(soma(ls.filter((l) => ehDesp(l) && l.pago))), "", "neg")}${tile("Em aberto", R$(soma(ls.filter((l) => !l.pago))), `${ls.filter(atrasado).length} em atraso`)}</div>
       ${ls.length ? `<table><tbody>${ls.slice(0, 40).map((l) => `<tr class="clic" data-act="editar-lanc" data-id="${l.id}"><td>${dataBR(l.data)}</td><td>${esc(l.descricao || catNome(l))}${l.parcela ? ` (${l.parcela})` : ""}</td><td class="num ${ehReceb(l) ? "pos" : "neg"}">${R$(l.valor)}</td><td>${situacaoLanc(l)}</td></tr>`).join("")}</tbody></table>` : `<p class="muted">Nenhuma movimentação com este contato.</p>`}</div>`;
   }
@@ -1483,7 +1504,7 @@ function formContato(c = {}) {
     ${campo("Nome / Razão social *", inp("nome", c.nome, "required"), true)}${campo("CPF / CNPJ", inp("documento", c.documento))}${campo("E-mail", inp("email", c.email, 'type="email"'))}
     ${campo("Telefone / Celular", inp("telefone", c.telefone))}${campo("Cidade", inp("cidade", c.cidade))}
     <p class="small muted full">Clientes cadastrados aqui também aparecem em Clientes, ligados às prospecções.</p></div>`, "f-contato", `data-id="${c.id || ""}"`);
-  if (c.id) dlg.querySelector(".df").insertAdjacentHTML("afterbegin", `<button type="button" class="btn danger" style="margin-right:auto" data-act="del-contato" data-id="${c.id}">Excluir</button>`);
+  if (c.id) dlg.querySelector(".df").insertAdjacentHTML("afterbegin", `<button type="button" class="btn danger" style="margin-right:auto" data-act="del-pessoa" data-id="${c.id}">Excluir</button>`);
 }
 
 /* ---------- Importar / Exportar ---------- */
@@ -1961,7 +1982,7 @@ document.addEventListener("click", (e) => {
     "f-rel-per": () => { if (v === "mes") { fRelDe = fMes + "-01"; fRelAte = addDias(addMeses(fRelDe, 1), -1); } else if (v === "ano") { fRelDe = fMes.slice(0, 4) + "-01-01"; fRelAte = fMes.slice(0, 4) + "-12-31"; } else { fRelAte = addDias(addMeses(HOJE.slice(0, 8) + "01", 1), -1); fRelDe = addMeses(HOJE.slice(0, 8) + "01", -11); } render(); },
     "f-ct-aba": () => { fCtAba = v; render(); },
     "f-ct-sel": () => { fCtSel = id; render(); },
-    "del-contato": () => excluirContato(id),
+    "del-pessoa": () => excluirContato(id),
     "f-ct-novo": () => formContato(),
     "f-ct-edit": () => formContato(db.fornecedores.find((f) => f.id === id)),
     "f-exp-ct": () => exportarFin("ct"),
@@ -2549,6 +2570,7 @@ async function conferirInatividade() {
   if (!sessao) return;
   const ultima = Math.max(ultimaAtividade, lerAtividade());
   if (Date.now() - ultima < INATIVO_MS) return;
+  if (emVoo || falhou || temPendente()) { salvar(); return; } // só sai depois que tudo estiver gravado
   finAte = 0; guardarSessao();
   if (canal) sb.removeChannel(canal);
   await sb.auth.signOut();
@@ -2556,7 +2578,15 @@ async function conferirInatividade() {
   toast("Sessão encerrada depois de 30 minutos sem uso. Entre de novo.");
 }
 setInterval(conferirInatividade, 60000);
-document.addEventListener("visibilitychange", () => { if (!document.hidden) conferirInatividade(); });
+// Ao voltar para a aba depois de um tempo: grava o que ficou pendente e recarrega do banco (o tempo real pode ter caído)
+let escondidaEm = 0;
+document.addEventListener("visibilitychange", async () => {
+  if (document.hidden) { escondidaEm = Date.now(); return; }
+  await conferirInatividade();
+  if (!sessao || Date.now() - escondidaEm < 120000) return;
+  if (emVoo || falhou || temPendente()) return salvar();
+  try { await garantirSessao(); await carregarDados(); ouvirMudancas(); atualizarTela(); } catch (e) { console.error(e); }
+});
 
 /* ===================== acesso e equipe ===================== */
 function telaNovaSenha() {
