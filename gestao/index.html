@@ -405,6 +405,7 @@ tr.t td { background: var(--surface-2); }
 <div id="tip"></div>
 <dialog id="dlg"></dialog>
 <dialog id="dlg2" style="width:min(460px, calc(100vw - 24px))"></dialog>
+<dialog id="dlg3" style="width:min(440px, calc(100vw - 24px))"></dialog>
 
 <script>
 "use strict";
@@ -1013,6 +1014,22 @@ function formCliente(c = {}) {
     ${campo("Observações", `<textarea class="input" name="observacoes" rows="3" data-mask="maiusc" style="text-transform:uppercase">${esc(c.observacoes)}</textarea>`, true)}
   </div>`, "cliente", `data-id="${c.id || ""}"`);
 }
+// Nome repetido: antes de cadastrar um contato/cliente novo com um nome que já existe, pergunta se é isso mesmo
+const normNome = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim().toUpperCase();
+const nomeExistente = (nome) => [...db.clientes, ...db.fornecedores].find((c) => normNome(c.nome) === normNome(nome));
+// Devolve true quando parou para perguntar; "seguir" refaz o envio já confirmado
+function perguntarNomeRepetido(form, nome, seguir) {
+  if (form.dataset.dupOk) return false;
+  const ja = nomeExistente(nome); if (!ja) return false;
+  const tipo = db.clientes.includes(ja) ? "cliente" : (ja.tipo || "contato").toLowerCase();
+  const d = $("#dlg3");
+  d.innerHTML = `<div class="aviso-serie perigo"><div class="ic" aria-hidden="true">!</div><h2>Nome já cadastrado</h2><p>Já existe um ${esc(tipo)} chamado <b>${esc(ja.nome)}</b>.<br>Deseja mesmo adicionar outro contato com o mesmo nome?</p>
+    <div class="bts"><button type="button" class="btn pri" id="dup-ok">Sim, adicionar</button><button type="button" class="btn" id="dup-x">Cancelar</button></div></div>`;
+  d.showModal();
+  $("#dup-x", d).onclick = () => d.close();
+  $("#dup-ok", d).onclick = () => { d.close(); form.dataset.dupOk = "1"; seguir(); };
+  return true;
+}
 // Lista de clientes da prospecção, com "+ Novo cliente..." logo no topo para cadastrar sem sair da janela
 const opcoesClienteProsp = (atual) => `<option value="">Selecione o cliente...</option><option value="__novo">+ Novo cliente...</option>`
   + opts(db.clientes.slice().sort((a, b) => a.nome.localeCompare(b.nome)).map((c) => [c.id, c.nome]), atual);
@@ -1032,7 +1049,7 @@ function novoClienteRapido(sel) {
     e.preventDefault(); e.stopPropagation();
     const fd = new FormData(e.target), v = (k) => String(fd.get(k) || "").trim(), nome = v("nome").toUpperCase();
     if (!nome) return;
-    if (db.clientes.some((c) => c.nome.trim().toUpperCase() === nome)) return ($("#err-dlg2", dlg2).textContent = "Já existe um cliente com esse nome. Escolha-o na lista.");
+    if (perguntarNomeRepetido(e.target, nome, () => e.target.requestSubmit())) return;
     const id = uid();
     db.clientes.push({ id, criado: HOJE, nome, documento: v("documento"), origem: "", telefone: v("telefone"), email: v("email").toLowerCase(), cep: "", endereco: "", numero: "", bairro: "", cidade: v("cidade").toUpperCase(), estado: "", observacoes: "" });
     salvar(); dlg2.close(); toast("Cliente cadastrado");
@@ -1695,6 +1712,7 @@ function cadastroRapido(qual, editarId, tipoLanc, pronto) {
     e.preventDefault(); e.stopPropagation();
     const fd = new FormData(e.target), nome = String(fd.get("nome") || "").trim().toUpperCase();
     if (!nome) return;
+    if (!cat && !item && perguntarNomeRepetido(e.target, nome, () => e.target.requestSubmit())) return;
     let id = item?.id;
     if (cat) { if (item) Object.assign(item, { nome, grupo: fd.get("grupo") }); else { id = uid(); db.categorias.push({ id, nome, grupo: fd.get("grupo") }); } }
     else {
@@ -2080,6 +2098,7 @@ document.addEventListener("submit", (e) => {
     salvar(); dlg.close(); toast(f.dataset.modo === "parcelado" ? `${datas.length} parcelas salvas` : `${datas.length} repetições salvas`); return render();
   }
   if (nome === "f-contato") {
+    if (!f.dataset.id && perguntarNomeRepetido(f, v("nome"), () => f.requestSubmit())) return;
     const dados = { nome: v("nome").toUpperCase(), tipo: v("tipo"), documento: v("documento").toUpperCase(), email: v("email"), telefone: v("telefone"), cidade: v("cidade").toUpperCase() };
     if (f.dataset.id) { const c = db.fornecedores.find((x) => x.id === f.dataset.id); if (dados.tipo === "Cliente") { db.fornecedores = db.fornecedores.filter((x) => x !== c); db.clientes.push({ ...c, ...dados, origem: "", endereco: "", observacoes: "", criado: HOJE }); } else Object.assign(c, dados); }
     else if (dados.tipo === "Cliente") db.clientes.push({ id: uid(), ...dados, origem: "", endereco: "", observacoes: "", criado: HOJE });
@@ -2244,6 +2263,7 @@ document.addEventListener("submit", (e) => {
     return salvarMembro(f.dataset.id, v("nome"), v("email").toLowerCase(), v("senha"), adm, adm ? MENUS.map(([m]) => m) : marcados);
   }
   if (nome === "cliente") {
+    if (!f.dataset.id && perguntarNomeRepetido(f, v("nome"), () => f.requestSubmit())) return;
     const M = (k) => v(k).toUpperCase();
     const dados = { nome: M("nome"), documento: v("documento"), origem: v("origem") === "__nova" ? "" : v("origem"), telefone: v("telefone"), email: v("email"), cep: v("cep"), endereco: M("endereco"), numero: M("numero"), bairro: M("bairro"), cidade: M("cidade"), estado: v("estado"), observacoes: M("observacoes") };
     let id = f.dataset.id;
