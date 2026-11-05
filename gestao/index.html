@@ -2600,16 +2600,13 @@ function marcarAtividade() {
   if (finAte > agora) { finAte = agora + INATIVO_MS; guardarSessao(); }
 }
 ["pointerdown", "keydown", "scroll", "touchstart", "mousemove"].forEach((ev) => addEventListener(ev, marcarAtividade, { passive: true, capture: true }));
+// O login fica até clicar em Sair. Só o cadeado do Financeiro/Equipe volta a travar depois de 30 min sem uso
+let cadeadoAberto = false;
 async function conferirInatividade() {
   if (!sessao) return;
-  const ultima = Math.max(ultimaAtividade, lerAtividade());
-  if (Date.now() - ultima < INATIVO_MS) return;
-  if (emVoo || falhou || temPendente()) { salvar(); return; } // só sai depois que tudo estiver gravado
-  finAte = 0; guardarSessao();
-  if (canal) sb.removeChannel(canal);
-  await sb.auth.signOut({ scope: "local" });
-  sessao = null; db = vazio(); espelho = new Map(); ROTA = "#/painel"; render();
-  toast("Sessão encerrada depois de 30 minutos sem uso. Entre de novo.");
+  const aberto = finLiberado();
+  if (cadeadoAberto && !aberto) { finAte = 0; guardarSessao(); if (/^#\/(financeiro|equipe)/.test(ROTA) && !dlg.open) { render(); toast("Financeiro travado depois de 30 minutos sem uso."); } }
+  cadeadoAberto = aberto;
 }
 setInterval(conferirInatividade, 60000);
 // Ao voltar para a aba depois de um tempo: grava o que ficou pendente e recarrega do banco (o tempo real pode ter caído)
@@ -2700,8 +2697,6 @@ async function alterarPerfil(id, dados) {
 sb.auth.onAuthStateChange((evento, s) => {
   if (evento === "PASSWORD_RECOVERY") { recuperandoSenha = true; carregando = false; return render(); }
   if (evento === "SIGNED_IN" || evento === "INITIAL_SESSION") {
-    const parada = evento === "INITIAL_SESSION" && lerAtividade() && Date.now() - lerAtividade() > INATIVO_MS;
-    if (s?.user && parada) { setTimeout(async () => { await sb.auth.signOut({ scope: "local" }); carregando = false; render(); toast("Sessão encerrada depois de 30 minutos sem uso. Entre de novo."); }); return; }
     if (s?.user && sessao?.id !== s.user.id) setTimeout(() => entrar(s.user));
     else if (!s) { carregando = false; render(); }
   }
