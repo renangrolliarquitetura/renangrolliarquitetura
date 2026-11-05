@@ -405,7 +405,7 @@ document.querySelectorAll(".ph").forEach(el=>{
   else if(el.dataset.plan!=="hero") el.insertAdjacentHTML("beforeend", `<span class="soon">foto em breve</span>`);
 });
 
-const places=["Sorriso · MT","Mont Serrat","São Conrado","Green Park","Jardim Aurora","Cidade Nova","Japaratinga · AL","Flats para Airbnb","Praia de Torres · RS"];
+const places=["Sorriso · MT","Japaratinga · AL","Torres · RS","Costa Brava Residencial Prime","Lot. Green Park","Lot. Villa Romana","Lot. Mont Serrat","Lot. Copenhagen","Lot. Golden Park","Lot. Jardim Aurora","Lot. São Conrado","Lot. Vila Rica"];
 document.getElementById("track").innerHTML = [...places,...places].map(p=>`<span>${p}</span>`).join("");
 
 document.querySelectorAll("[data-wa]").forEach(a=>a.href="https://wa.me/"+WHATSAPP+"?text="+encodeURIComponent(a.dataset.msg||MSG));
