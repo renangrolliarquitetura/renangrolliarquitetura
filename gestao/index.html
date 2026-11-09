@@ -247,6 +247,7 @@ tr.link { cursor: pointer; } tr.link:hover td { background: var(--surface-2); }
 .checklist input { margin-top: 2px; accent-color: var(--ink); width: 16px; height: 16px; flex: none; }
 .checklist input:checked + span { color: var(--muted); text-decoration: line-through; }
 .kcard.origem { opacity: .35; }
+.kins { height: 3px; background: var(--accent); margin: -2px 0; flex: none; border-radius: 2px; }
 .kcard.fantasma { position: fixed; z-index: 70; pointer-events: none; margin: 0; transform: rotate(3deg); box-shadow: 0 12px 28px rgba(0,0,0,.18); cursor: grabbing; }
 body.arrastando, body.arrastando * { cursor: grabbing !important; }
 body.arrastando .kanban { scroll-snap-type: none; }
@@ -953,19 +954,35 @@ function cartaoProjeto(p) {
 }
 function pgEsteira() {
   const lista = db.prospeccoes.filter((p) => p.status !== "cancelado" && (!feTipo || p.tipos.includes(Number(feTipo))) && (!feResp || (p.responsavelId || "-") === feResp) && filtraBusca(p.titulo + " " + (cliente(p.clienteId)?.nome || "")));
-  return cabecalho("Esteira de projetos", `${lista.length} projeto(s) · arraste os cartões entre as colunas`, `<button class="btn pri" data-act="nova-prosp">Novo projeto</button>`) +
+  return cabecalho("Esteira de projetos", `${lista.length} projeto(s) · arraste os cartões entre as colunas ou para cima e para baixo`, `<button class="btn pri" data-act="nova-prosp">Novo projeto</button>`) +
     `<div class="bar mb"><input class="input" id="busca-est" style="max-width:320px" placeholder="Buscar projeto ou cliente" value="${esc(feBusca)}">
       <div class="actions"><select class="input" data-act="fe-tipo" aria-label="Tipo de projeto"><option value="">Todos os tipos</option>${db.tipos.map((t) => `<option value="${t.id}" ${String(t.id) === feTipo ? "selected" : ""}>${esc(t.nome)}</option>`).join("")}</select>
       <select class="input" data-act="fe-resp" aria-label="Responsável"><option value="">Todos os responsáveis</option>${pessoas.map((x) => `<option value="${x.id}" ${x.id === feResp ? "selected" : ""}>${esc(x.nome)}</option>`).join("")}<option value="-" ${feResp === "-" ? "selected" : ""}>Sem responsável</option></select></div></div>
     <div class="kanban">${ESTEIRA.map((col, i) => {
-      const cs = lista.filter((p) => etapaDe(p) === col);
+      const cs = lista.filter((p) => etapaDe(p) === col).sort(ordemEst);
       return `<section class="kcol" data-drop="prosp" data-v="${i}"><header><span>${esc(col)} <span class="muted">${cs.length}</span></span>${i === 0 ? `<button class="btn sm" data-act="nova-prosp" title="Nova prospecção">+</button>` : ""}</header><div class="kcards">${cs.map(cartaoProjeto).join("")}</div></section>`;
     }).join("")}</div>`;
 }
 // Mover na esteira também atualiza a situação comercial: sair de "Em prospecção" para uma etapa de trabalho fecha o projeto
-function moverProjeto(p, i) {
+// Ordem dos cartões dentro de cada coluna (campo "ordem"); quem não tem ordem fica no fim, na ordem em que foi criado
+const ordemEst = (a, b) => (a.ordem ?? 1e9) - (b.ordem ?? 1e9);
+const colunaEsteira = (etapa, sem) => db.prospeccoes.filter((x) => x !== sem && x.status !== "cancelado" && etapaDe(x) === etapa).sort(ordemEst);
+// antesId: ao arrastar, o cartão cai antes deste (null = no fim da coluna); sem ele (troca pelo menu), vai para o fim
+function moverProjeto(p, i, antesId) {
   i = Math.max(0, Math.min(ESTEIRA.length - 1, i));
-  if (ESTEIRA[i] === etapaDe(p)) return;
+  const mudou = ESTEIRA[i] !== etapaDe(p);
+  const col = colunaEsteira(ESTEIRA[i], p);
+  let k = antesId ? col.findIndex((x) => x.id === antesId) : -1;
+  if (k < 0) k = col.length;
+  if (!mudou) {
+    const antes = colunaEsteira(ESTEIRA[i]).map((x) => x.id).join();
+    col.splice(k, 0, p);
+    if (col.map((x) => x.id).join() === antes) return;
+    col.forEach((x, n) => { if (x.ordem !== n) x.ordem = n; });
+    salvar(); render(); return;
+  }
+  col.splice(k, 0, p);
+  col.forEach((x, n) => { if (x.ordem !== n) x.ordem = n; });
   p.esteira = ESTEIRA[i];
   let msg = "Movido para " + ESTEIRA[i];
   if (i === 0 && p.status === "fechado") { p.status = "aberto"; p.fechamento = null; msg += " (voltou a ficar em aberto)"; }
@@ -2404,6 +2421,15 @@ function moverFantasma(x, y) {
   const col = colunaSob(x, y, a.tipo);
   document.querySelectorAll(".kcol.over").forEach((c) => c !== col && c.classList.remove("over"));
   if (col) col.classList.add("over");
+  // Na esteira, uma linha mostra onde o cartão vai ficar dentro da coluna
+  if (a.tipo !== "prosp") return;
+  if (!col) { a.marca?.remove(); a.antes = undefined; return; }
+  const lista = col.querySelector(".kcards");
+  const cards = [...lista.querySelectorAll(".kcard[data-id]")].filter((c) => c.dataset.id !== a.id);
+  const antes = cards.find((c) => { const r = c.getBoundingClientRect(); return y < r.top + r.height / 2; }) || null;
+  if (!a.marca) { a.marca = document.createElement("div"); a.marca.className = "kins"; }
+  if (a.marca.parentNode !== lista || a.antes !== antes) lista.insertBefore(a.marca, antes);
+  a.antes = antes;
 }
 // Rola o quadro sozinho quando o cartão chega perto das bordas
 function rolarNasBordas() {
@@ -2418,11 +2444,11 @@ function encerrarArraste(soltar) {
   clearTimeout(a.timer); arraste = null;
   if (!a.ativo) return;
   const col = soltar ? colunaSob(a.x, a.y, a.tipo) : null;
-  a.fantasma.remove(); a.card.classList.remove("origem"); document.body.classList.remove("arrastando");
+  a.fantasma.remove(); a.marca?.remove(); a.card.classList.remove("origem"); document.body.classList.remove("arrastando");
   document.querySelectorAll(".kcol.over").forEach((c) => c.classList.remove("over"));
   soltouEm = Date.now();
   if (col) {
-    if (a.tipo === "prosp") moverProjeto(prosp(a.id), Number(col.dataset.v));
+    if (a.tipo === "prosp") moverProjeto(prosp(a.id), Number(col.dataset.v), a.antes?.dataset.id || null);
     else { const t = db.tarefas.find((x) => x.id === a.id); if (t && (t.responsavelId || "") !== col.dataset.v) { t.responsavelId = col.dataset.v || null; salvar(); } }
   }
   renderPendente = false; render();
